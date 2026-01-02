@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import "../css/customer-search-page.css";
 import { useMembers } from "../context/MembersContext";
 import HamburgerMenu from "../components/hamburger-menu";
+import { logDailyVisit } from "../api/analytics-crud";
 
 function CustomerSearchPage() {
   const { getMember } = useMembers();
@@ -10,6 +11,9 @@ function CustomerSearchPage() {
   const [memberData, setMemberData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [isLoggingVisit, setIsLoggingVisit] = useState(false);
+  const [logSuccess, setLogSuccess] = useState(false);
+  const [logError, setLogError] = useState(null);
 
   const handleInput = (value) => {
     setCode((prev) => {
@@ -50,6 +54,24 @@ function CustomerSearchPage() {
     setMemberData(null);
     setError(null);
     setCode("");
+    setLogSuccess(false);
+    setLogError(null);
+  };
+
+  const handleLogVisit = async () => {
+    setIsLoggingVisit(true);
+    setLogSuccess(false);
+    setLogError(null);
+
+    try {
+      await logDailyVisit();
+      setLogSuccess(true);
+      setTimeout(() => setLogSuccess(false), 3000);
+    } catch (err) {
+      setLogError(`Failed to log visit: ${err.message}`);
+    } finally {
+      setIsLoggingVisit(false);
+    }
   };
 
   const buttons = [
@@ -124,6 +146,30 @@ function CustomerSearchPage() {
               <span className="notes-value">{memberData.notes}</span>
             </div>
           )}
+
+          {/* LOG VISIT BUTTON */}
+          <div className="log-visit-container">
+            <button
+              onClick={handleLogVisit}
+              className="log-visit-btn"
+              disabled={isLoggingVisit}
+              aria-label="Log customer visit"
+            >
+              {isLoggingVisit ? "Logging..." : "Log Visit"}
+            </button>
+
+            {logSuccess && (
+              <div className="log-success-message" role="status">
+                ✓ Visit logged successfully
+              </div>
+            )}
+
+            {logError && (
+              <div className="log-error-message" role="alert">
+                {logError}
+              </div>
+            )}
+          </div>
         </div>
       </div>
     );
