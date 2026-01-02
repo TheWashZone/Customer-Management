@@ -181,9 +181,9 @@ async function cleanupOldVisitData() {
     // Wait for all deletions to complete
     await Promise.all(deletePromises);
 
-    if (deletedCount > 0) {
-      console.log(`🧹 Cleaned up ${deletedCount} old visit records`);
-    }
+    // if (deletedCount > 0) {
+    //   console.log(`🧹 Cleaned up ${deletedCount} old visit records`);
+    // }
 
     return deletedCount;
   } catch (error) {

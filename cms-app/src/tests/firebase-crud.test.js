@@ -39,13 +39,18 @@ beforeAll(async () => {
   try {
     // Try to sign in with test user
     await signInWithEmailAndPassword(auth, "test@example.com", "password123");
-  } catch (error) {
-    // If user doesn't exist, create it
-    if (error.code === 'auth/user-not-found') {
+  } catch (signInError) {
+    // If sign in fails, try to create the user
+    try {
       await createUserWithEmailAndPassword(auth, "test@example.com", "password123");
-    } else {
-      console.error("Failed to authenticate test user:", error);
-      throw error;
+    } catch (createError) {
+      // If user already exists, try signing in again
+      if (createError.code === 'auth/email-already-in-use') {
+        await signInWithEmailAndPassword(auth, "test@example.com", "password123");
+      } else {
+        console.error("Failed to authenticate test user:", createError);
+        throw createError;
+      }
     }
   }
 });
