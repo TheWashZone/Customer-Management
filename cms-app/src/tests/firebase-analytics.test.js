@@ -37,11 +37,11 @@ beforeAll(async () => {
   try {
     // Try to sign in with test user
     await signInWithEmailAndPassword(auth, "test@example.com", "password123");
-  } catch (signInError) {
+  } catch {
     // If sign in fails, try to create the user
     try {
       await createUserWithEmailAndPassword(auth, "test@example.com", "password123");
-    } catch {
+    } catch (createError) {
       // If user already exists, try signing in again
       if (createError.code === 'auth/email-already-in-use') {
         await signInWithEmailAndPassword(auth, "test@example.com", "password123");
