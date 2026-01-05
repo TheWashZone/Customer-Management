@@ -40,9 +40,8 @@ beforeAll(async () => {
   } catch (signInError) {
     // If sign in fails, try to create the user
     try {
-      console.error("Failed to sign in, creating test user and retrying");
       await createUserWithEmailAndPassword(auth, "test@example.com", "password123");
-    } catch (createError) {
+    } catch {
       // If user already exists, try signing in again
       if (createError.code === 'auth/email-already-in-use') {
         await signInWithEmailAndPassword(auth, "test@example.com", "password123");
