@@ -1,0 +1,25 @@
+rules_version='2'
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Users collection
+    match /users/{userId} {
+      // Allow read/write only if the user is authenticated
+      allow read, write: if request.auth != null;
+    }
+
+    // Daily visits collection
+    match /dailyVisits/{dateString} {
+      // Read: Any authenticated user can read visit data
+      allow read: if request.auth != null;
+
+      // Write: Any authenticated user can create/update visit counts
+      // Validate that document ID is in YYYY-MM-DD format
+      allow create, update: if request.auth != null
+                            && dateString.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$');
+
+      // Delete: Allow authenticated users to delete old records (for cleanup)
+      allow delete: if request.auth != null;
+    }
+  }
+}
