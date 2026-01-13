@@ -119,8 +119,8 @@ function CustomerSearchPage() {
             {/* Active Card */}
             <div
               className={`status-card ${memberData.isActive === "No" || memberData.isActive === false
-                  ? "inactive-card"
-                  : "ok-card"
+                ? "inactive-card"
+                : "ok-card"
                 }`}
             >
               <span className="status-label">Active:</span>
@@ -130,8 +130,8 @@ function CustomerSearchPage() {
             {/* Valid Payment Card */}
             <div
               className={`status-card ${memberData.validPayment === "No" || memberData.validPayment === false
-                  ? "invalid-payment-card"
-                  : "ok-card"
+                ? "invalid-payment-card"
+                : "ok-card"
                 }`}
             >
               <span className="status-label">Valid Payment:</span>
@@ -147,21 +147,19 @@ function CustomerSearchPage() {
             </div>
           )}
 
-          {/* LOG VISIT BUTTON */}
+          {/* LOG CUSTOMER COUNT BUTTON */}
           <div className="log-visit-container">
             <button
               onClick={handleLogVisit}
               className="log-visit-btn"
               disabled={isLoggingVisit}
-              aria-label="Log customer visit"
+              aria-label="Add one to today's total customer count"
             >
-              {isLoggingVisit ? "Logging..." : "Log Visit"}
+              {isLoggingVisit ? "Logging..." : "Log Customer"}
             </button>
-
             {logSuccess && (
               <div className="log-success-message" role="status">
-                ✓ Visit logged successfully
-              </div>
+                ✓ Customer counted successfully              </div>
             )}
 
             {logError && (

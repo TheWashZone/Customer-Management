@@ -71,8 +71,8 @@ async function cleanupTestVisitDoc(dateString) {
   try {
     await deleteDoc(doc(db, "dailyVisits", dateString));
   } catch (error) {
-    // Ignore errors if document doesn't exist
-    if (error.code !== 'not-found') {
+    // Ignore errors if document doesn't exist or access is denied (e.g., for missing docs)
+    if (error.code !== 'not-found' && error.code !== 'permission-denied') {
       console.error(error.message);
     }
   }
@@ -249,19 +249,6 @@ describe("Analytics CRUD Operations (emulator)", () => {
       await cleanupTestVisitDoc(date1);
       await cleanupTestVisitDoc(date2);
       await cleanupTestVisitDoc(date3);
-
-      // Create test data by manipulating current date and logging
-      // For this test, we'll create documents manually would be more reliable
-      // but for simplicity, we'll use a different approach
-
-      // We'll use a unique range that won't have interference
-      const testDate1 = "2025-06-15";
-      const testDate2 = "2025-06-16";
-      const testDate3 = "2025-06-17";
-
-      await cleanupTestVisitDoc(testDate1);
-      await cleanupTestVisitDoc(testDate2);
-      await cleanupTestVisitDoc(testDate3);
 
       // Since logDailyVisit uses current date, we'll skip creating test data
       // and just verify the function works with current date

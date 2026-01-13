@@ -171,7 +171,7 @@ async function cleanupOldVisitData() {
 
     const querySnapshot = await getDocs(q);
 
-    // Delete documents (batch delete if many, but doing individually for simplicity)
+    // Delete documents concurrently using Promise.all (one deleteDoc call per document)
     let deletedCount = 0;
     const deletePromises = [];
 

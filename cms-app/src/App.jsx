@@ -19,9 +19,20 @@ function App() {
       setUser(currentUser);
       setLoading(false);
 
-      // Run cleanup of old visit data when user logs in
+      // Run cleanup of old visit data once per day
       if (currentUser) {
-        cleanupOldVisitData().catch(err => console.error('Cleanup failed:', err));
+        const lastCleanupDate = localStorage.getItem('lastCleanupDate');
+        const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+
+        // Only run cleanup if it hasn't been run today
+        if (lastCleanupDate !== today) {
+          cleanupOldVisitData()
+            .then(() => {
+              localStorage.setItem('lastCleanupDate', today);
+              console.log('✅ Cleanup completed for', today);
+            })
+            .catch(err => console.error('Cleanup failed:', err));
+        }
       }
     });
 
