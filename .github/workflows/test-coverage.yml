@@ -38,5 +38,3 @@ jobs:
     - name: Get test coverage
       run: firebase emulators:exec --only auth,firestore "npm test -- --coverage" --project demo-washzone-cms
       working-directory: cms-app
-      env:
-        FIREBASE_PROJECT: demo-washzone-cms

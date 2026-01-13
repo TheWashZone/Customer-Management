@@ -21,13 +21,7 @@ function App() {
 
       // Run cleanup of old visit data when user logs in
       if (currentUser) {
-        cleanupOldVisitData()
-          // .then(deletedCount => {
-          //   if (deletedCount > 0) {
-          //     console.log(`Cleaned up ${deletedCount} old visit records`);
-          //   }
-          // })
-          // .catch(err => console.error('Cleanup failed:', err));
+        cleanupOldVisitData().catch(err => console.error('Cleanup failed:', err));
       }
     });
 

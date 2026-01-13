@@ -17,7 +17,7 @@ export default defineConfig({
     sequence: {
       shuffle: false,
     },
-    // Retry flaky tests (helpful for Firebase emulator timing issues)
+    // Retry flaky tests in CI runner (helpful for Firebase emulator timing issues)
     retry: process.env.CI ? 1 : 0,
   },
 });

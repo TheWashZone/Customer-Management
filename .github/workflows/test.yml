@@ -38,5 +38,3 @@ jobs:
     - name: Run tests with Firebase emulators
       run: firebase emulators:exec --only auth,firestore "npm test" --project demo-washzone-cms
       working-directory: cms-app
-      env:
-        FIREBASE_PROJECT: demo-washzone-cms
