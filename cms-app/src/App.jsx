@@ -29,7 +29,6 @@ function App() {
           cleanupOldVisitData()
             .then(() => {
               localStorage.setItem('lastCleanupDate', today);
-              console.log('✅ Cleanup completed for', today);
             })
             .catch(err => console.error('Cleanup failed:', err));
         }
