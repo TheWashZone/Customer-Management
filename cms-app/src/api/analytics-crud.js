@@ -16,7 +16,7 @@
  * @module api/analytics-crud
  */
 
-import { doc, setDoc, getDoc, collection, query, where, getDocs, deleteDoc, Timestamp, serverTimestamp, runTransaction } from "firebase/firestore";
+import { doc, getDoc, collection, query, where, getDocs, deleteDoc, Timestamp, serverTimestamp, runTransaction } from "firebase/firestore";
 import { db } from "./firebaseconfig";
 
 /**
