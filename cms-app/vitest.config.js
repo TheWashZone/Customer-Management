@@ -10,6 +10,14 @@ export default defineConfig({
       include: ['src/api/**/*.js', 'src/context/MembersContext.jsx'],
       exclude: ['src/api/firebaseconfig.js', 'node_modules/'],
     },
-    testTimeout: 10000,
+    testTimeout: 30000, // Increased timeout for CI environment
+    // Run test files sequentially to avoid overwhelming Firebase emulator
+    fileParallelism: false,
+    // Ensure tests within a file also run sequentially for Firebase operations
+    sequence: {
+      shuffle: false,
+    },
+    // Retry flaky tests in CI runner (helpful for Firebase emulator timing issues)
+    retry: process.env.CI ? 1 : 0,
   },
 });

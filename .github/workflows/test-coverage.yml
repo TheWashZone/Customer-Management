@@ -26,7 +26,15 @@ jobs:
     
     - name: Install Firebase CLI
       run: npm install -g firebase-tools
-    
+
+    - name: Cache Firebase Emulators
+      uses: actions/cache@v4
+      with:
+        path: ~/.cache/firebase/emulators
+        key: ${{ runner.os }}-firebase-emulators-${{ hashFiles('cms-app/firebase.json') }}
+        restore-keys: |
+          ${{ runner.os }}-firebase-emulators-
+
     - name: Get test coverage
-      run: firebase emulators:exec --only auth,firestore "npm test -- --coverage"
+      run: firebase emulators:exec --only auth,firestore "npm test -- --coverage" --project demo-washzone-cms
       working-directory: cms-app

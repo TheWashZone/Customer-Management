@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router';
 import { onAuthStateChanged } from 'firebase/auth';
 import { auth } from './api/firebaseconfig';
 import { MembersProvider } from './context/MembersContext';
+import { cleanupOldVisitData } from './api/analytics-crud';
 import AnalyticsPage from './pages/analytics-page';
 import CustomerListPage from './pages/customer-list-page';
 import CustomerSearchPage from './pages/customer-search-page';
@@ -17,6 +18,21 @@ function App() {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
       setLoading(false);
+
+      // Run cleanup of old visit data once per day
+      if (currentUser) {
+        const lastCleanupDate = localStorage.getItem('lastCleanupDate');
+        const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+
+        // Only run cleanup if it hasn't been run today
+        if (lastCleanupDate !== today) {
+          cleanupOldVisitData()
+            .then(() => {
+              localStorage.setItem('lastCleanupDate', today);
+            })
+            .catch(err => console.error('Cleanup failed:', err));
+        }
+      }
     });
 
     // Cleanup subscription on unmount
