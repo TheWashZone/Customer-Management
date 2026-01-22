@@ -23,9 +23,9 @@ function AnalyticsPage() {
 
   // Main render
   return (
-    <div className="p-3" style={{ minHeight: '100vh', overflow: 'auto' }}>
+    <div className="p-3 analytics-page-container">
       <HamburgerMenu />
-      <div style={{ marginLeft: '60px', paddingBottom: '40px' }}>
+      <div className="analytics-content" style={{ marginLeft: '60px' }}>
         <h1 className="mb-3">Analytics Dashboard</h1>
         <Stack direction="horizontal" gap={2} className='mb-3'>
           <Button variant={activeView === 'membership' ? 'primary' : 'outline-primary'} onClick={() => setActiveView('membership')}>

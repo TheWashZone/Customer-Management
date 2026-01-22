@@ -262,7 +262,7 @@ function MembersPage() {
   };
 
   return (
-    <>
+    <div className="customer-list-page-container">
       <HamburgerMenu />
       <Container fluid className="page-wrap">
         {/* Header + controls */}
@@ -628,7 +628,7 @@ function MembersPage() {
         </Modal>
 
       </Container>
-    </>
+    </div>
   );
 }
 
