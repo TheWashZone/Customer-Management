@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import "../css/customer-search-page.css";
 import { useMembers } from "../context/MembersContext";
-import HamburgerMenu from "../components/hamburger-menu";
+import HamburgerMenu from "../components/HamburgerMenu";
 import { logDailyVisit } from "../api/analytics-crud";
 
 function CustomerSearchPage() {

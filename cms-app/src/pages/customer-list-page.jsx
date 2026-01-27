@@ -21,7 +21,7 @@ import { useMembers } from '../context/MembersContext';
 
 import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
-import HamburgerMenu from '../components/hamburger-menu';
+import HamburgerMenu from '../components/HamburgerMenu';
 
 function MembersPage() {
   const { members, isLoading, createMember, updateMember, deleteMember } = useMembers();
@@ -262,7 +262,7 @@ function MembersPage() {
   };
 
   return (
-    <>
+    <div className="customer-list-page-container">
       <HamburgerMenu />
       <Container fluid className="page-wrap">
         {/* Header + controls */}
@@ -628,7 +628,7 @@ function MembersPage() {
         </Modal>
 
       </Container>
-    </>
+    </div>
   );
 }
 
