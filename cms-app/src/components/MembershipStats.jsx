@@ -18,6 +18,17 @@ const MEMBERSHIP_NAMES = {
 function MembershipStats() {
   const { members, isLoading } = useMembers();
 
+  if (error) {
+    return (
+      <Card className="mb-4">
+        <Card.Body>
+          <Card.Title>Membership Overview</Card.Title>
+          <p className="text-danger mb-0">Failed to load membership data: {typeof error === 'string' ? error : 'Please try again later.'}</p>
+        </Card.Body>
+      </Card>
+    )
+  }
+
   const stats = useMemo(() => {
     if (!members || members.length === 0) {
       return {

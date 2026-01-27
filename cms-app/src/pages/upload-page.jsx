@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useMembers } from '../context/MembersContext';
 import { uploadCustomerRecordsFromFile } from '../utils/excel-upload';
-import HamburgerMenu from '../components/hamburger-menu';
+import HamburgerMenu from '../components/HamburgerMenu';
 
 function UploadPage() {
   const { createMember } = useMembers();

@@ -62,10 +62,10 @@ function VisitsChart() {
 
     // Create a map of all dates in range with 0 counts
     const dateMap = new Map();
-    const start = new Date(dateRange.start);
-    const end = new Date(dateRange.end);
+    const start = new Date(dateRange.start + 'T00:00:00Z');
+    const end = new Date(dateRange.end + 'T00:00:00Z');
 
-    for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+    for (let d = new Date(start); d <= end; d.setUTCDate(d.getUTCDate() + 1)) {
       const dateStr = d.toISOString().split('T')[0];
       dateMap.set(dateStr, {
         date: dateStr,

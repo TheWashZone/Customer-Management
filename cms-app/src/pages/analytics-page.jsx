@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import Button from 'react-bootstrap/Button';
 import Stack from 'react-bootstrap/Stack';
 import '../css/analytics-page.css';
-import HamburgerMenu from '../components/hamburger-menu';
+import HamburgerMenu from '../components/HamburgerMenu';
 import MembershipStats from '../components/MembershipStats';
 import VisitsChart from '../components/VisitsChart';
 import WeatherAnalytics from '../components/WeatherAnalytics';
