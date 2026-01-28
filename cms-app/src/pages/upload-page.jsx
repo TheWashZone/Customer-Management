@@ -2,16 +2,13 @@ import React, { useState } from 'react';
 import { useMembers } from '../context/MembersContext';
 import { uploadCustomerRecordsFromFile } from '../utils/excel-upload';
 import HamburgerMenu from '../components/HamburgerMenu';
-import * as ExcelJS from 'exceljs';
-import { saveAs } from 'file-saver';
 
 function UploadPage() {
-  const { createMember, members, isLoading } = useMembers();
+  const { createMember } = useMembers();
 
   const [message, setMessage] = useState('');
   const [selectedFile, setSelectedFile] = useState(null);
   const [uploadResults, setUploadResults] = useState(null);
-  const [isDownloading, setIsDownloading] = useState(false);
 
   const handleCreateMember = async () => {
     try {
@@ -31,71 +28,6 @@ function UploadPage() {
     } catch (error) {
       setMessage(`Error: ${error.message}`);
       console.error('Error creating member:', error);
-    }
-  };
-
-  const handleDownloadExcel = async () => {
-    try {
-      setIsDownloading(true);
-      setMessage('Preparing Excel download...');
-
-      // Check if members data is available
-      if (!members || members.length === 0) {
-        setMessage('No customer data available to download');
-        setIsDownloading(false);
-        return;
-      }
-
-      // Create a new workbook
-      const workbook = new ExcelJS.Workbook();
-      const worksheet = workbook.addWorksheet('Customers');
-
-      // Define columns
-      worksheet.columns = [
-        { header: 'ID', key: 'id', width: 15 },
-        { header: 'Name', key: 'name', width: 25 },
-        { header: 'Car', key: 'car', width: 30 },
-        { header: 'Status', key: 'status', width: 12 },
-        { header: 'Payment Status', key: 'paymentStatus', width: 15 },
-        { header: 'Notes', key: 'notes', width: 40 },
-        { header: 'Created Date', key: 'createdAt', width: 20 }
-      ];
-
-      // Add data rows
-      members.forEach((member) => {
-        worksheet.addRow({
-          id: member.id,
-          name: member.name,
-          car: member.car,
-          status: member.isActive ? 'Active' : 'Inactive',
-          paymentStatus: member.validPayment ? 'Valid' : 'Invalid',
-          notes: member.notes,
-          createdAt: member.createdAt ? 
-            new Date(member.createdAt).toLocaleString() : 'N/A'
-        });
-      });
-
-      // Generate Excel file
-      const buffer = await workbook.xlsx.writeBuffer();
-      
-      // Create blob and save
-      const data = new Blob([buffer], {
-        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-      });
-
-      // Generate filename
-      const timestamp = new Date().toISOString().split('T')[0];
-      const filename = `customers_${timestamp}.xlsx`;
-      
-      saveAs(data, filename);
-      
-      setMessage(`Excel file downloaded: ${filename}`);
-      setIsDownloading(false);
-
-    } catch (error) {
-      console.error('Error downloading Excel:', error);
-      setMessage(`Error downloading Excel: ${error.message}`);
-      setIsDownloading(false);
     }
   };
 
@@ -152,29 +84,10 @@ function UploadPage() {
             border: 'none',
             borderRadius: '4px',
             cursor: 'pointer',
-            minWidth: '150px',
-            marginRight: '10px'
+            minWidth: '150px'
           }}
         >
           Create Test Member
-        </button>
-        
-        <button
-          onClick={handleDownloadExcel}
-          disabled={isDownloading || !members || members.length === 0}
-          style={{
-            padding: '10px 20px',
-            fontSize: '16px',
-            backgroundColor: isDownloading ? '#666' : 
-                           (members && members.length > 0 ? '#2196F3' : '#ccc'),
-            color: 'white',
-            border: 'none',
-            borderRadius: '4px',
-            cursor: (members && members.length > 0 && !isDownloading) ? 'pointer' : 'not-allowed',
-            minWidth: '200px'
-          }}
-        >
-          {isDownloading ? 'Downloading...' : 'Download Excel'}
         </button>
       </div>
 
