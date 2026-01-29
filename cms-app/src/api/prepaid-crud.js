@@ -7,16 +7,18 @@ const COLLECTION_NAME = "prepaidMembers";
  * Creates a prepaid member document in the database
  * @param {string} id - The prepaid member ID (p + 3-5 digits, e.g. "p101")
  * @param {string} name - Member's name
+ * @param {string} type - Car wash type: "B", "U", or "D"
  * @param {string} issueDate - Date the prepaid membership was issued
  * @param {string} lastVisitDate - Date of the member's last visit
  * @param {number} prepaidWashes - Number of prepaid washes remaining
  * @param {string} notes - Additional notes
  * @returns {Promise<string>} The prepaid member ID
  */
-async function createPrepaidMember(id, name, issueDate, lastVisitDate, prepaidWashes, notes) {
+async function createPrepaidMember(id, name, type, issueDate, lastVisitDate, prepaidWashes, notes) {
   try {
     const memberData = {
       name: name,
+      type: type,
       issueDate: issueDate,
       lastVisitDate: lastVisitDate,
       prepaidWashes: prepaidWashes,

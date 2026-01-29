@@ -37,6 +37,20 @@
   gap: 16px;
 }
 
+/* Letter row with 5 buttons */
+.letter-row {
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+}
+
+.letter-row .keypad-btn {
+  width: 50px;
+  height: 50px;
+  font-size: 18px;
+}
+
 /* Number + letter buttons */
 .keypad-btn {
   width: 60px;
@@ -157,6 +171,18 @@
   color: #0a4d0a;
 }
 
+/* Warning card for low prepaid washes (1-2) */
+.warning-card {
+  background: #fff3cd;
+  color: #856404;
+}
+
+/* No washes card for zero prepaid washes */
+.no-washes-card {
+  background: #f8d7da;
+  color: #721c24;
+}
+
 
 /* ---- NOTES CARD ---- */
 
@@ -252,4 +278,45 @@
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(-10px); }
   to { opacity: 1; transform: translateY(0); }
+}
+
+
+/* ---- FREE WASH BANNER ---- */
+
+.free-wash-banner {
+  background: linear-gradient(135deg, #ffd700 0%, #ffec8b 50%, #ffd700 100%);
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 18px;
+  text-align: center;
+  box-shadow: 0 4px 12px rgba(255, 215, 0, 0.4);
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+.free-wash-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #333;
+  margin-bottom: 8px;
+}
+
+.free-wash-subtitle {
+  font-size: 1rem;
+  font-weight: 500;
+  color: #555;
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 4px 12px rgba(255, 215, 0, 0.4);
+  }
+  50% {
+    transform: scale(1.02);
+    box-shadow: 0 6px 16px rgba(255, 215, 0, 0.6);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 0 4px 12px rgba(255, 215, 0, 0.4);
+  }
 }
