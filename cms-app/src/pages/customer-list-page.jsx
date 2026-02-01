@@ -70,6 +70,7 @@ function MembersPage() {
   // --- LOYALTY STATE ---
   const [loyaltyMembers, setLoyaltyMembers] = useState([]);
   const [loyaltyLoading, setLoyaltyLoading] = useState(false);
+  const [loyaltyLoaded, setLoyaltyLoaded] = useState(false);
   const [filteredLoyaltyMembers, setFilteredLoyaltyMembers] = useState([]);
   const [loyaltySearchTerm, setLoyaltySearchTerm] = useState('');
 
@@ -89,6 +90,7 @@ function MembersPage() {
   // --- PREPAID STATE ---
   const [prepaidMembers, setPrepaidMembers] = useState([]);
   const [prepaidLoading, setPrepaidLoading] = useState(false);
+  const [prepaidLoaded, setPrepaidLoaded] = useState(false);
   const [filteredPrepaidMembers, setFilteredPrepaidMembers] = useState([]);
   const [prepaidSearchTerm, setPrepaidSearchTerm] = useState('');
   const [filterPrepaidType, setFilterPrepaidType] = useState('all');
@@ -108,18 +110,19 @@ function MembersPage() {
 
   // --- LOAD LOYALTY / PREPAID DATA ON TAB SWITCH ---
   useEffect(() => {
-    if (activeTab === 'loyalty' && loyaltyMembers.length === 0) {
+    if (activeTab === 'loyalty' && !loyaltyLoaded) {
       loadLoyaltyMembers();
-    } else if (activeTab === 'prepaid' && prepaidMembers.length === 0) {
+    } else if (activeTab === 'prepaid' && !prepaidLoaded) {
       loadPrepaidMembers();
     }
-  }, [activeTab]);
+  }, [activeTab, loyaltyLoaded, prepaidLoaded]);
 
   const loadLoyaltyMembers = async () => {
     setLoyaltyLoading(true);
     try {
       const data = await getAllLoyaltyMembers();
       setLoyaltyMembers(data);
+      setLoyaltyLoaded(true);
     } catch (err) {
       console.error(err);
       setError('Failed to load loyalty members.');
@@ -133,6 +136,7 @@ function MembersPage() {
     try {
       const data = await getAllPrepaidMembers();
       setPrepaidMembers(data);
+      setPrepaidLoaded(true);
     } catch (err) {
       console.error(err);
       setError('Failed to load prepaid members.');
