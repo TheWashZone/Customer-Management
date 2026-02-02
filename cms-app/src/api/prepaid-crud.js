@@ -5,7 +5,7 @@ const COLLECTION_NAME = "prepaidMembers";
 
 /**
  * Creates a prepaid member document in the database
- * @param {string} id - The prepaid member ID (p + 3-5 digits, e.g. "p101")
+ * @param {string} id - The prepaid member ID (P + 3-5 digits, e.g. "P101")
  * @param {string} name - Member's name
  * @param {string} type - Car wash type: "B", "U", or "D"
  * @param {string} issueDate - Date the prepaid membership was issued

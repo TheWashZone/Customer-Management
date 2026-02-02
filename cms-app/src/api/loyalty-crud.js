@@ -5,7 +5,7 @@ const COLLECTION_NAME = "loyaltyMembers";
 
 /**
  * Creates a loyalty member document in the database
- * @param {string} id - The loyalty member ID (l + 3-5 digits, e.g. "l101")
+ * @param {string} id - The loyalty member ID (L + 3-5 digits, e.g. "L101")
  * @param {string} name - Member's name
  * @param {string} issueDate - Date the loyalty membership was issued
  * @param {string} lastVisitDate - Date of the member's last visit
