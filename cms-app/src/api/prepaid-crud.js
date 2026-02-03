@@ -1,5 +1,5 @@
 import { doc, setDoc, getDoc, updateDoc, deleteDoc, collection, getDocs } from "firebase/firestore";
-import { db } from "./firebaseconfig";
+import { db } from "./firebase-config";
 
 const COLLECTION_NAME = "prepaidMembers";
 

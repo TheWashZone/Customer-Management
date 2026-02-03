@@ -1,5 +1,5 @@
 import { doc, setDoc, getDoc, updateDoc, deleteDoc, collection, getDocs, query, where } from "firebase/firestore";
-import { db } from "./firebaseconfig";
+import { db } from "./firebase-config";
 
 /**
  * Creates or overwrites a user document in the database
