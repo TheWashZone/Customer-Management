@@ -292,6 +292,17 @@
 }
 
 
+/* --- TAB ROW --- */
+.tab-row {
+  padding-left: 75px;
+}
+
+@media (max-width: 768px) {
+  .tab-row {
+    padding-left: 0;
+  }
+}
+
 /* "Add Member" Form Styling */
 .add-member-card {
   /* 1. Distinct Border (Slate Gray) */

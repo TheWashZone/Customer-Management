@@ -8,6 +8,16 @@ service cloud.firestore {
       allow read, write: if request.auth != null;
     }
 
+    // Loyalty members collection
+    match /loyaltyMembers/{memberId} {
+      allow read, write: if request.auth != null;
+    }
+
+    // Prepaid members collection
+    match /prepaidMembers/{memberId} {
+      allow read, write: if request.auth != null;
+    }
+
     // Daily visits collection
     match /dailyVisits/{dateString} {
       // Read: Any authenticated user can read visit data

@@ -3,6 +3,8 @@ import "../css/customer-search-page.css";
 import { useMembers } from "../context/MembersContext";
 import HamburgerMenu from "../components/HamburgerMenu";
 import { logDailyVisit } from "../api/analytics-crud";
+import { getLoyaltyMember, updateLoyaltyMember } from "../api/loyalty-crud";
+import { getPrepaidMember, updatePrepaidMember } from "../api/prepaid-crud";
 
 function CustomerSearchPage() {
   const { getMember } = useMembers();
@@ -14,10 +16,12 @@ function CustomerSearchPage() {
   const [isLoggingVisit, setIsLoggingVisit] = useState(false);
   const [logSuccess, setLogSuccess] = useState(false);
   const [logError, setLogError] = useState(null);
+  const [memberType, setMemberType] = useState(null); // 'subscription' | 'loyalty' | 'prepaid'
+  const [freeWashEarned, setFreeWashEarned] = useState(false);
 
   const handleInput = (value) => {
     setCode((prev) => {
-      if (prev.length >= 5) return prev;
+      if (prev.length >= 6) return prev;
       return prev + value.toUpperCase();
     });
   };
@@ -27,16 +31,29 @@ function CustomerSearchPage() {
   };
 
   const handleSubmit = async () => {
-    if (!/^[BDU]\d{3,4}$/.test(code)) {
-      setError("Code must be B/D/U + 3 or 4 digits (example: B123/B1234)");
+    if (!/^[BDULP]\d{3,5}$/.test(code)) {
+      setError("Code must be B/D/U/L/P + 3 to 5 digits (example: B123, L1234, P12345)");
       return;
     }
 
     setLoading(true);
     setError(null);
 
+    const prefix = code.charAt(0).toUpperCase();
+
     try {
-      const member = await getMember(code);
+      let member = null;
+
+      if (prefix === "B" || prefix === "D" || prefix === "U") {
+        member = await getMember(code);
+        if (member) setMemberType("subscription");
+      } else if (prefix === "L") {
+        member = await getLoyaltyMember(code);
+        if (member) setMemberType("loyalty");
+      } else if (prefix === "P") {
+        member = await getPrepaidMember(code);
+        if (member) setMemberType("prepaid");
+      }
 
       if (member) {
         setMemberData(member);
@@ -56,17 +73,59 @@ function CustomerSearchPage() {
     setCode("");
     setLogSuccess(false);
     setLogError(null);
+    setMemberType(null);
+    setFreeWashEarned(false);
   };
 
   const handleLogVisit = async () => {
     setIsLoggingVisit(true);
     setLogSuccess(false);
     setLogError(null);
+    setFreeWashEarned(false);
 
     try {
-      await logDailyVisit();
-      setLogSuccess(true);
-      setTimeout(() => setLogSuccess(false), 3000);
+      if (memberType === "subscription") {
+        await logDailyVisit();
+        setLogSuccess(true);
+        setTimeout(() => setLogSuccess(false), 3000);
+      } else if (memberType === "loyalty") {
+        const today = new Date().toISOString().split("T")[0];
+        const newVisitCount = (memberData.visitCount || 0) + 1;
+        await updateLoyaltyMember(memberData.id, {
+          lastVisitDate: today,
+          visitCount: newVisitCount,
+        });
+        setMemberData((prev) => ({
+          ...prev,
+          lastVisitDate: today,
+          visitCount: newVisitCount,
+        }));
+        await logDailyVisit();
+        if (newVisitCount % 10 === 0) {
+          setFreeWashEarned(true);
+        }
+        setLogSuccess(true);
+        setTimeout(() => setLogSuccess(false), 3000);
+      } else if (memberType === "prepaid") {
+        if (memberData.prepaidWashes <= 0) {
+          setLogError("No prepaid washes remaining. Cannot log visit.");
+          return;
+        }
+        const today = new Date().toISOString().split("T")[0];
+        const newPrepaidWashes = memberData.prepaidWashes - 1;
+        await updatePrepaidMember(memberData.id, {
+          lastVisitDate: today,
+          prepaidWashes: newPrepaidWashes,
+        });
+        setMemberData((prev) => ({
+          ...prev,
+          lastVisitDate: today,
+          prepaidWashes: newPrepaidWashes,
+        }));
+        await logDailyVisit();
+        setLogSuccess(true);
+        setTimeout(() => setLogSuccess(false), 3000);
+      }
     } catch (err) {
       setLogError(`Failed to log visit: ${err.message}`);
     } finally {
@@ -75,7 +134,7 @@ function CustomerSearchPage() {
   };
 
   const buttons = [
-    ["B", "D", "U"],
+    ["B", "D", "U", "L", "P"],
     ["1", "2", "3"],
     ["4", "5", "6"],
     ["7", "8", "9"],
@@ -85,6 +144,12 @@ function CustomerSearchPage() {
   if (memberData) {
     const formatYesNo = (val) => {
       return val ? "Yes" : "No";
+    };
+
+    const getPrepaidWashesClass = () => {
+      if (memberData.prepaidWashes === 0) return "no-washes-card";
+      if (memberData.prepaidWashes <= 2) return "warning-card";
+      return "ok-card";
     };
 
     return (
@@ -98,46 +163,120 @@ function CustomerSearchPage() {
 
           <h2>Member Details</h2>
 
-          {/* HEADER BLOCK */}
-          <div className="member-header-card">
-            <div className="header-row">
-              <span className="header-label">ID:</span>
-              <span className="header-value">{memberData.id}</span>
+          {/* FREE WASH BANNER */}
+          {freeWashEarned && (
+            <div className="free-wash-banner" role="alert">
+              <div className="free-wash-title">FREE WASH EARNED!</div>
+              <div className="free-wash-subtitle">
+                Congratulations! This is visit #{memberData.visitCount}!
+              </div>
             </div>
-            <div className="header-row">
-              <span className="header-label">Name:&nbsp;</span>
-              <span className="header-value">{memberData.name}</span>
-            </div>
-            <div className="header-row">
-              <span className="header-label">Car:&nbsp;</span>
-              <span className="header-value">{memberData.car}</span>
-            </div>
-          </div>
+          )}
 
-          {/* STATUS SECTION */}
-          <div className="status-section">
-            {/* Active Card */}
-            <div
-              className={`status-card ${memberData.isActive === "No" || memberData.isActive === false
-                ? "inactive-card"
-                : "ok-card"
-                }`}
-            >
-              <span className="status-label">Active:</span>
-              <span className="status-value">{formatYesNo(memberData.isActive)}</span>
-            </div>
+          {/* SUBSCRIPTION (B/D/U) DISPLAY */}
+          {memberType === "subscription" && (
+            <>
+              <div className="member-header-card">
+                <div className="header-row">
+                  <span className="header-label">ID:</span>
+                  <span className="header-value">{memberData.id}</span>
+                </div>
+                <div className="header-row">
+                  <span className="header-label">Name:&nbsp;</span>
+                  <span className="header-value">{memberData.name}</span>
+                </div>
+                <div className="header-row">
+                  <span className="header-label">Car:&nbsp;</span>
+                  <span className="header-value">{memberData.car}</span>
+                </div>
+              </div>
 
-            {/* Valid Payment Card */}
-            <div
-              className={`status-card ${memberData.validPayment === "No" || memberData.validPayment === false
-                ? "invalid-payment-card"
-                : "ok-card"
-                }`}
-            >
-              <span className="status-label">Valid Payment:</span>
-              <span className="status-value">{formatYesNo(memberData.validPayment)}</span>
-            </div>
-          </div>
+              <div className="status-section">
+                <div
+                  className={`status-card ${memberData.isActive === "No" || memberData.isActive === false
+                    ? "inactive-card"
+                    : "ok-card"
+                    }`}
+                >
+                  <span className="status-label">Active:</span>
+                  <span className="status-value">{formatYesNo(memberData.isActive)}</span>
+                </div>
+
+                <div
+                  className={`status-card ${memberData.validPayment === "No" || memberData.validPayment === false
+                    ? "invalid-payment-card"
+                    : "ok-card"
+                    }`}
+                >
+                  <span className="status-label">Valid Payment:</span>
+                  <span className="status-value">{formatYesNo(memberData.validPayment)}</span>
+                </div>
+              </div>
+            </>
+          )}
+
+          {/* LOYALTY (L) DISPLAY */}
+          {memberType === "loyalty" && (
+            <>
+              <div className="member-header-card">
+                <div className="header-row">
+                  <span className="header-label">ID:</span>
+                  <span className="header-value">{memberData.id}</span>
+                </div>
+                <div className="header-row">
+                  <span className="header-label">Name:&nbsp;</span>
+                  <span className="header-value">{memberData.name}</span>
+                </div>
+                <div className="header-row">
+                  <span className="header-label">Issue Date:&nbsp;</span>
+                  <span className="header-value">{memberData.issueDate}</span>
+                </div>
+                <div className="header-row">
+                  <span className="header-label">Last Visit:&nbsp;</span>
+                  <span className="header-value">{memberData.lastVisitDate}</span>
+                </div>
+                <div className="header-row">
+                  <span className="header-label">Visit Count:&nbsp;</span>
+                  <span className="header-value">{memberData.visitCount}</span>
+                </div>
+              </div>
+            </>
+          )}
+
+          {/* PREPAID (P) DISPLAY */}
+          {memberType === "prepaid" && (
+            <>
+              <div className="member-header-card">
+                <div className="header-row">
+                  <span className="header-label">ID:</span>
+                  <span className="header-value">{memberData.id}</span>
+                </div>
+                <div className="header-row">
+                  <span className="header-label">Name:&nbsp;</span>
+                  <span className="header-value">{memberData.name}</span>
+                </div>
+                <div className="header-row">
+                  <span className="header-label">Type:&nbsp;</span>
+                  <span className="header-value">{memberData.type}</span>
+                </div>
+                <div className="header-row">
+                  <span className="header-label">Issue Date:&nbsp;</span>
+                  <span className="header-value">{memberData.issueDate}</span>
+                </div>
+                <div className="header-row">
+                  <span className="header-label">Last Visit:&nbsp;</span>
+                  <span className="header-value">{memberData.lastVisitDate}</span>
+                </div>
+              </div>
+
+              <div className="status-section">
+                <div className={`status-card ${getPrepaidWashesClass()}`}>
+                  <span className="status-label">Prepaid Washes:</span>
+                  <span className="status-value">{memberData.prepaidWashes}</span>
+                </div>
+              </div>
+            </>
+          )}
 
           {/* NOTES */}
           {memberData.notes && (
@@ -152,14 +291,15 @@ function CustomerSearchPage() {
             <button
               onClick={handleLogVisit}
               className="log-visit-btn"
-              disabled={isLoggingVisit}
+              disabled={isLoggingVisit || (memberType === "prepaid" && memberData.prepaidWashes <= 0)}
               aria-label="Add one to today's total customer count"
             >
               {isLoggingVisit ? "Logging..." : "Log Customer"}
             </button>
             {logSuccess && (
               <div className="log-success-message" role="status">
-                ✓ Customer counted successfully              </div>
+                ✓ Customer counted successfully
+              </div>
             )}
 
             {logError && (
@@ -204,7 +344,22 @@ function CustomerSearchPage() {
 
         {/* Keypad Grid */}
         <div className="keypad-grid">
-          {buttons.flat().map((btn) => (
+          {/* Letter row (5 buttons) */}
+          <div className="letter-row">
+            {buttons[0].map((btn) => (
+              <button
+                key={btn}
+                onClick={() => handleInput(btn)}
+                className="keypad-btn"
+                disabled={loading}
+              >
+                {btn}
+              </button>
+            ))}
+          </div>
+
+          {/* Number rows (3 buttons each) */}
+          {buttons.slice(1).flat().map((btn) => (
             <button
               key={btn}
               onClick={() => handleInput(btn)}
@@ -233,7 +388,7 @@ function CustomerSearchPage() {
           <button
             onClick={handleSubmit}
             className="submit-btn"
-            disabled={!/^[BDU]\d{3,4}$/.test(code) || loading}
+            disabled={!/^[BDULP]\d{3,5}$/.test(code) || loading}
             aria-label="Submit customer code"
           >
             ✓
