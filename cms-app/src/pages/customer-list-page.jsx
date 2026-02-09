@@ -21,15 +21,18 @@ import {
 
 import { useMembers } from '../context/MembersContext';
 
-import { getAllLoyaltyMembers, createLoyaltyMember, updateLoyaltyMember, deleteLoyaltyMember } from '../api/loyalty-crud';
-import { getAllPrepaidMembers, createPrepaidMember, updatePrepaidMember, deletePrepaidMember } from '../api/prepaid-crud';
-
 import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
 import HamburgerMenu from '../components/HamburgerMenu';
 
 function MembersPage() {
-  const { members, isLoading, createMember, updateMember, deleteMember } = useMembers();
+  const {
+    members, isLoading, createMember, updateMember, deleteMember,
+    loyaltyMembers, isLoyaltyLoading, ensureLoyaltyLoaded,
+    createLoyaltyMember, updateLoyaltyMember, deleteLoyaltyMember,
+    prepaidMembers, isPrepaidLoading, ensurePrepaidLoaded,
+    createPrepaidMember, updatePrepaidMember, deletePrepaidMember,
+  } = useMembers();
 
   // --- TAB STATE ---
   const [activeTab, setActiveTab] = useState('subscription');
@@ -68,9 +71,6 @@ function MembersPage() {
   const [filterPayment, setFilterPayment] = useState('all');
 
   // --- LOYALTY STATE ---
-  const [loyaltyMembers, setLoyaltyMembers] = useState([]);
-  const [loyaltyLoading, setLoyaltyLoading] = useState(false);
-  const [loyaltyLoaded, setLoyaltyLoaded] = useState(false);
   const [filteredLoyaltyMembers, setFilteredLoyaltyMembers] = useState([]);
   const [loyaltySearchTerm, setLoyaltySearchTerm] = useState('');
 
@@ -88,9 +88,6 @@ function MembersPage() {
   const [loyaltyMemberToDelete, setLoyaltyMemberToDelete] = useState(null);
 
   // --- PREPAID STATE ---
-  const [prepaidMembers, setPrepaidMembers] = useState([]);
-  const [prepaidLoading, setPrepaidLoading] = useState(false);
-  const [prepaidLoaded, setPrepaidLoaded] = useState(false);
   const [filteredPrepaidMembers, setFilteredPrepaidMembers] = useState([]);
   const [prepaidSearchTerm, setPrepaidSearchTerm] = useState('');
   const [filterPrepaidType, setFilterPrepaidType] = useState('all');
@@ -110,40 +107,12 @@ function MembersPage() {
 
   // --- LOAD LOYALTY / PREPAID DATA ON TAB SWITCH ---
   useEffect(() => {
-    if (activeTab === 'loyalty' && !loyaltyLoaded) {
-      loadLoyaltyMembers();
-    } else if (activeTab === 'prepaid' && !prepaidLoaded) {
-      loadPrepaidMembers();
+    if (activeTab === 'loyalty') {
+      ensureLoyaltyLoaded();
+    } else if (activeTab === 'prepaid') {
+      ensurePrepaidLoaded();
     }
-  }, [activeTab, loyaltyLoaded, prepaidLoaded]);
-
-  const loadLoyaltyMembers = async () => {
-    setLoyaltyLoading(true);
-    try {
-      const data = await getAllLoyaltyMembers();
-      setLoyaltyMembers(data);
-      setLoyaltyLoaded(true);
-    } catch (err) {
-      console.error(err);
-      setError('Failed to load loyalty members.');
-    } finally {
-      setLoyaltyLoading(false);
-    }
-  };
-
-  const loadPrepaidMembers = async () => {
-    setPrepaidLoading(true);
-    try {
-      const data = await getAllPrepaidMembers();
-      setPrepaidMembers(data);
-      setPrepaidLoaded(true);
-    } catch (err) {
-      console.error(err);
-      setError('Failed to load prepaid members.');
-    } finally {
-      setPrepaidLoading(false);
-    }
-  };
+  }, [activeTab, ensureLoyaltyLoaded, ensurePrepaidLoaded]);
 
   // --- EXPORT HANDLER (per-tab) ---
   const handleExportExcel = async () => {
@@ -398,14 +367,6 @@ function MembersPage() {
         Number(loyaltyAddForm.visitCount) || 0,
         loyaltyAddForm.notes.trim()
       );
-      setLoyaltyMembers((prev) => [...prev, {
-        id: loyaltyAddForm.id.trim(),
-        name: loyaltyAddForm.name.trim(),
-        issueDate: loyaltyAddForm.issueDate,
-        lastVisitDate: loyaltyAddForm.lastVisitDate,
-        visitCount: Number(loyaltyAddForm.visitCount) || 0,
-        notes: loyaltyAddForm.notes.trim(),
-      }]);
       setLoyaltyAddForm({ id: '', name: '', issueDate: '', lastVisitDate: '', visitCount: 0, notes: '' });
       setShowLoyaltyAddForm(false);
     } catch (err) {
@@ -449,9 +410,6 @@ function MembersPage() {
         notes: loyaltyEditForm.notes.trim(),
       };
       await updateLoyaltyMember(loyaltyEditForm.id, updates);
-      setLoyaltyMembers((prev) =>
-        prev.map((m) => m.id === loyaltyEditForm.id ? { ...m, ...updates } : m)
-      );
       setShowLoyaltyEditModal(false);
     } catch (err) {
       console.error(err);
@@ -469,7 +427,6 @@ function MembersPage() {
     setError('');
     try {
       await deleteLoyaltyMember(loyaltyMemberToDelete.id);
-      setLoyaltyMembers((prev) => prev.filter((m) => m.id !== loyaltyMemberToDelete.id));
       setShowLoyaltyDeleteModal(false);
       setLoyaltyMemberToDelete(null);
     } catch (err) {
@@ -517,15 +474,6 @@ function MembersPage() {
         Number(prepaidAddForm.prepaidWashes) || 0,
         prepaidAddForm.notes.trim()
       );
-      setPrepaidMembers((prev) => [...prev, {
-        id: prepaidAddForm.id.trim(),
-        name: prepaidAddForm.name.trim(),
-        type: prepaidAddForm.type,
-        issueDate: prepaidAddForm.issueDate,
-        lastVisitDate: prepaidAddForm.lastVisitDate,
-        prepaidWashes: Number(prepaidAddForm.prepaidWashes) || 0,
-        notes: prepaidAddForm.notes.trim(),
-      }]);
       setPrepaidAddForm({ id: '', name: '', type: 'B', issueDate: '', lastVisitDate: '', prepaidWashes: 0, notes: '' });
       setShowPrepaidAddForm(false);
     } catch (err) {
@@ -571,9 +519,6 @@ function MembersPage() {
         notes: prepaidEditForm.notes.trim(),
       };
       await updatePrepaidMember(prepaidEditForm.id, updates);
-      setPrepaidMembers((prev) =>
-        prev.map((m) => m.id === prepaidEditForm.id ? { ...m, ...updates } : m)
-      );
       setShowPrepaidEditModal(false);
     } catch (err) {
       console.error(err);
@@ -591,7 +536,6 @@ function MembersPage() {
     setError('');
     try {
       await deletePrepaidMember(prepaidMemberToDelete.id);
-      setPrepaidMembers((prev) => prev.filter((m) => m.id !== prepaidMemberToDelete.id));
       setShowPrepaidDeleteModal(false);
       setPrepaidMemberToDelete(null);
     } catch (err) {
@@ -1085,7 +1029,7 @@ function MembersPage() {
           <Row className="table-section g-0">
             <Col className="d-flex flex-column h-100">
               <div className="border rounded table-scroll">
-                {loyaltyLoading ? (
+                {isLoyaltyLoading ? (
                   <div className="d-flex justify-content-center align-items-center h-100">
                     <Spinner animation="border" role="status" className="me-2" />
                     <span>Loading loyalty members...</span>
@@ -1137,7 +1081,7 @@ function MembersPage() {
           <Row className="table-section g-0">
             <Col className="d-flex flex-column h-100">
               <div className="border rounded table-scroll">
-                {prepaidLoading ? (
+                {isPrepaidLoading ? (
                   <div className="d-flex justify-content-center align-items-center h-100">
                     <Spinner animation="border" role="status" className="me-2" />
                     <span>Loading prepaid members...</span>
