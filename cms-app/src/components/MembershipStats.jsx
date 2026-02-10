@@ -81,7 +81,7 @@ function MembershipStats() {
 
   return (
     <div>
-      <h2 className="mb-4">Membership Overview</h2>
+      <h2 className="mb-4">Subscription Overview</h2>
 
       {/* Summary Cards */}
       <Row className="mb-4">
