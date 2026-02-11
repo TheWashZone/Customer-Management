@@ -556,6 +556,32 @@ describe('MembersContext', () => {
 
       expect(loyaltyCrud.getAllLoyaltyMembers).toHaveBeenCalledTimes(1);
     });
+
+    test('sets loyaltyError when loading fails', async () => {
+      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      firebaseCrud.getAllMembers.mockResolvedValue(mockMembers);
+      loyaltyCrud.getAllLoyaltyMembers.mockRejectedValue(new Error('Network error'));
+
+      const wrapper = ({ children }) => (
+        <MembersProvider user={mockUser}>{children}</MembersProvider>
+      );
+
+      const { result } = renderHook(() => useMembers(), { wrapper });
+
+      await waitFor(() => {
+        expect(result.current.isLoading).toBe(false);
+      });
+
+      await act(async () => {
+        await result.current.ensureLoyaltyLoaded();
+      });
+
+      expect(result.current.loyaltyError).toBe('Failed to load loyalty members.');
+      expect(result.current.loyaltyMembers).toEqual([]);
+      expect(result.current.isLoyaltyLoading).toBe(false);
+
+      consoleErrorSpy.mockRestore();
+    });
   });
 
   describe('getLoyaltyMember', () => {
@@ -741,6 +767,43 @@ describe('MembersContext', () => {
       expect(result.current.loyaltyMembers).toHaveLength(2);
       expect(loyaltyCrud.getAllLoyaltyMembers).toHaveBeenCalledTimes(2);
     });
+
+    test('handles errors during refresh', async () => {
+      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      firebaseCrud.getAllMembers.mockResolvedValue(mockMembers);
+      loyaltyCrud.getAllLoyaltyMembers
+        .mockResolvedValueOnce(mockLoyaltyMembers)
+        .mockRejectedValueOnce(new Error('Network error'));
+
+      const wrapper = ({ children }) => (
+        <MembersProvider user={mockUser}>{children}</MembersProvider>
+      );
+
+      const { result } = renderHook(() => useMembers(), { wrapper });
+
+      await waitFor(() => {
+        expect(result.current.isLoading).toBe(false);
+      });
+
+      await act(async () => {
+        await result.current.ensureLoyaltyLoaded();
+      });
+
+      let errorThrown = false;
+      await act(async () => {
+        try {
+          await result.current.refreshLoyaltyMembers();
+        } catch (err) {
+          errorThrown = true;
+          expect(err.message).toBe('Network error');
+        }
+      });
+
+      expect(errorThrown).toBe(true);
+      expect(result.current.loyaltyError).toBe('Failed to refresh loyalty members.');
+
+      consoleErrorSpy.mockRestore();
+    });
   });
 
   // =============================================
@@ -795,6 +858,32 @@ describe('MembersContext', () => {
       });
 
       expect(prepaidCrud.getAllPrepaidMembers).toHaveBeenCalledTimes(1);
+    });
+
+    test('sets prepaidError when loading fails', async () => {
+      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      firebaseCrud.getAllMembers.mockResolvedValue(mockMembers);
+      prepaidCrud.getAllPrepaidMembers.mockRejectedValue(new Error('Network error'));
+
+      const wrapper = ({ children }) => (
+        <MembersProvider user={mockUser}>{children}</MembersProvider>
+      );
+
+      const { result } = renderHook(() => useMembers(), { wrapper });
+
+      await waitFor(() => {
+        expect(result.current.isLoading).toBe(false);
+      });
+
+      await act(async () => {
+        await result.current.ensurePrepaidLoaded();
+      });
+
+      expect(result.current.prepaidError).toBe('Failed to load prepaid members.');
+      expect(result.current.prepaidMembers).toEqual([]);
+      expect(result.current.isPrepaidLoading).toBe(false);
+
+      consoleErrorSpy.mockRestore();
     });
   });
 
@@ -980,6 +1069,43 @@ describe('MembersContext', () => {
 
       expect(result.current.prepaidMembers).toHaveLength(2);
       expect(prepaidCrud.getAllPrepaidMembers).toHaveBeenCalledTimes(2);
+    });
+
+    test('handles errors during refresh', async () => {
+      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      firebaseCrud.getAllMembers.mockResolvedValue(mockMembers);
+      prepaidCrud.getAllPrepaidMembers
+        .mockResolvedValueOnce(mockPrepaidMembers)
+        .mockRejectedValueOnce(new Error('Network error'));
+
+      const wrapper = ({ children }) => (
+        <MembersProvider user={mockUser}>{children}</MembersProvider>
+      );
+
+      const { result } = renderHook(() => useMembers(), { wrapper });
+
+      await waitFor(() => {
+        expect(result.current.isLoading).toBe(false);
+      });
+
+      await act(async () => {
+        await result.current.ensurePrepaidLoaded();
+      });
+
+      let errorThrown = false;
+      await act(async () => {
+        try {
+          await result.current.refreshPrepaidMembers();
+        } catch (err) {
+          errorThrown = true;
+          expect(err.message).toBe('Network error');
+        }
+      });
+
+      expect(errorThrown).toBe(true);
+      expect(result.current.prepaidError).toBe('Failed to refresh prepaid members.');
+
+      consoleErrorSpy.mockRestore();
     });
   });
 
