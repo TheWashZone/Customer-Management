@@ -4,6 +4,8 @@ import { render, screen, waitFor, renderHook, act } from '@testing-library/react
 import React from 'react';
 import { MembersProvider, useMembers } from '../context/MembersContext';
 import * as firebaseCrud from '../api/firebase-crud';
+import * as loyaltyCrud from '../api/loyalty-crud';
+import * as prepaidCrud from '../api/prepaid-crud';
 
 // Mock the firebase-crud module
 vi.mock('../api/firebase-crud', () => ({
@@ -14,6 +16,24 @@ vi.mock('../api/firebase-crud', () => ({
   deleteMember: vi.fn(),
 }));
 
+// Mock the loyalty-crud module
+vi.mock('../api/loyalty-crud', () => ({
+  getAllLoyaltyMembers: vi.fn(),
+  getLoyaltyMember: vi.fn(),
+  createLoyaltyMember: vi.fn(),
+  updateLoyaltyMember: vi.fn(),
+  deleteLoyaltyMember: vi.fn(),
+}));
+
+// Mock the prepaid-crud module
+vi.mock('../api/prepaid-crud', () => ({
+  getAllPrepaidMembers: vi.fn(),
+  getPrepaidMember: vi.fn(),
+  createPrepaidMember: vi.fn(),
+  updatePrepaidMember: vi.fn(),
+  deletePrepaidMember: vi.fn(),
+}));
+
 describe('MembersContext', () => {
   const mockUser = { uid: 'test-user-123', email: 'test@example.com' };
 
@@ -21,6 +41,16 @@ describe('MembersContext', () => {
     { id: 'B001', name: 'Alice Smith', car: 'Honda', isActive: true, validPayment: true, notes: '' },
     { id: 'D002', name: 'Bob Jones', car: 'Toyota', isActive: true, validPayment: false, notes: 'Payment pending' },
     { id: 'U003', name: 'Charlie Brown', car: 'Ford', isActive: false, validPayment: true, notes: 'Inactive' },
+  ];
+
+  const mockLoyaltyMembers = [
+    { id: 'L001', name: 'Loyal Larry', issueDate: '2024-01-01', lastVisitDate: '2024-06-15', visitCount: 5, notes: '' },
+    { id: 'L002', name: 'Loyal Lucy', issueDate: '2024-02-10', lastVisitDate: '2024-07-20', visitCount: 12, notes: 'VIP' },
+  ];
+
+  const mockPrepaidMembers = [
+    { id: 'P001', name: 'Prepaid Pete', type: 'B', issueDate: '2024-03-01', lastVisitDate: '2024-08-10', prepaidWashes: 8, notes: '' },
+    { id: 'P002', name: 'Prepaid Pam', type: 'D', issueDate: '2024-04-15', lastVisitDate: '2024-09-01', prepaidWashes: 3, notes: 'Deluxe plan' },
   ];
 
   beforeEach(() => {
@@ -48,6 +78,7 @@ describe('MembersContext', () => {
 
       const { result } = renderHook(() => useMembers(), { wrapper });
 
+      // Subscription fields
       expect(result.current).toHaveProperty('members');
       expect(result.current).toHaveProperty('isLoading');
       expect(result.current).toHaveProperty('error');
@@ -56,6 +87,26 @@ describe('MembersContext', () => {
       expect(result.current).toHaveProperty('updateMember');
       expect(result.current).toHaveProperty('deleteMember');
       expect(result.current).toHaveProperty('refreshMembers');
+      // Loyalty fields
+      expect(result.current).toHaveProperty('loyaltyMembers');
+      expect(result.current).toHaveProperty('isLoyaltyLoading');
+      expect(result.current).toHaveProperty('loyaltyError');
+      expect(result.current).toHaveProperty('ensureLoyaltyLoaded');
+      expect(result.current).toHaveProperty('getLoyaltyMember');
+      expect(result.current).toHaveProperty('createLoyaltyMember');
+      expect(result.current).toHaveProperty('updateLoyaltyMember');
+      expect(result.current).toHaveProperty('deleteLoyaltyMember');
+      expect(result.current).toHaveProperty('refreshLoyaltyMembers');
+      // Prepaid fields
+      expect(result.current).toHaveProperty('prepaidMembers');
+      expect(result.current).toHaveProperty('isPrepaidLoading');
+      expect(result.current).toHaveProperty('prepaidError');
+      expect(result.current).toHaveProperty('ensurePrepaidLoaded');
+      expect(result.current).toHaveProperty('getPrepaidMember');
+      expect(result.current).toHaveProperty('createPrepaidMember');
+      expect(result.current).toHaveProperty('updatePrepaidMember');
+      expect(result.current).toHaveProperty('deletePrepaidMember');
+      expect(result.current).toHaveProperty('refreshPrepaidMembers');
     });
   });
 
@@ -452,6 +503,616 @@ describe('MembersContext', () => {
     });
   });
 
+  // =============================================
+  //  LOYALTY TESTS
+  // =============================================
+
+  describe('ensureLoyaltyLoaded', () => {
+    test('loads loyalty members on first call', async () => {
+      firebaseCrud.getAllMembers.mockResolvedValue(mockMembers);
+      loyaltyCrud.getAllLoyaltyMembers.mockResolvedValue(mockLoyaltyMembers);
+
+      const wrapper = ({ children }) => (
+        <MembersProvider user={mockUser}>{children}</MembersProvider>
+      );
+
+      const { result } = renderHook(() => useMembers(), { wrapper });
+
+      await waitFor(() => {
+        expect(result.current.isLoading).toBe(false);
+      });
+
+      expect(result.current.loyaltyMembers).toEqual([]);
+
+      await act(async () => {
+        await result.current.ensureLoyaltyLoaded();
+      });
+
+      expect(result.current.loyaltyMembers).toEqual(mockLoyaltyMembers);
+      expect(loyaltyCrud.getAllLoyaltyMembers).toHaveBeenCalledTimes(1);
+    });
+
+    test('does not re-fetch on subsequent calls', async () => {
+      firebaseCrud.getAllMembers.mockResolvedValue(mockMembers);
+      loyaltyCrud.getAllLoyaltyMembers.mockResolvedValue(mockLoyaltyMembers);
+
+      const wrapper = ({ children }) => (
+        <MembersProvider user={mockUser}>{children}</MembersProvider>
+      );
+
+      const { result } = renderHook(() => useMembers(), { wrapper });
+
+      await waitFor(() => {
+        expect(result.current.isLoading).toBe(false);
+      });
+
+      await act(async () => {
+        await result.current.ensureLoyaltyLoaded();
+      });
+
+      await act(async () => {
+        await result.current.ensureLoyaltyLoaded();
+      });
+
+      expect(loyaltyCrud.getAllLoyaltyMembers).toHaveBeenCalledTimes(1);
+    });
+
+    test('sets loyaltyError when loading fails', async () => {
+      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      firebaseCrud.getAllMembers.mockResolvedValue(mockMembers);
+      loyaltyCrud.getAllLoyaltyMembers.mockRejectedValue(new Error('Network error'));
+
+      const wrapper = ({ children }) => (
+        <MembersProvider user={mockUser}>{children}</MembersProvider>
+      );
+
+      const { result } = renderHook(() => useMembers(), { wrapper });
+
+      await waitFor(() => {
+        expect(result.current.isLoading).toBe(false);
+      });
+
+      await act(async () => {
+        await result.current.ensureLoyaltyLoaded();
+      });
+
+      expect(result.current.loyaltyError).toBe('Failed to load loyalty members.');
+      expect(result.current.loyaltyMembers).toEqual([]);
+      expect(result.current.isLoyaltyLoading).toBe(false);
+
+      consoleErrorSpy.mockRestore();
+    });
+  });
+
+  describe('getLoyaltyMember', () => {
+    test('returns loyalty member from cache if available', async () => {
+      firebaseCrud.getAllMembers.mockResolvedValue(mockMembers);
+      loyaltyCrud.getAllLoyaltyMembers.mockResolvedValue(mockLoyaltyMembers);
+
+      const wrapper = ({ children }) => (
+        <MembersProvider user={mockUser}>{children}</MembersProvider>
+      );
+
+      const { result } = renderHook(() => useMembers(), { wrapper });
+
+      await waitFor(() => {
+        expect(result.current.isLoading).toBe(false);
+      });
+
+      // Load loyalty members first
+      await act(async () => {
+        await result.current.ensureLoyaltyLoaded();
+      });
+
+      let member;
+      await act(async () => {
+        member = await result.current.getLoyaltyMember('L001');
+      });
+
+      expect(member).toEqual(mockLoyaltyMembers[0]);
+      expect(loyaltyCrud.getLoyaltyMember).not.toHaveBeenCalled();
+    });
+
+    test('fetches loyalty member from DB if not in cache', async () => {
+      const newLoyaltyMember = { id: 'L999', name: 'New Loyal', issueDate: '2024-05-01', lastVisitDate: '2024-10-01', visitCount: 1, notes: '' };
+      firebaseCrud.getAllMembers.mockResolvedValue(mockMembers);
+      loyaltyCrud.getLoyaltyMember.mockResolvedValue(newLoyaltyMember);
+
+      const wrapper = ({ children }) => (
+        <MembersProvider user={mockUser}>{children}</MembersProvider>
+      );
+
+      const { result } = renderHook(() => useMembers(), { wrapper });
+
+      await waitFor(() => {
+        expect(result.current.isLoading).toBe(false);
+      });
+
+      let member;
+      await act(async () => {
+        member = await result.current.getLoyaltyMember('L999');
+      });
+
+      expect(member).toEqual(newLoyaltyMember);
+      expect(loyaltyCrud.getLoyaltyMember).toHaveBeenCalledWith('L999');
+      expect(result.current.loyaltyMembers).toContainEqual(newLoyaltyMember);
+    });
+  });
+
+  describe('createLoyaltyMember', () => {
+    test('creates loyalty member in DB and updates cache', async () => {
+      firebaseCrud.getAllMembers.mockResolvedValue(mockMembers);
+      loyaltyCrud.createLoyaltyMember.mockResolvedValue('L123');
+
+      const wrapper = ({ children }) => (
+        <MembersProvider user={mockUser}>{children}</MembersProvider>
+      );
+
+      const { result } = renderHook(() => useMembers(), { wrapper });
+
+      await waitFor(() => {
+        expect(result.current.isLoading).toBe(false);
+      });
+
+      let memberId;
+      await act(async () => {
+        memberId = await result.current.createLoyaltyMember('L123', 'New Loyal', '2024-01-01', '2024-06-01', 0, 'Test');
+      });
+
+      expect(memberId).toBe('L123');
+      expect(loyaltyCrud.createLoyaltyMember).toHaveBeenCalledWith('L123', 'New Loyal', '2024-01-01', '2024-06-01', 0, 'Test');
+      expect(result.current.loyaltyMembers).toContainEqual({
+        id: 'L123',
+        name: 'New Loyal',
+        issueDate: '2024-01-01',
+        lastVisitDate: '2024-06-01',
+        visitCount: 0,
+        notes: 'Test',
+      });
+    });
+  });
+
+  describe('updateLoyaltyMember', () => {
+    test('updates loyalty member in DB and cache', async () => {
+      firebaseCrud.getAllMembers.mockResolvedValue(mockMembers);
+      loyaltyCrud.getAllLoyaltyMembers.mockResolvedValue(mockLoyaltyMembers);
+      loyaltyCrud.updateLoyaltyMember.mockResolvedValue('L001');
+
+      const wrapper = ({ children }) => (
+        <MembersProvider user={mockUser}>{children}</MembersProvider>
+      );
+
+      const { result } = renderHook(() => useMembers(), { wrapper });
+
+      await waitFor(() => {
+        expect(result.current.isLoading).toBe(false);
+      });
+
+      await act(async () => {
+        await result.current.ensureLoyaltyLoaded();
+      });
+
+      await act(async () => {
+        await result.current.updateLoyaltyMember('L001', { visitCount: 10, lastVisitDate: '2024-12-01' });
+      });
+
+      expect(loyaltyCrud.updateLoyaltyMember).toHaveBeenCalledWith('L001', { visitCount: 10, lastVisitDate: '2024-12-01' });
+
+      const updated = result.current.loyaltyMembers.find(m => m.id === 'L001');
+      expect(updated.visitCount).toBe(10);
+      expect(updated.lastVisitDate).toBe('2024-12-01');
+      expect(updated.name).toBe('Loyal Larry'); // Unchanged
+    });
+  });
+
+  describe('deleteLoyaltyMember', () => {
+    test('deletes loyalty member from DB and cache', async () => {
+      firebaseCrud.getAllMembers.mockResolvedValue(mockMembers);
+      loyaltyCrud.getAllLoyaltyMembers.mockResolvedValue(mockLoyaltyMembers);
+      loyaltyCrud.deleteLoyaltyMember.mockResolvedValue('L001');
+
+      const wrapper = ({ children }) => (
+        <MembersProvider user={mockUser}>{children}</MembersProvider>
+      );
+
+      const { result } = renderHook(() => useMembers(), { wrapper });
+
+      await waitFor(() => {
+        expect(result.current.isLoading).toBe(false);
+      });
+
+      await act(async () => {
+        await result.current.ensureLoyaltyLoaded();
+      });
+
+      expect(result.current.loyaltyMembers).toHaveLength(2);
+
+      await act(async () => {
+        await result.current.deleteLoyaltyMember('L001');
+      });
+
+      expect(loyaltyCrud.deleteLoyaltyMember).toHaveBeenCalledWith('L001');
+      expect(result.current.loyaltyMembers).toHaveLength(1);
+      expect(result.current.loyaltyMembers.find(m => m.id === 'L001')).toBeUndefined();
+    });
+  });
+
+  describe('refreshLoyaltyMembers', () => {
+    test('refreshes loyalty members from DB', async () => {
+      firebaseCrud.getAllMembers.mockResolvedValue(mockMembers);
+      loyaltyCrud.getAllLoyaltyMembers
+        .mockResolvedValueOnce([mockLoyaltyMembers[0]])
+        .mockResolvedValueOnce(mockLoyaltyMembers);
+
+      const wrapper = ({ children }) => (
+        <MembersProvider user={mockUser}>{children}</MembersProvider>
+      );
+
+      const { result } = renderHook(() => useMembers(), { wrapper });
+
+      await waitFor(() => {
+        expect(result.current.isLoading).toBe(false);
+      });
+
+      await act(async () => {
+        await result.current.ensureLoyaltyLoaded();
+      });
+
+      expect(result.current.loyaltyMembers).toHaveLength(1);
+
+      await act(async () => {
+        await result.current.refreshLoyaltyMembers();
+      });
+
+      expect(result.current.loyaltyMembers).toHaveLength(2);
+      expect(loyaltyCrud.getAllLoyaltyMembers).toHaveBeenCalledTimes(2);
+    });
+
+    test('handles errors during refresh', async () => {
+      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      firebaseCrud.getAllMembers.mockResolvedValue(mockMembers);
+      loyaltyCrud.getAllLoyaltyMembers
+        .mockResolvedValueOnce(mockLoyaltyMembers)
+        .mockRejectedValueOnce(new Error('Network error'));
+
+      const wrapper = ({ children }) => (
+        <MembersProvider user={mockUser}>{children}</MembersProvider>
+      );
+
+      const { result } = renderHook(() => useMembers(), { wrapper });
+
+      await waitFor(() => {
+        expect(result.current.isLoading).toBe(false);
+      });
+
+      await act(async () => {
+        await result.current.ensureLoyaltyLoaded();
+      });
+
+      let errorThrown = false;
+      await act(async () => {
+        try {
+          await result.current.refreshLoyaltyMembers();
+        } catch (err) {
+          errorThrown = true;
+          expect(err.message).toBe('Network error');
+        }
+      });
+
+      expect(errorThrown).toBe(true);
+      expect(result.current.loyaltyError).toBe('Failed to refresh loyalty members.');
+
+      consoleErrorSpy.mockRestore();
+    });
+  });
+
+  // =============================================
+  //  PREPAID TESTS
+  // =============================================
+
+  describe('ensurePrepaidLoaded', () => {
+    test('loads prepaid members on first call', async () => {
+      firebaseCrud.getAllMembers.mockResolvedValue(mockMembers);
+      prepaidCrud.getAllPrepaidMembers.mockResolvedValue(mockPrepaidMembers);
+
+      const wrapper = ({ children }) => (
+        <MembersProvider user={mockUser}>{children}</MembersProvider>
+      );
+
+      const { result } = renderHook(() => useMembers(), { wrapper });
+
+      await waitFor(() => {
+        expect(result.current.isLoading).toBe(false);
+      });
+
+      expect(result.current.prepaidMembers).toEqual([]);
+
+      await act(async () => {
+        await result.current.ensurePrepaidLoaded();
+      });
+
+      expect(result.current.prepaidMembers).toEqual(mockPrepaidMembers);
+      expect(prepaidCrud.getAllPrepaidMembers).toHaveBeenCalledTimes(1);
+    });
+
+    test('does not re-fetch on subsequent calls', async () => {
+      firebaseCrud.getAllMembers.mockResolvedValue(mockMembers);
+      prepaidCrud.getAllPrepaidMembers.mockResolvedValue(mockPrepaidMembers);
+
+      const wrapper = ({ children }) => (
+        <MembersProvider user={mockUser}>{children}</MembersProvider>
+      );
+
+      const { result } = renderHook(() => useMembers(), { wrapper });
+
+      await waitFor(() => {
+        expect(result.current.isLoading).toBe(false);
+      });
+
+      await act(async () => {
+        await result.current.ensurePrepaidLoaded();
+      });
+
+      await act(async () => {
+        await result.current.ensurePrepaidLoaded();
+      });
+
+      expect(prepaidCrud.getAllPrepaidMembers).toHaveBeenCalledTimes(1);
+    });
+
+    test('sets prepaidError when loading fails', async () => {
+      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      firebaseCrud.getAllMembers.mockResolvedValue(mockMembers);
+      prepaidCrud.getAllPrepaidMembers.mockRejectedValue(new Error('Network error'));
+
+      const wrapper = ({ children }) => (
+        <MembersProvider user={mockUser}>{children}</MembersProvider>
+      );
+
+      const { result } = renderHook(() => useMembers(), { wrapper });
+
+      await waitFor(() => {
+        expect(result.current.isLoading).toBe(false);
+      });
+
+      await act(async () => {
+        await result.current.ensurePrepaidLoaded();
+      });
+
+      expect(result.current.prepaidError).toBe('Failed to load prepaid members.');
+      expect(result.current.prepaidMembers).toEqual([]);
+      expect(result.current.isPrepaidLoading).toBe(false);
+
+      consoleErrorSpy.mockRestore();
+    });
+  });
+
+  describe('getPrepaidMember', () => {
+    test('returns prepaid member from cache if available', async () => {
+      firebaseCrud.getAllMembers.mockResolvedValue(mockMembers);
+      prepaidCrud.getAllPrepaidMembers.mockResolvedValue(mockPrepaidMembers);
+
+      const wrapper = ({ children }) => (
+        <MembersProvider user={mockUser}>{children}</MembersProvider>
+      );
+
+      const { result } = renderHook(() => useMembers(), { wrapper });
+
+      await waitFor(() => {
+        expect(result.current.isLoading).toBe(false);
+      });
+
+      await act(async () => {
+        await result.current.ensurePrepaidLoaded();
+      });
+
+      let member;
+      await act(async () => {
+        member = await result.current.getPrepaidMember('P001');
+      });
+
+      expect(member).toEqual(mockPrepaidMembers[0]);
+      expect(prepaidCrud.getPrepaidMember).not.toHaveBeenCalled();
+    });
+
+    test('fetches prepaid member from DB if not in cache', async () => {
+      const newPrepaidMember = { id: 'P999', name: 'New Prepaid', type: 'U', issueDate: '2024-05-01', lastVisitDate: '2024-10-01', prepaidWashes: 5, notes: '' };
+      firebaseCrud.getAllMembers.mockResolvedValue(mockMembers);
+      prepaidCrud.getPrepaidMember.mockResolvedValue(newPrepaidMember);
+
+      const wrapper = ({ children }) => (
+        <MembersProvider user={mockUser}>{children}</MembersProvider>
+      );
+
+      const { result } = renderHook(() => useMembers(), { wrapper });
+
+      await waitFor(() => {
+        expect(result.current.isLoading).toBe(false);
+      });
+
+      let member;
+      await act(async () => {
+        member = await result.current.getPrepaidMember('P999');
+      });
+
+      expect(member).toEqual(newPrepaidMember);
+      expect(prepaidCrud.getPrepaidMember).toHaveBeenCalledWith('P999');
+      expect(result.current.prepaidMembers).toContainEqual(newPrepaidMember);
+    });
+  });
+
+  describe('createPrepaidMember', () => {
+    test('creates prepaid member in DB and updates cache', async () => {
+      firebaseCrud.getAllMembers.mockResolvedValue(mockMembers);
+      prepaidCrud.createPrepaidMember.mockResolvedValue('P123');
+
+      const wrapper = ({ children }) => (
+        <MembersProvider user={mockUser}>{children}</MembersProvider>
+      );
+
+      const { result } = renderHook(() => useMembers(), { wrapper });
+
+      await waitFor(() => {
+        expect(result.current.isLoading).toBe(false);
+      });
+
+      let memberId;
+      await act(async () => {
+        memberId = await result.current.createPrepaidMember('P123', 'New Prepaid', 'B', '2024-01-01', '2024-06-01', 10, 'Test');
+      });
+
+      expect(memberId).toBe('P123');
+      expect(prepaidCrud.createPrepaidMember).toHaveBeenCalledWith('P123', 'New Prepaid', 'B', '2024-01-01', '2024-06-01', 10, 'Test');
+      expect(result.current.prepaidMembers).toContainEqual({
+        id: 'P123',
+        name: 'New Prepaid',
+        type: 'B',
+        issueDate: '2024-01-01',
+        lastVisitDate: '2024-06-01',
+        prepaidWashes: 10,
+        notes: 'Test',
+      });
+    });
+  });
+
+  describe('updatePrepaidMember', () => {
+    test('updates prepaid member in DB and cache', async () => {
+      firebaseCrud.getAllMembers.mockResolvedValue(mockMembers);
+      prepaidCrud.getAllPrepaidMembers.mockResolvedValue(mockPrepaidMembers);
+      prepaidCrud.updatePrepaidMember.mockResolvedValue('P001');
+
+      const wrapper = ({ children }) => (
+        <MembersProvider user={mockUser}>{children}</MembersProvider>
+      );
+
+      const { result } = renderHook(() => useMembers(), { wrapper });
+
+      await waitFor(() => {
+        expect(result.current.isLoading).toBe(false);
+      });
+
+      await act(async () => {
+        await result.current.ensurePrepaidLoaded();
+      });
+
+      await act(async () => {
+        await result.current.updatePrepaidMember('P001', { prepaidWashes: 5, lastVisitDate: '2024-12-01' });
+      });
+
+      expect(prepaidCrud.updatePrepaidMember).toHaveBeenCalledWith('P001', { prepaidWashes: 5, lastVisitDate: '2024-12-01' });
+
+      const updated = result.current.prepaidMembers.find(m => m.id === 'P001');
+      expect(updated.prepaidWashes).toBe(5);
+      expect(updated.lastVisitDate).toBe('2024-12-01');
+      expect(updated.name).toBe('Prepaid Pete'); // Unchanged
+    });
+  });
+
+  describe('deletePrepaidMember', () => {
+    test('deletes prepaid member from DB and cache', async () => {
+      firebaseCrud.getAllMembers.mockResolvedValue(mockMembers);
+      prepaidCrud.getAllPrepaidMembers.mockResolvedValue(mockPrepaidMembers);
+      prepaidCrud.deletePrepaidMember.mockResolvedValue('P001');
+
+      const wrapper = ({ children }) => (
+        <MembersProvider user={mockUser}>{children}</MembersProvider>
+      );
+
+      const { result } = renderHook(() => useMembers(), { wrapper });
+
+      await waitFor(() => {
+        expect(result.current.isLoading).toBe(false);
+      });
+
+      await act(async () => {
+        await result.current.ensurePrepaidLoaded();
+      });
+
+      expect(result.current.prepaidMembers).toHaveLength(2);
+
+      await act(async () => {
+        await result.current.deletePrepaidMember('P001');
+      });
+
+      expect(prepaidCrud.deletePrepaidMember).toHaveBeenCalledWith('P001');
+      expect(result.current.prepaidMembers).toHaveLength(1);
+      expect(result.current.prepaidMembers.find(m => m.id === 'P001')).toBeUndefined();
+    });
+  });
+
+  describe('refreshPrepaidMembers', () => {
+    test('refreshes prepaid members from DB', async () => {
+      firebaseCrud.getAllMembers.mockResolvedValue(mockMembers);
+      prepaidCrud.getAllPrepaidMembers
+        .mockResolvedValueOnce([mockPrepaidMembers[0]])
+        .mockResolvedValueOnce(mockPrepaidMembers);
+
+      const wrapper = ({ children }) => (
+        <MembersProvider user={mockUser}>{children}</MembersProvider>
+      );
+
+      const { result } = renderHook(() => useMembers(), { wrapper });
+
+      await waitFor(() => {
+        expect(result.current.isLoading).toBe(false);
+      });
+
+      await act(async () => {
+        await result.current.ensurePrepaidLoaded();
+      });
+
+      expect(result.current.prepaidMembers).toHaveLength(1);
+
+      await act(async () => {
+        await result.current.refreshPrepaidMembers();
+      });
+
+      expect(result.current.prepaidMembers).toHaveLength(2);
+      expect(prepaidCrud.getAllPrepaidMembers).toHaveBeenCalledTimes(2);
+    });
+
+    test('handles errors during refresh', async () => {
+      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      firebaseCrud.getAllMembers.mockResolvedValue(mockMembers);
+      prepaidCrud.getAllPrepaidMembers
+        .mockResolvedValueOnce(mockPrepaidMembers)
+        .mockRejectedValueOnce(new Error('Network error'));
+
+      const wrapper = ({ children }) => (
+        <MembersProvider user={mockUser}>{children}</MembersProvider>
+      );
+
+      const { result } = renderHook(() => useMembers(), { wrapper });
+
+      await waitFor(() => {
+        expect(result.current.isLoading).toBe(false);
+      });
+
+      await act(async () => {
+        await result.current.ensurePrepaidLoaded();
+      });
+
+      let errorThrown = false;
+      await act(async () => {
+        try {
+          await result.current.refreshPrepaidMembers();
+        } catch (err) {
+          errorThrown = true;
+          expect(err.message).toBe('Network error');
+        }
+      });
+
+      expect(errorThrown).toBe(true);
+      expect(result.current.prepaidError).toBe('Failed to refresh prepaid members.');
+
+      consoleErrorSpy.mockRestore();
+    });
+  });
+
+  // =============================================
+  //  INTEGRATION TESTS
+  // =============================================
+
   describe('Integration Scenarios', () => {
     test('complete CRUD workflow updates cache correctly', async () => {
       firebaseCrud.getAllMembers.mockResolvedValue(mockMembers);
@@ -543,6 +1204,51 @@ describe('MembersContext', () => {
         await result.current.getMember('B999');
       });
       expect(firebaseCrud.getMember).toHaveBeenCalledTimes(1); // Still 1, not called again
+    });
+
+    test('cross-type independence: modifying one type does not affect others', async () => {
+      firebaseCrud.getAllMembers.mockResolvedValue(mockMembers);
+      loyaltyCrud.getAllLoyaltyMembers.mockResolvedValue(mockLoyaltyMembers);
+      prepaidCrud.getAllPrepaidMembers.mockResolvedValue(mockPrepaidMembers);
+      loyaltyCrud.deleteLoyaltyMember.mockResolvedValue('L001');
+      prepaidCrud.createPrepaidMember.mockResolvedValue('P999');
+
+      const wrapper = ({ children }) => (
+        <MembersProvider user={mockUser}>{children}</MembersProvider>
+      );
+
+      const { result } = renderHook(() => useMembers(), { wrapper });
+
+      await waitFor(() => {
+        expect(result.current.isLoading).toBe(false);
+      });
+
+      // Load all types
+      await act(async () => {
+        await result.current.ensureLoyaltyLoaded();
+      });
+      await act(async () => {
+        await result.current.ensurePrepaidLoaded();
+      });
+
+      const initialSubscriptionCount = result.current.members.length;
+      const initialLoyaltyCount = result.current.loyaltyMembers.length;
+      const initialPrepaidCount = result.current.prepaidMembers.length;
+
+      // Delete a loyalty member
+      await act(async () => {
+        await result.current.deleteLoyaltyMember('L001');
+      });
+
+      // Create a prepaid member
+      await act(async () => {
+        await result.current.createPrepaidMember('P999', 'New Prepaid', 'U', '2024-01-01', '2024-06-01', 15, '');
+      });
+
+      // Verify only affected types changed
+      expect(result.current.members).toHaveLength(initialSubscriptionCount); // unchanged
+      expect(result.current.loyaltyMembers).toHaveLength(initialLoyaltyCount - 1); // one deleted
+      expect(result.current.prepaidMembers).toHaveLength(initialPrepaidCount + 1); // one added
     });
   });
 

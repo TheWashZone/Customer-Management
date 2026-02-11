@@ -3,11 +3,9 @@ import "../css/customer-search-page.css";
 import { useMembers } from "../context/MembersContext";
 import HamburgerMenu from "../components/HamburgerMenu";
 import { logDailyVisit } from "../api/analytics-crud";
-import { getLoyaltyMember, updateLoyaltyMember } from "../api/loyalty-crud";
-import { getPrepaidMember, updatePrepaidMember } from "../api/prepaid-crud";
 
 function CustomerSearchPage() {
-  const { getMember } = useMembers();
+  const { getMember, getLoyaltyMember, updateLoyaltyMember, getPrepaidMember, updatePrepaidMember } = useMembers();
 
   const [code, setCode] = useState("");
   const [memberData, setMemberData] = useState(null);
