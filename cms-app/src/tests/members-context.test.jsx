@@ -286,7 +286,7 @@ describe('MembersContext', () => {
       });
 
       expect(memberId).toBe('B123');
-      expect(firebaseCrud.createMember).toHaveBeenCalledWith('B123', 'John Doe', 'Toyota', true, true, 'Test member');
+      expect(firebaseCrud.createMember).toHaveBeenCalledWith('B123', 'John Doe', 'Toyota', true, true, 'Test member', '');
       expect(result.current.members).toHaveLength(initialLength + 1);
       expect(result.current.members).toContainEqual({
         id: 'B123',
@@ -295,6 +295,7 @@ describe('MembersContext', () => {
         isActive: true,
         validPayment: true,
         notes: 'Test member',
+        email: '',
       });
     });
 
@@ -660,7 +661,7 @@ describe('MembersContext', () => {
       });
 
       expect(memberId).toBe('L123');
-      expect(loyaltyCrud.createLoyaltyMember).toHaveBeenCalledWith('L123', 'New Loyal', '2024-01-01', '2024-06-01', 0, 'Test');
+      expect(loyaltyCrud.createLoyaltyMember).toHaveBeenCalledWith('L123', 'New Loyal', '2024-01-01', '2024-06-01', 0, 'Test', '');
       expect(result.current.loyaltyMembers).toContainEqual({
         id: 'L123',
         name: 'New Loyal',
@@ -668,6 +669,7 @@ describe('MembersContext', () => {
         lastVisitDate: '2024-06-01',
         visitCount: 0,
         notes: 'Test',
+        email: '',
       });
     });
   });
@@ -962,7 +964,7 @@ describe('MembersContext', () => {
       });
 
       expect(memberId).toBe('P123');
-      expect(prepaidCrud.createPrepaidMember).toHaveBeenCalledWith('P123', 'New Prepaid', 'B', '2024-01-01', '2024-06-01', 10, 'Test');
+      expect(prepaidCrud.createPrepaidMember).toHaveBeenCalledWith('P123', 'New Prepaid', 'B', '2024-01-01', '2024-06-01', 10, 'Test', '');
       expect(result.current.prepaidMembers).toContainEqual({
         id: 'P123',
         name: 'New Prepaid',
@@ -971,6 +973,7 @@ describe('MembersContext', () => {
         lastVisitDate: '2024-06-01',
         prepaidWashes: 10,
         notes: 'Test',
+        email: '',
       });
     });
   });

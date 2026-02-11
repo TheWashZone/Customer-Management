@@ -96,6 +96,7 @@ describe("Prepaid CRUD Operations (emulator)", () => {
         lastVisitDate: lastVisitDate,
         prepaidWashes: prepaidWashes,
         notes: notes,
+        email: '',
       });
 
       await cleanupTestDoc(id);
