@@ -12,9 +12,10 @@ const COLLECTION_NAME = "prepaidMembers";
  * @param {string} lastVisitDate - Date of the member's last visit
  * @param {number} prepaidWashes - Number of prepaid washes remaining
  * @param {string} notes - Additional notes
+ * @param {string} email - Email address (optional)
  * @returns {Promise<string>} The prepaid member ID
  */
-async function createPrepaidMember(id, name, type, issueDate, lastVisitDate, prepaidWashes, notes) {
+async function createPrepaidMember(id, name, type, issueDate, lastVisitDate, prepaidWashes, notes, email = '') {
   try {
     const memberData = {
       name: name,
@@ -22,7 +23,8 @@ async function createPrepaidMember(id, name, type, issueDate, lastVisitDate, pre
       issueDate: issueDate,
       lastVisitDate: lastVisitDate,
       prepaidWashes: prepaidWashes,
-      notes: notes
+      notes: notes,
+      email: email
     };
     await setDoc(doc(db, COLLECTION_NAME, id), memberData);
     return id;

@@ -187,6 +187,12 @@ function CustomerSearchPage() {
                   <span className="header-label">Car:&nbsp;</span>
                   <span className="header-value">{memberData.car}</span>
                 </div>
+                {memberData.email && (
+                  <div className="header-row">
+                    <span className="header-label">Email:&nbsp;</span>
+                    <span className="header-value">{memberData.email}</span>
+                  </div>
+                )}
               </div>
 
               <div className="status-section">
@@ -225,6 +231,12 @@ function CustomerSearchPage() {
                   <span className="header-label">Name:&nbsp;</span>
                   <span className="header-value">{memberData.name}</span>
                 </div>
+                {memberData.email && (
+                  <div className="header-row">
+                    <span className="header-label">Email:&nbsp;</span>
+                    <span className="header-value">{memberData.email}</span>
+                  </div>
+                )}
                 <div className="header-row">
                   <span className="header-label">Issue Date:&nbsp;</span>
                   <span className="header-value">{memberData.issueDate}</span>
@@ -253,6 +265,12 @@ function CustomerSearchPage() {
                   <span className="header-label">Name:&nbsp;</span>
                   <span className="header-value">{memberData.name}</span>
                 </div>
+                {memberData.email && (
+                  <div className="header-row">
+                    <span className="header-label">Email:&nbsp;</span>
+                    <span className="header-value">{memberData.email}</span>
+                  </div>
+                )}
                 <div className="header-row">
                   <span className="header-label">Type:&nbsp;</span>
                   <span className="header-value">{memberData.type}</span>

@@ -11,16 +11,18 @@ const COLLECTION_NAME = "loyaltyMembers";
  * @param {string} lastVisitDate - Date of the member's last visit
  * @param {number} visitCount - Number of times the member has visited
  * @param {string} notes - Additional notes
+ * @param {string} email - Email address (optional)
  * @returns {Promise<string>} The loyalty member ID
  */
-async function createLoyaltyMember(id, name, issueDate, lastVisitDate, visitCount, notes) {
+async function createLoyaltyMember(id, name, issueDate, lastVisitDate, visitCount, notes, email = '') {
   try {
     const memberData = {
       name: name,
       issueDate: issueDate,
       lastVisitDate: lastVisitDate,
       visitCount: visitCount,
-      notes: notes
+      notes: notes,
+      email: email
     };
     await setDoc(doc(db, COLLECTION_NAME, id), memberData);
     return id;

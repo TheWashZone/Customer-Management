@@ -151,9 +151,9 @@ export const MembersProvider = ({ children, user }) => {
     }
   }, [members]);
 
-  const createMember = useCallback(async (id, name, car, isActive, validPayment, notes) => {
+  const createMember = useCallback(async (id, name, car, isActive, validPayment, notes, email = '') => {
     try {
-      await createMemberInDB(id, name, car, isActive, validPayment, notes);
+      await createMemberInDB(id, name, car, isActive, validPayment, notes, email);
 
       const newMember = {
         id,
@@ -162,6 +162,7 @@ export const MembersProvider = ({ children, user }) => {
         isActive,
         validPayment,
         notes,
+        email,
       };
 
       setMembers((prev) => [...prev, newMember]);
@@ -244,9 +245,9 @@ export const MembersProvider = ({ children, user }) => {
     }
   }, [loyaltyMembers]);
 
-  const createLoyaltyMember = useCallback(async (id, name, issueDate, lastVisitDate, visitCount, notes) => {
+  const createLoyaltyMember = useCallback(async (id, name, issueDate, lastVisitDate, visitCount, notes, email = '') => {
     try {
-      await createLoyaltyMemberInDB(id, name, issueDate, lastVisitDate, visitCount, notes);
+      await createLoyaltyMemberInDB(id, name, issueDate, lastVisitDate, visitCount, notes, email);
 
       const newMember = {
         id,
@@ -255,6 +256,7 @@ export const MembersProvider = ({ children, user }) => {
         lastVisitDate,
         visitCount,
         notes,
+        email,
       };
 
       setLoyaltyMembers((prev) => [...prev, newMember]);
@@ -337,9 +339,9 @@ export const MembersProvider = ({ children, user }) => {
     }
   }, [prepaidMembers]);
 
-  const createPrepaidMember = useCallback(async (id, name, type, issueDate, lastVisitDate, prepaidWashes, notes) => {
+  const createPrepaidMember = useCallback(async (id, name, type, issueDate, lastVisitDate, prepaidWashes, notes, email = '') => {
     try {
-      await createPrepaidMemberInDB(id, name, type, issueDate, lastVisitDate, prepaidWashes, notes);
+      await createPrepaidMemberInDB(id, name, type, issueDate, lastVisitDate, prepaidWashes, notes, email);
 
       const newMember = {
         id,
@@ -349,6 +351,7 @@ export const MembersProvider = ({ children, user }) => {
         lastVisitDate,
         prepaidWashes,
         notes,
+        email,
       };
 
       setPrepaidMembers((prev) => [...prev, newMember]);
