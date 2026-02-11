@@ -28,9 +28,9 @@ import HamburgerMenu from '../components/HamburgerMenu';
 function MembersPage() {
   const {
     members, isLoading, createMember, updateMember, deleteMember,
-    loyaltyMembers, isLoyaltyLoading, ensureLoyaltyLoaded,
+    loyaltyMembers, isLoyaltyLoading, loyaltyError, ensureLoyaltyLoaded,
     createLoyaltyMember, updateLoyaltyMember, deleteLoyaltyMember,
-    prepaidMembers, isPrepaidLoading, ensurePrepaidLoaded,
+    prepaidMembers, isPrepaidLoading, prepaidError, ensurePrepaidLoaded,
     createPrepaidMember, updatePrepaidMember, deletePrepaidMember,
   } = useMembers();
 
@@ -622,9 +622,13 @@ function MembersPage() {
           </Stack>
 
           {/* Error Alert */}
-          {error && (
+          {(error || (activeTab === 'loyalty' && loyaltyError) || (activeTab === 'prepaid' && prepaidError)) && (
             <Row className="mb-3 px-4">
-              <Col><Alert variant="danger">{error}</Alert></Col>
+              <Col>
+                <Alert variant="danger">
+                  {error || (activeTab === 'loyalty' ? loyaltyError : prepaidError)}
+                </Alert>
+              </Col>
             </Row>
           )}
 

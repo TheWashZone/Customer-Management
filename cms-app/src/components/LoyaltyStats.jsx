@@ -3,7 +3,7 @@ import { Card, Row, Col } from 'react-bootstrap';
 import { useMembers } from '../context/MembersContext';
 
 function LoyaltyStats() {
-  const { loyaltyMembers, isLoyaltyLoading, ensureLoyaltyLoaded } = useMembers();
+  const { loyaltyMembers, isLoyaltyLoading, loyaltyError, ensureLoyaltyLoaded } = useMembers();
 
   useEffect(() => {
     ensureLoyaltyLoaded();
@@ -29,6 +29,16 @@ function LoyaltyStats() {
       <Card>
         <Card.Body>
           <div className="text-center py-5">Loading loyalty data...</div>
+        </Card.Body>
+      </Card>
+    );
+  }
+
+  if (loyaltyError) {
+    return (
+      <Card>
+        <Card.Body>
+          <div className="text-center py-5 text-danger">{loyaltyError}</div>
         </Card.Body>
       </Card>
     );

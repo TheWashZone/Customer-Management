@@ -21,7 +21,7 @@ function AnalyticsPage() {
       case 'prepaid': return <PrepaidStats />;
       case 'visits': return <VisitsChart />;
       case 'weather': return <WeatherAnalytics />;
-      default: return <p>How did we get here?</p> // should never happen. Little Joke
+      default: return <p>Something went wrong.</p>
     }
   }
 
