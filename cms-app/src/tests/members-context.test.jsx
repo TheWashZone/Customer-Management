@@ -49,8 +49,8 @@ describe('MembersContext', () => {
   ];
 
   const mockPrepaidMembers = [
-    { id: 'P001', name: 'Prepaid Pete', type: 'B', issueDate: '2024-03-01', lastVisitDate: '2024-08-10', prepaidWashes: 8, notes: '' },
-    { id: 'P002', name: 'Prepaid Pam', type: 'D', issueDate: '2024-04-15', lastVisitDate: '2024-09-01', prepaidWashes: 3, notes: 'Deluxe plan' },
+    { id: 'BB001', name: 'Prepaid Pete', issueDate: '2024-03-01', lastVisitDate: '2024-08-10', prepaidWashes: 8, notes: '' },
+    { id: 'DB002', name: 'Prepaid Pam', issueDate: '2024-04-15', lastVisitDate: '2024-09-01', prepaidWashes: 3, notes: 'Deluxe plan' },
   ];
 
   beforeEach(() => {
@@ -910,7 +910,7 @@ describe('MembersContext', () => {
 
       let member;
       await act(async () => {
-        member = await result.current.getPrepaidMember('P001');
+        member = await result.current.getPrepaidMember('BB001');
       });
 
       expect(member).toEqual(mockPrepaidMembers[0]);
@@ -918,7 +918,7 @@ describe('MembersContext', () => {
     });
 
     test('fetches prepaid member from DB if not in cache', async () => {
-      const newPrepaidMember = { id: 'P999', name: 'New Prepaid', type: 'U', issueDate: '2024-05-01', lastVisitDate: '2024-10-01', prepaidWashes: 5, notes: '' };
+      const newPrepaidMember = { id: 'UB999', name: 'New Prepaid', issueDate: '2024-05-01', lastVisitDate: '2024-10-01', prepaidWashes: 5, notes: '' };
       firebaseCrud.getAllMembers.mockResolvedValue(mockMembers);
       prepaidCrud.getPrepaidMember.mockResolvedValue(newPrepaidMember);
 
@@ -934,11 +934,11 @@ describe('MembersContext', () => {
 
       let member;
       await act(async () => {
-        member = await result.current.getPrepaidMember('P999');
+        member = await result.current.getPrepaidMember('UB999');
       });
 
       expect(member).toEqual(newPrepaidMember);
-      expect(prepaidCrud.getPrepaidMember).toHaveBeenCalledWith('P999');
+      expect(prepaidCrud.getPrepaidMember).toHaveBeenCalledWith('UB999');
       expect(result.current.prepaidMembers).toContainEqual(newPrepaidMember);
     });
   });
@@ -946,7 +946,7 @@ describe('MembersContext', () => {
   describe('createPrepaidMember', () => {
     test('creates prepaid member in DB and updates cache', async () => {
       firebaseCrud.getAllMembers.mockResolvedValue(mockMembers);
-      prepaidCrud.createPrepaidMember.mockResolvedValue('P123');
+      prepaidCrud.createPrepaidMember.mockResolvedValue('BB123');
 
       const wrapper = ({ children }) => (
         <MembersProvider user={mockUser}>{children}</MembersProvider>
@@ -960,15 +960,14 @@ describe('MembersContext', () => {
 
       let memberId;
       await act(async () => {
-        memberId = await result.current.createPrepaidMember('P123', 'New Prepaid', 'B', '2024-01-01', '2024-06-01', 10, 'Test');
+        memberId = await result.current.createPrepaidMember('BB123', 'New Prepaid', '2024-01-01', '2024-06-01', 10, 'Test');
       });
 
-      expect(memberId).toBe('P123');
-      expect(prepaidCrud.createPrepaidMember).toHaveBeenCalledWith('P123', 'New Prepaid', 'B', '2024-01-01', '2024-06-01', 10, 'Test', '');
+      expect(memberId).toBe('BB123');
+      expect(prepaidCrud.createPrepaidMember).toHaveBeenCalledWith('BB123', 'New Prepaid', '2024-01-01', '2024-06-01', 10, 'Test', '');
       expect(result.current.prepaidMembers).toContainEqual({
-        id: 'P123',
+        id: 'BB123',
         name: 'New Prepaid',
-        type: 'B',
         issueDate: '2024-01-01',
         lastVisitDate: '2024-06-01',
         prepaidWashes: 10,
@@ -982,7 +981,7 @@ describe('MembersContext', () => {
     test('updates prepaid member in DB and cache', async () => {
       firebaseCrud.getAllMembers.mockResolvedValue(mockMembers);
       prepaidCrud.getAllPrepaidMembers.mockResolvedValue(mockPrepaidMembers);
-      prepaidCrud.updatePrepaidMember.mockResolvedValue('P001');
+      prepaidCrud.updatePrepaidMember.mockResolvedValue('BB001');
 
       const wrapper = ({ children }) => (
         <MembersProvider user={mockUser}>{children}</MembersProvider>
@@ -999,12 +998,12 @@ describe('MembersContext', () => {
       });
 
       await act(async () => {
-        await result.current.updatePrepaidMember('P001', { prepaidWashes: 5, lastVisitDate: '2024-12-01' });
+        await result.current.updatePrepaidMember('BB001', { prepaidWashes: 5, lastVisitDate: '2024-12-01' });
       });
 
-      expect(prepaidCrud.updatePrepaidMember).toHaveBeenCalledWith('P001', { prepaidWashes: 5, lastVisitDate: '2024-12-01' });
+      expect(prepaidCrud.updatePrepaidMember).toHaveBeenCalledWith('BB001', { prepaidWashes: 5, lastVisitDate: '2024-12-01' });
 
-      const updated = result.current.prepaidMembers.find(m => m.id === 'P001');
+      const updated = result.current.prepaidMembers.find(m => m.id === 'BB001');
       expect(updated.prepaidWashes).toBe(5);
       expect(updated.lastVisitDate).toBe('2024-12-01');
       expect(updated.name).toBe('Prepaid Pete'); // Unchanged
@@ -1015,7 +1014,7 @@ describe('MembersContext', () => {
     test('deletes prepaid member from DB and cache', async () => {
       firebaseCrud.getAllMembers.mockResolvedValue(mockMembers);
       prepaidCrud.getAllPrepaidMembers.mockResolvedValue(mockPrepaidMembers);
-      prepaidCrud.deletePrepaidMember.mockResolvedValue('P001');
+      prepaidCrud.deletePrepaidMember.mockResolvedValue('BB001');
 
       const wrapper = ({ children }) => (
         <MembersProvider user={mockUser}>{children}</MembersProvider>
@@ -1034,12 +1033,12 @@ describe('MembersContext', () => {
       expect(result.current.prepaidMembers).toHaveLength(2);
 
       await act(async () => {
-        await result.current.deletePrepaidMember('P001');
+        await result.current.deletePrepaidMember('BB001');
       });
 
-      expect(prepaidCrud.deletePrepaidMember).toHaveBeenCalledWith('P001');
+      expect(prepaidCrud.deletePrepaidMember).toHaveBeenCalledWith('BB001');
       expect(result.current.prepaidMembers).toHaveLength(1);
-      expect(result.current.prepaidMembers.find(m => m.id === 'P001')).toBeUndefined();
+      expect(result.current.prepaidMembers.find(m => m.id === 'BB001')).toBeUndefined();
     });
   });
 
@@ -1214,7 +1213,7 @@ describe('MembersContext', () => {
       loyaltyCrud.getAllLoyaltyMembers.mockResolvedValue(mockLoyaltyMembers);
       prepaidCrud.getAllPrepaidMembers.mockResolvedValue(mockPrepaidMembers);
       loyaltyCrud.deleteLoyaltyMember.mockResolvedValue('L001');
-      prepaidCrud.createPrepaidMember.mockResolvedValue('P999');
+      prepaidCrud.createPrepaidMember.mockResolvedValue('UB999');
 
       const wrapper = ({ children }) => (
         <MembersProvider user={mockUser}>{children}</MembersProvider>
@@ -1245,7 +1244,7 @@ describe('MembersContext', () => {
 
       // Create a prepaid member
       await act(async () => {
-        await result.current.createPrepaidMember('P999', 'New Prepaid', 'U', '2024-01-01', '2024-06-01', 15, '');
+        await result.current.createPrepaidMember('UB999', 'New Prepaid', '2024-01-01', '2024-06-01', 15, '');
       });
 
       // Verify only affected types changed

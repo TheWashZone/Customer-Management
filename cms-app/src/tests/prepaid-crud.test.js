@@ -76,13 +76,12 @@ describe("Prepaid CRUD Operations (emulator)", () => {
     test("successfully creates a new prepaid member document", async () => {
       const id = uniqId("create");
       const name = "John Doe";
-      const type = "B";
       const issueDate = "2025-01-15";
       const lastVisitDate = "2025-06-01";
       const prepaidWashes = 10;
       const notes = "Bulk purchase";
 
-      const returnedId = await createPrepaidMember(id, name, type, issueDate, lastVisitDate, prepaidWashes, notes);
+      const returnedId = await createPrepaidMember(id, name, issueDate, lastVisitDate, prepaidWashes, notes);
 
       expect(returnedId).toBe(id);
 
@@ -91,7 +90,6 @@ describe("Prepaid CRUD Operations (emulator)", () => {
       expect(member).toEqual({
         id: id,
         name: name,
-        type: type,
         issueDate: issueDate,
         lastVisitDate: lastVisitDate,
         prepaidWashes: prepaidWashes,
@@ -105,12 +103,11 @@ describe("Prepaid CRUD Operations (emulator)", () => {
     test("overwrites existing prepaid member document", async () => {
       const id = uniqId("overwrite");
 
-      await createPrepaidMember(id, "Old Name", "B", "2024-01-01", "2024-06-01", 5, "Old notes");
-      await createPrepaidMember(id, "New Name", "D", "2025-02-02", "2025-07-01", 15, "New notes");
+      await createPrepaidMember(id, "Old Name", "2024-01-01", "2024-06-01", 5, "Old notes");
+      await createPrepaidMember(id, "New Name", "2025-02-02", "2025-07-01", 15, "New notes");
 
       const member = await getPrepaidMember(id);
       expect(member.name).toBe("New Name");
-      expect(member.type).toBe("D");
       expect(member.issueDate).toBe("2025-02-02");
       expect(member.lastVisitDate).toBe("2025-07-01");
       expect(member.prepaidWashes).toBe(15);
@@ -118,48 +115,24 @@ describe("Prepaid CRUD Operations (emulator)", () => {
 
       await cleanupTestDoc(id);
     });
-
-    test("creates prepaid members with different wash types", async () => {
-      const idB = uniqId("typeB");
-      const idD = uniqId("typeD");
-      const idU = uniqId("typeU");
-
-      await createPrepaidMember(idB, "Basic User", "B", "2025-01-01", "2025-06-01", 5, "");
-      await createPrepaidMember(idD, "Deluxe User", "D", "2025-01-01", "2025-06-01", 5, "");
-      await createPrepaidMember(idU, "Ultimate User", "U", "2025-01-01", "2025-06-01", 5, "");
-
-      const memberB = await getPrepaidMember(idB);
-      const memberD = await getPrepaidMember(idD);
-      const memberU = await getPrepaidMember(idU);
-
-      expect(memberB.type).toBe("B");
-      expect(memberD.type).toBe("D");
-      expect(memberU.type).toBe("U");
-
-      await cleanupTestDoc(idB);
-      await cleanupTestDoc(idD);
-      await cleanupTestDoc(idU);
-    });
   });
 
   describe("getPrepaidMember", () => {
     test("retrieves an existing prepaid member document", async () => {
       const id = uniqId("get");
       const name = "Jane Smith";
-      const type = "U";
       const issueDate = "2025-03-10";
       const lastVisitDate = "2025-05-20";
       const prepaidWashes = 3;
       const notes = "Test member";
 
-      await createPrepaidMember(id, name, type, issueDate, lastVisitDate, prepaidWashes, notes);
+      await createPrepaidMember(id, name, issueDate, lastVisitDate, prepaidWashes, notes);
 
       const member = await getPrepaidMember(id);
 
       expect(member).toBeDefined();
       expect(member.id).toBe(id);
       expect(member.name).toBe(name);
-      expect(member.type).toBe(type);
       expect(member.issueDate).toBe(issueDate);
       expect(member.lastVisitDate).toBe(lastVisitDate);
       expect(member.prepaidWashes).toBe(prepaidWashes);
@@ -182,9 +155,9 @@ describe("Prepaid CRUD Operations (emulator)", () => {
       const id2 = uniqId("all2");
       const id3 = uniqId("all3");
 
-      await createPrepaidMember(id1, "Member 1", "B", "2025-01-01", "2025-06-01", 10, "Notes 1");
-      await createPrepaidMember(id2, "Member 2", "D", "2025-02-01", "2025-06-15", 5, "Notes 2");
-      await createPrepaidMember(id3, "Member 3", "U", "2025-03-01", "2025-07-01", 0, "Notes 3");
+      await createPrepaidMember(id1, "Member 1", "2025-01-01", "2025-06-01", 10, "Notes 1");
+      await createPrepaidMember(id2, "Member 2", "2025-02-01", "2025-06-15", 5, "Notes 2");
+      await createPrepaidMember(id3, "Member 3", "2025-03-01", "2025-07-01", 0, "Notes 3");
 
       const allMembers = await getAllPrepaidMembers();
 
@@ -211,7 +184,7 @@ describe("Prepaid CRUD Operations (emulator)", () => {
     test("updates specific fields of a prepaid member", async () => {
       const id = uniqId("update");
 
-      await createPrepaidMember(id, "Original Name", "B", "2025-01-01", "2025-06-01", 10, "Original notes");
+      await createPrepaidMember(id, "Original Name", "2025-01-01", "2025-06-01", 10, "Original notes");
 
       await updatePrepaidMember(id, {
         lastVisitDate: "2025-08-01",
@@ -221,7 +194,6 @@ describe("Prepaid CRUD Operations (emulator)", () => {
 
       const member = await getPrepaidMember(id);
       expect(member.name).toBe("Original Name"); // Should remain unchanged
-      expect(member.type).toBe("B"); // Should remain unchanged
       expect(member.issueDate).toBe("2025-01-01"); // Should remain unchanged
       expect(member.lastVisitDate).toBe("2025-08-01");
       expect(member.prepaidWashes).toBe(9);
@@ -233,7 +205,7 @@ describe("Prepaid CRUD Operations (emulator)", () => {
     test("updates only one field", async () => {
       const id = uniqId("partial");
 
-      await createPrepaidMember(id, "Test Member", "D", "2025-01-01", "2025-06-01", 5, "Notes");
+      await createPrepaidMember(id, "Test Member", "2025-01-01", "2025-06-01", 5, "Notes");
 
       await updatePrepaidMember(id, {
         prepaidWashes: 4,
@@ -241,25 +213,10 @@ describe("Prepaid CRUD Operations (emulator)", () => {
 
       const member = await getPrepaidMember(id);
       expect(member.name).toBe("Test Member");
-      expect(member.type).toBe("D");
       expect(member.issueDate).toBe("2025-01-01");
       expect(member.lastVisitDate).toBe("2025-06-01");
       expect(member.notes).toBe("Notes");
       expect(member.prepaidWashes).toBe(4);
-
-      await cleanupTestDoc(id);
-    });
-
-    test("updates the wash type", async () => {
-      const id = uniqId("typechg");
-
-      await createPrepaidMember(id, "Type Change", "B", "2025-01-01", "2025-06-01", 5, "");
-
-      await updatePrepaidMember(id, { type: "U" });
-
-      const member = await getPrepaidMember(id);
-      expect(member.type).toBe("U");
-      expect(member.prepaidWashes).toBe(5); // Should remain unchanged
 
       await cleanupTestDoc(id);
     });
@@ -280,7 +237,7 @@ describe("Prepaid CRUD Operations (emulator)", () => {
     test("deletes an existing prepaid member document", async () => {
       const id = uniqId("delete");
 
-      await createPrepaidMember(id, "Delete Member", "B", "2025-01-01", "2025-06-01", 3, "Notes");
+      await createPrepaidMember(id, "Delete Member", "2025-01-01", "2025-06-01", 3, "Notes");
 
       // Verify it exists
       let member = await getPrepaidMember(id);
@@ -312,10 +269,9 @@ describe("Prepaid CRUD Operations (emulator)", () => {
       const id = uniqId("workflow");
 
       // Create
-      await createPrepaidMember(id, "Workflow Member", "B", "2025-01-01", "2025-06-01", 10, "New prepaid member");
+      await createPrepaidMember(id, "Workflow Member", "2025-01-01", "2025-06-01", 10, "New prepaid member");
       let member = await getPrepaidMember(id);
       expect(member.name).toBe("Workflow Member");
-      expect(member.type).toBe("B");
       expect(member.prepaidWashes).toBe(10);
 
       // Update — simulate a wash visit
@@ -339,7 +295,7 @@ describe("Prepaid CRUD Operations (emulator)", () => {
     test("prepaid washes decrement to zero", async () => {
       const id = uniqId("zero");
 
-      await createPrepaidMember(id, "Zero Wash", "D", "2025-01-01", "2025-06-01", 2, "");
+      await createPrepaidMember(id, "Zero Wash", "2025-01-01", "2025-06-01", 2, "");
 
       // Use first wash
       await updatePrepaidMember(id, { prepaidWashes: 1, lastVisitDate: "2025-07-01" });

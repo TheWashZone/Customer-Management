@@ -339,14 +339,13 @@ export const MembersProvider = ({ children, user }) => {
     }
   }, [prepaidMembers]);
 
-  const createPrepaidMember = useCallback(async (id, name, type, issueDate, lastVisitDate, prepaidWashes, notes, email = '') => {
+  const createPrepaidMember = useCallback(async (id, name, issueDate, lastVisitDate, prepaidWashes, notes, email = '') => {
     try {
-      await createPrepaidMemberInDB(id, name, type, issueDate, lastVisitDate, prepaidWashes, notes, email);
+      await createPrepaidMemberInDB(id, name, issueDate, lastVisitDate, prepaidWashes, notes, email);
 
       const newMember = {
         id,
         name,
-        type,
         issueDate,
         lastVisitDate,
         prepaidWashes,

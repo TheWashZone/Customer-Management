@@ -96,12 +96,12 @@ function MembersPage() {
 
   const [showPrepaidAddForm, setShowPrepaidAddForm] = useState(false);
   const [prepaidAddForm, setPrepaidAddForm] = useState({
-    id: '', name: '', type: 'B', issueDate: '', lastVisitDate: '', prepaidWashes: 0, notes: '', email: ''
+    id: '', name: '', issueDate: '', lastVisitDate: '', prepaidWashes: 0, notes: '', email: ''
   });
 
   const [showPrepaidEditModal, setShowPrepaidEditModal] = useState(false);
   const [prepaidEditForm, setPrepaidEditForm] = useState({
-    id: '', name: '', type: 'B', issueDate: '', lastVisitDate: '', prepaidWashes: 0, notes: '', email: ''
+    id: '', name: '', issueDate: '', lastVisitDate: '', prepaidWashes: 0, notes: '', email: ''
   });
 
   const [showPrepaidDeleteModal, setShowPrepaidDeleteModal] = useState(false);
@@ -157,9 +157,9 @@ function MembersPage() {
 
     } else if (activeTab === 'prepaid') {
       const worksheet = workbook.addWorksheet('Prepaid Members');
-      worksheet.addRow(['ID', 'Name', 'Type', 'Issue Date', 'Last Visit', 'Washes Remaining', 'Notes', 'Email']);
+      worksheet.addRow(['ID', 'Name', 'Issue Date', 'Last Visit', 'Washes Remaining', 'Notes', 'Email']);
       filteredPrepaidMembers.forEach((m) => {
-        worksheet.addRow([m.id, m.name, m.type, m.issueDate, m.lastVisitDate, m.prepaidWashes, m.notes, m.email || '']);
+        worksheet.addRow([m.id, m.name, m.issueDate, m.lastVisitDate, m.prepaidWashes, m.notes, m.email || '']);
       });
       const buffer = await workbook.xlsx.writeBuffer();
       const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
@@ -219,7 +219,7 @@ function MembersPage() {
       const name = (m.name || '').toLowerCase();
       const id = (m.id || '').toString().toLowerCase();
       const matchesSearch = !term || name.includes(term) || id.includes(term);
-      const matchesType = filterPrepaidType === 'all' || m.type === filterPrepaidType;
+      const matchesType = filterPrepaidType === 'all' || m.id.charAt(0) === filterPrepaidType;
       return matchesSearch && matchesType;
     });
     setFilteredPrepaidMembers(filtered);
@@ -463,9 +463,9 @@ function MembersPage() {
     setError('');
     setIdError('');
 
-    const idPattern = /^P\d{3,5}$/;
+    const idPattern = /^[BDU]B\d{3,5}$/;
     if (!idPattern.test(prepaidAddForm.id.trim())) {
-      setIdError("Prepaid ID must be P followed by 3-5 digits (e.g. P101).");
+      setIdError("Prepaid ID must be BB/DB/UB followed by 3-5 digits (e.g. BB101).");
       return;
     }
     if (!prepaidAddForm.name.trim()) {
@@ -477,14 +477,13 @@ function MembersPage() {
       await createPrepaidMember(
         prepaidAddForm.id.trim(),
         prepaidAddForm.name.trim(),
-        prepaidAddForm.type,
         prepaidAddForm.issueDate,
         prepaidAddForm.lastVisitDate,
         Number(prepaidAddForm.prepaidWashes) || 0,
         prepaidAddForm.notes.trim(),
         prepaidAddForm.email.trim()
       );
-      setPrepaidAddForm({ id: '', name: '', type: 'B', issueDate: '', lastVisitDate: '', prepaidWashes: 0, notes: '', email: '' });
+      setPrepaidAddForm({ id: '', name: '', issueDate: '', lastVisitDate: '', prepaidWashes: 0, notes: '', email: '' });
       setShowPrepaidAddForm(false);
     } catch (err) {
       console.error(err);
@@ -496,7 +495,6 @@ function MembersPage() {
     setPrepaidEditForm({
       id: member.id,
       name: member.name || '',
-      type: member.type || 'B',
       issueDate: member.issueDate || '',
       lastVisitDate: member.lastVisitDate || '',
       prepaidWashes: member.prepaidWashes || 0,
@@ -523,7 +521,6 @@ function MembersPage() {
     try {
       const updates = {
         name: prepaidEditForm.name.trim(),
-        type: prepaidEditForm.type,
         issueDate: prepaidEditForm.issueDate,
         lastVisitDate: prepaidEditForm.lastVisitDate,
         prepaidWashes: Number(prepaidEditForm.prepaidWashes) || 0,
@@ -912,7 +909,7 @@ function MembersPage() {
                             <Col md={3}>
                               <Form.Group controlId="prepaidAddId">
                                 <Form.Label>ID <span className="text-danger">*</span></Form.Label>
-                                <Form.Control type="text" name="id" value={prepaidAddForm.id} onChange={handlePrepaidAddInputChange} placeholder="e.g. P101" required isInvalid={!!idError} />
+                                <Form.Control type="text" name="id" value={prepaidAddForm.id} onChange={handlePrepaidAddInputChange} placeholder="e.g. BB101" required isInvalid={!!idError} />
                                 <Form.Control.Feedback type="invalid">{idError}</Form.Control.Feedback>
                               </Form.Group>
                             </Col>
@@ -930,16 +927,6 @@ function MembersPage() {
                             </Col>
                           </Row>
                           <Row className="mb-3">
-                            <Col md={3}>
-                              <Form.Group controlId="prepaidAddType">
-                                <Form.Label>Type</Form.Label>
-                                <Form.Select name="type" value={prepaidAddForm.type} onChange={handlePrepaidAddInputChange}>
-                                  <option value="B">Basic</option>
-                                  <option value="D">Deluxe</option>
-                                  <option value="U">Ultimate</option>
-                                </Form.Select>
-                              </Form.Group>
-                            </Col>
                             <Col md={3}>
                               <Form.Group controlId="prepaidAddWashes">
                                 <Form.Label>Prepaid Washes</Form.Label>
@@ -1134,14 +1121,13 @@ function MembersPage() {
                   <Table hover size="sm" className="mb-0 w-100">
                     <thead className="table-light">
                       <tr>
-                        <th style={{ width: '7%' }}>ID</th>
-                        <th style={{ width: '14%' }}>Name</th>
+                        <th style={{ width: '8%' }}>ID</th>
+                        <th style={{ width: '15%' }}>Name</th>
                         <th style={{ width: '13%' }}>Email</th>
-                        <th className="text-center" style={{ width: '6%' }}>Type</th>
-                        <th style={{ width: '10%' }}>Issue Date</th>
-                        <th style={{ width: '10%' }}>Last Visit</th>
+                        <th style={{ width: '11%' }}>Issue Date</th>
+                        <th style={{ width: '11%' }}>Last Visit</th>
                         <th className="text-center" style={{ width: '10%' }}>Washes Remaining</th>
-                        <th style={{ width: '16%' }}>Notes</th>
+                        <th style={{ width: '18%' }}>Notes</th>
                         <th className="text-end" style={{ width: '14%' }}></th>
                       </tr>
                     </thead>
@@ -1151,7 +1137,6 @@ function MembersPage() {
                           <td title={member.id}>{member.id}</td>
                           <td className="cell-truncate" title={member.name}>{member.name}</td>
                           <td className="cell-truncate" title={member.email}>{member.email}</td>
-                          <td className="text-center">{member.type}</td>
                           <td>{member.issueDate}</td>
                           <td>{member.lastVisitDate}</td>
                           <td className="text-center">
@@ -1340,14 +1325,6 @@ function MembersPage() {
               <Form.Group className="mb-3" controlId="prepaidEditEmail">
                 <Form.Label>Email</Form.Label>
                 <Form.Control type="email" name="email" value={prepaidEditForm.email} onChange={handlePrepaidEditInputChange} placeholder="optional" />
-              </Form.Group>
-              <Form.Group className="mb-3" controlId="prepaidEditType">
-                <Form.Label>Type</Form.Label>
-                <Form.Select name="type" value={prepaidEditForm.type} onChange={handlePrepaidEditInputChange}>
-                  <option value="B">Basic</option>
-                  <option value="D">Deluxe</option>
-                  <option value="U">Ultimate</option>
-                </Form.Select>
               </Form.Group>
               <Row className="mb-3">
                 <Col md={6}>

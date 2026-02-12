@@ -19,7 +19,7 @@ function CustomerSearchPage() {
 
   const handleInput = (value) => {
     setCode((prev) => {
-      if (prev.length >= 6) return prev;
+      if (prev.length >= 7) return prev;
       return prev + value.toUpperCase();
     });
   };
@@ -29,28 +29,26 @@ function CustomerSearchPage() {
   };
 
   const handleSubmit = async () => {
-    if (!/^[BDULP]\d{3,5}$/.test(code)) {
-      setError("Code must be B/D/U/L/P + 3 to 5 digits (example: B123, L1234, P12345)");
+    if (!/^([BDUL]\d{3,5}|[BDU]B\d{3,5})$/.test(code)) {
+      setError("Code must be B/D/U/L + 3-5 digits (e.g. B123) or BB/DB/UB + 3-5 digits for prepaid (e.g. BB101)");
       return;
     }
 
     setLoading(true);
     setError(null);
 
-    const prefix = code.charAt(0).toUpperCase();
-
     try {
       let member = null;
 
-      if (prefix === "B" || prefix === "D" || prefix === "U") {
-        member = await getMember(code);
-        if (member) setMemberType("subscription");
-      } else if (prefix === "L") {
+      if (code[0] === "L") {
         member = await getLoyaltyMember(code);
         if (member) setMemberType("loyalty");
-      } else if (prefix === "P") {
+      } else if ((code[0] === "B" || code[0] === "D" || code[0] === "U") && code[1] === "B") {
         member = await getPrepaidMember(code);
         if (member) setMemberType("prepaid");
+      } else if (code[0] === "B" || code[0] === "D" || code[0] === "U") {
+        member = await getMember(code);
+        if (member) setMemberType("subscription");
       }
 
       if (member) {
@@ -132,7 +130,7 @@ function CustomerSearchPage() {
   };
 
   const buttons = [
-    ["B", "D", "U", "L", "P"],
+    ["B", "D", "U", "L"],
     ["1", "2", "3"],
     ["4", "5", "6"],
     ["7", "8", "9"],
@@ -272,10 +270,6 @@ function CustomerSearchPage() {
                   </div>
                 )}
                 <div className="header-row">
-                  <span className="header-label">Type:&nbsp;</span>
-                  <span className="header-value">{memberData.type}</span>
-                </div>
-                <div className="header-row">
                   <span className="header-label">Issue Date:&nbsp;</span>
                   <span className="header-value">{memberData.issueDate}</span>
                 </div>
@@ -404,7 +398,7 @@ function CustomerSearchPage() {
           <button
             onClick={handleSubmit}
             className="submit-btn"
-            disabled={!/^[BDULP]\d{3,5}$/.test(code) || loading}
+            disabled={!/^([BDUL]\d{3,5}|[BDU]B\d{3,5})$/.test(code) || loading}
             aria-label="Submit customer code"
           >
             ✓
