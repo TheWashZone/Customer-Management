@@ -94,6 +94,7 @@ describe("Loyalty CRUD Operations (emulator)", () => {
         lastVisitDate: lastVisitDate,
         visitCount: visitCount,
         notes: notes,
+        email: '',
       });
 
       await cleanupTestDoc(id);

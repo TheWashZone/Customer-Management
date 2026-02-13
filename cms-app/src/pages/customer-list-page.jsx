@@ -51,6 +51,7 @@ function MembersPage() {
     isActive: true,
     validPayment: true,
     notes: '',
+    email: '',
   });
 
   const [showEditModal, setShowEditModal] = useState(false);
@@ -61,6 +62,7 @@ function MembersPage() {
     isActive: true,
     validPayment: true,
     notes: '',
+    email: '',
   });
 
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -76,12 +78,12 @@ function MembersPage() {
 
   const [showLoyaltyAddForm, setShowLoyaltyAddForm] = useState(false);
   const [loyaltyAddForm, setLoyaltyAddForm] = useState({
-    id: '', name: '', issueDate: '', lastVisitDate: '', visitCount: 0, notes: ''
+    id: '', name: '', issueDate: '', lastVisitDate: '', visitCount: 0, notes: '', email: ''
   });
 
   const [showLoyaltyEditModal, setShowLoyaltyEditModal] = useState(false);
   const [loyaltyEditForm, setLoyaltyEditForm] = useState({
-    id: '', name: '', issueDate: '', lastVisitDate: '', visitCount: 0, notes: ''
+    id: '', name: '', issueDate: '', lastVisitDate: '', visitCount: 0, notes: '', email: ''
   });
 
   const [showLoyaltyDeleteModal, setShowLoyaltyDeleteModal] = useState(false);
@@ -94,12 +96,12 @@ function MembersPage() {
 
   const [showPrepaidAddForm, setShowPrepaidAddForm] = useState(false);
   const [prepaidAddForm, setPrepaidAddForm] = useState({
-    id: '', name: '', type: 'B', issueDate: '', lastVisitDate: '', prepaidWashes: 0, notes: ''
+    id: '', name: '', issueDate: '', lastVisitDate: '', prepaidWashes: 0, notes: '', email: ''
   });
 
   const [showPrepaidEditModal, setShowPrepaidEditModal] = useState(false);
   const [prepaidEditForm, setPrepaidEditForm] = useState({
-    id: '', name: '', type: 'B', issueDate: '', lastVisitDate: '', prepaidWashes: 0, notes: ''
+    id: '', name: '', issueDate: '', lastVisitDate: '', prepaidWashes: 0, notes: '', email: ''
   });
 
   const [showPrepaidDeleteModal, setShowPrepaidDeleteModal] = useState(false);
@@ -120,13 +122,14 @@ function MembersPage() {
 
     if (activeTab === 'subscription') {
       const worksheet = workbook.addWorksheet('Subscription Members');
-      worksheet.addRow(['ID', 'Name', 'Car', 'Active', 'Valid Payment', 'Notes']);
+      worksheet.addRow(['ID', 'Name', 'Car', 'Active', 'Valid Payment', 'Notes', 'Email']);
       filteredMembers.forEach((m) => {
         const row = worksheet.addRow([
           m.id, m.name, m.car,
           m.isActive ? 'Yes' : 'No',
           m.validPayment ? 'Yes' : 'No',
           m.notes,
+          m.email || '',
         ]);
         if (!m.isActive) {
           row.eachCell((cell) => {
@@ -144,9 +147,9 @@ function MembersPage() {
 
     } else if (activeTab === 'loyalty') {
       const worksheet = workbook.addWorksheet('Loyalty Members');
-      worksheet.addRow(['ID', 'Name', 'Issue Date', 'Last Visit', 'Visit Count', 'Notes']);
+      worksheet.addRow(['ID', 'Name', 'Issue Date', 'Last Visit', 'Visit Count', 'Notes', 'Email']);
       filteredLoyaltyMembers.forEach((m) => {
-        worksheet.addRow([m.id, m.name, m.issueDate, m.lastVisitDate, m.visitCount, m.notes]);
+        worksheet.addRow([m.id, m.name, m.issueDate, m.lastVisitDate, m.visitCount, m.notes, m.email || '']);
       });
       const buffer = await workbook.xlsx.writeBuffer();
       const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
@@ -154,9 +157,9 @@ function MembersPage() {
 
     } else if (activeTab === 'prepaid') {
       const worksheet = workbook.addWorksheet('Prepaid Members');
-      worksheet.addRow(['ID', 'Name', 'Type', 'Issue Date', 'Last Visit', 'Washes Remaining', 'Notes']);
+      worksheet.addRow(['ID', 'Name', 'Issue Date', 'Last Visit', 'Washes Remaining', 'Notes', 'Email']);
       filteredPrepaidMembers.forEach((m) => {
-        worksheet.addRow([m.id, m.name, m.type, m.issueDate, m.lastVisitDate, m.prepaidWashes, m.notes]);
+        worksheet.addRow([m.id, m.name, m.issueDate, m.lastVisitDate, m.prepaidWashes, m.notes, m.email || '']);
       });
       const buffer = await workbook.xlsx.writeBuffer();
       const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
@@ -216,7 +219,7 @@ function MembersPage() {
       const name = (m.name || '').toLowerCase();
       const id = (m.id || '').toString().toLowerCase();
       const matchesSearch = !term || name.includes(term) || id.includes(term);
-      const matchesType = filterPrepaidType === 'all' || m.type === filterPrepaidType;
+      const matchesType = filterPrepaidType === 'all' || m.id.charAt(0) === filterPrepaidType;
       return matchesSearch && matchesType;
     });
     setFilteredPrepaidMembers(filtered);
@@ -256,9 +259,10 @@ function MembersPage() {
         addForm.car.trim(),
         addForm.isActive,
         addForm.validPayment,
-        addForm.notes.trim()
+        addForm.notes.trim(),
+        addForm.email.trim()
       );
-      setAddForm({ id: '', name: '', car: '', isActive: true, validPayment: true, notes: '' });
+      setAddForm({ id: '', name: '', car: '', isActive: true, validPayment: true, notes: '', email: '' });
       setShowAddForm(false);
     } catch (err) {
       console.error(err);
@@ -274,6 +278,7 @@ function MembersPage() {
       isActive: !!member.isActive,
       validPayment: !!member.validPayment,
       notes: member.notes || '',
+      email: member.email || '',
     });
     setShowEditModal(true);
   };
@@ -302,6 +307,7 @@ function MembersPage() {
         isActive: editForm.isActive,
         validPayment: editForm.validPayment,
         notes: editForm.notes.trim(),
+        email: editForm.email.trim(),
       };
       await updateMember(editForm.id, updates);
       setShowEditModal(false);
@@ -365,9 +371,10 @@ function MembersPage() {
         loyaltyAddForm.issueDate,
         loyaltyAddForm.lastVisitDate,
         Number(loyaltyAddForm.visitCount) || 0,
-        loyaltyAddForm.notes.trim()
+        loyaltyAddForm.notes.trim(),
+        loyaltyAddForm.email.trim()
       );
-      setLoyaltyAddForm({ id: '', name: '', issueDate: '', lastVisitDate: '', visitCount: 0, notes: '' });
+      setLoyaltyAddForm({ id: '', name: '', issueDate: '', lastVisitDate: '', visitCount: 0, notes: '', email: '' });
       setShowLoyaltyAddForm(false);
     } catch (err) {
       console.error(err);
@@ -383,6 +390,7 @@ function MembersPage() {
       lastVisitDate: member.lastVisitDate || '',
       visitCount: member.visitCount || 0,
       notes: member.notes || '',
+      email: member.email || '',
     });
     setShowLoyaltyEditModal(true);
   };
@@ -408,6 +416,7 @@ function MembersPage() {
         lastVisitDate: loyaltyEditForm.lastVisitDate,
         visitCount: Number(loyaltyEditForm.visitCount) || 0,
         notes: loyaltyEditForm.notes.trim(),
+        email: loyaltyEditForm.email.trim(),
       };
       await updateLoyaltyMember(loyaltyEditForm.id, updates);
       setShowLoyaltyEditModal(false);
@@ -454,9 +463,9 @@ function MembersPage() {
     setError('');
     setIdError('');
 
-    const idPattern = /^P\d{3,5}$/;
+    const idPattern = /^[BDU]B\d{3,5}$/;
     if (!idPattern.test(prepaidAddForm.id.trim())) {
-      setIdError("Prepaid ID must be P followed by 3-5 digits (e.g. P101).");
+      setIdError("Prepaid ID must be BB/DB/UB followed by 3-5 digits (e.g. BB101).");
       return;
     }
     if (!prepaidAddForm.name.trim()) {
@@ -468,13 +477,13 @@ function MembersPage() {
       await createPrepaidMember(
         prepaidAddForm.id.trim(),
         prepaidAddForm.name.trim(),
-        prepaidAddForm.type,
         prepaidAddForm.issueDate,
         prepaidAddForm.lastVisitDate,
         Number(prepaidAddForm.prepaidWashes) || 0,
-        prepaidAddForm.notes.trim()
+        prepaidAddForm.notes.trim(),
+        prepaidAddForm.email.trim()
       );
-      setPrepaidAddForm({ id: '', name: '', type: 'B', issueDate: '', lastVisitDate: '', prepaidWashes: 0, notes: '' });
+      setPrepaidAddForm({ id: '', name: '', issueDate: '', lastVisitDate: '', prepaidWashes: 0, notes: '', email: '' });
       setShowPrepaidAddForm(false);
     } catch (err) {
       console.error(err);
@@ -486,11 +495,11 @@ function MembersPage() {
     setPrepaidEditForm({
       id: member.id,
       name: member.name || '',
-      type: member.type || 'B',
       issueDate: member.issueDate || '',
       lastVisitDate: member.lastVisitDate || '',
       prepaidWashes: member.prepaidWashes || 0,
       notes: member.notes || '',
+      email: member.email || '',
     });
     setShowPrepaidEditModal(true);
   };
@@ -512,11 +521,11 @@ function MembersPage() {
     try {
       const updates = {
         name: prepaidEditForm.name.trim(),
-        type: prepaidEditForm.type,
         issueDate: prepaidEditForm.issueDate,
         lastVisitDate: prepaidEditForm.lastVisitDate,
         prepaidWashes: Number(prepaidEditForm.prepaidWashes) || 0,
         notes: prepaidEditForm.notes.trim(),
+        email: prepaidEditForm.email.trim(),
       };
       await updatePrepaidMember(prepaidEditForm.id, updates);
       setShowPrepaidEditModal(false);
@@ -720,12 +729,18 @@ function MembersPage() {
                             </Col>
                           </Row>
                           <Row className="mb-3">
-                            <Col md={3}>
+                            <Col md={4}>
+                              <Form.Group controlId="addEmail">
+                                <Form.Label>Email</Form.Label>
+                                <Form.Control type="email" name="email" value={addForm.email} onChange={handleAddInputChange} placeholder="optional" />
+                              </Form.Group>
+                            </Col>
+                            <Col md={2}>
                               <Form.Group controlId="addIsActive" className="pt-4">
                                 <Form.Check type="checkbox" label="Active" name="isActive" checked={addForm.isActive} onChange={handleAddInputChange} />
                               </Form.Group>
                             </Col>
-                            <Col md={3}>
+                            <Col md={2}>
                               <Form.Group controlId="addValidPayment" className="pt-4">
                                 <Form.Check type="checkbox" label="Valid Payment" name="validPayment" checked={addForm.validPayment} onChange={handleAddInputChange} />
                               </Form.Group>
@@ -797,6 +812,14 @@ function MembersPage() {
                                 <Form.Control type="text" name="name" value={loyaltyAddForm.name} onChange={handleLoyaltyAddInputChange} required />
                               </Form.Group>
                             </Col>
+                            <Col md={4}>
+                              <Form.Group controlId="loyaltyAddEmail">
+                                <Form.Label>Email</Form.Label>
+                                <Form.Control type="email" name="email" value={loyaltyAddForm.email} onChange={handleLoyaltyAddInputChange} placeholder="optional" />
+                              </Form.Group>
+                            </Col>
+                          </Row>
+                          <Row className="mb-3">
                             <Col md={4}>
                               <Form.Group controlId="loyaltyAddVisitCount">
                                 <Form.Label>Visit Count</Form.Label>
@@ -886,7 +909,7 @@ function MembersPage() {
                             <Col md={3}>
                               <Form.Group controlId="prepaidAddId">
                                 <Form.Label>ID <span className="text-danger">*</span></Form.Label>
-                                <Form.Control type="text" name="id" value={prepaidAddForm.id} onChange={handlePrepaidAddInputChange} placeholder="e.g. P101" required isInvalid={!!idError} />
+                                <Form.Control type="text" name="id" value={prepaidAddForm.id} onChange={handlePrepaidAddInputChange} placeholder="e.g. BB101" required isInvalid={!!idError} />
                                 <Form.Control.Feedback type="invalid">{idError}</Form.Control.Feedback>
                               </Form.Group>
                             </Col>
@@ -897,15 +920,13 @@ function MembersPage() {
                               </Form.Group>
                             </Col>
                             <Col md={3}>
-                              <Form.Group controlId="prepaidAddType">
-                                <Form.Label>Type</Form.Label>
-                                <Form.Select name="type" value={prepaidAddForm.type} onChange={handlePrepaidAddInputChange}>
-                                  <option value="B">Basic</option>
-                                  <option value="D">Deluxe</option>
-                                  <option value="U">Ultimate</option>
-                                </Form.Select>
+                              <Form.Group controlId="prepaidAddEmail">
+                                <Form.Label>Email</Form.Label>
+                                <Form.Control type="email" name="email" value={prepaidAddForm.email} onChange={handlePrepaidAddInputChange} placeholder="optional" />
                               </Form.Group>
                             </Col>
+                          </Row>
+                          <Row className="mb-3">
                             <Col md={3}>
                               <Form.Group controlId="prepaidAddWashes">
                                 <Form.Label>Prepaid Washes</Form.Label>
@@ -968,12 +989,13 @@ function MembersPage() {
                   <Table hover size="sm" className="mb-0 w-100">
                     <thead className="table-light">
                       <tr>
-                        <th style={{ width: '10%' }}>ID</th>
-                        <th style={{ width: '20%' }}>Member</th>
-                        <th style={{ width: '15%' }}>Vehicle</th>
-                        <th className="text-center" style={{ width: '10%' }}>Status</th>
-                        <th className="text-center" style={{ width: '10%' }}>Payment</th>
-                        <th style={{ width: '18%' }}>Notes</th>
+                        <th style={{ width: '8%' }}>ID</th>
+                        <th style={{ width: '15%' }}>Member</th>
+                        <th style={{ width: '12%' }}>Vehicle</th>
+                        <th style={{ width: '15%' }}>Email</th>
+                        <th className="text-center" style={{ width: '8%' }}>Status</th>
+                        <th className="text-center" style={{ width: '8%' }}>Payment</th>
+                        <th style={{ width: '17%' }}>Notes</th>
                         <th className="text-end" style={{ width: '17%' }}></th>
                       </tr>
                     </thead>
@@ -996,6 +1018,7 @@ function MembersPage() {
                             <td title={member.id}>{member.id}</td>
                             <td className="cell-truncate" title={member.name}>{member.name}</td>
                             <td className="cell-truncate" title={member.car}>{member.car}</td>
+                            <td className="cell-truncate" title={member.email}>{member.email}</td>
                             <td className="text-center">
                               {isActive
                                 ? <span className="badge bg-success">Active</span>
@@ -1044,12 +1067,13 @@ function MembersPage() {
                   <Table hover size="sm" className="mb-0 w-100">
                     <thead className="table-light">
                       <tr>
-                        <th style={{ width: '10%' }}>ID</th>
-                        <th style={{ width: '20%' }}>Name</th>
-                        <th style={{ width: '14%' }}>Issue Date</th>
-                        <th style={{ width: '14%' }}>Last Visit</th>
+                        <th style={{ width: '8%' }}>ID</th>
+                        <th style={{ width: '15%' }}>Name</th>
+                        <th style={{ width: '13%' }}>Email</th>
+                        <th style={{ width: '12%' }}>Issue Date</th>
+                        <th style={{ width: '12%' }}>Last Visit</th>
                         <th className="text-center" style={{ width: '10%' }}>Visit Count</th>
-                        <th style={{ width: '18%' }}>Notes</th>
+                        <th style={{ width: '16%' }}>Notes</th>
                         <th className="text-end" style={{ width: '14%' }}></th>
                       </tr>
                     </thead>
@@ -1058,6 +1082,7 @@ function MembersPage() {
                         <tr key={member.id}>
                           <td title={member.id}>{member.id}</td>
                           <td className="cell-truncate" title={member.name}>{member.name}</td>
+                          <td className="cell-truncate" title={member.email}>{member.email}</td>
                           <td>{member.issueDate}</td>
                           <td>{member.lastVisitDate}</td>
                           <td className="text-center">{member.visitCount}</td>
@@ -1097,12 +1122,12 @@ function MembersPage() {
                     <thead className="table-light">
                       <tr>
                         <th style={{ width: '8%' }}>ID</th>
-                        <th style={{ width: '18%' }}>Name</th>
-                        <th className="text-center" style={{ width: '8%' }}>Type</th>
-                        <th style={{ width: '12%' }}>Issue Date</th>
-                        <th style={{ width: '12%' }}>Last Visit</th>
-                        <th className="text-center" style={{ width: '12%' }}>Washes Remaining</th>
-                        <th style={{ width: '16%' }}>Notes</th>
+                        <th style={{ width: '15%' }}>Name</th>
+                        <th style={{ width: '13%' }}>Email</th>
+                        <th style={{ width: '11%' }}>Issue Date</th>
+                        <th style={{ width: '11%' }}>Last Visit</th>
+                        <th className="text-center" style={{ width: '10%' }}>Washes Remaining</th>
+                        <th style={{ width: '18%' }}>Notes</th>
                         <th className="text-end" style={{ width: '14%' }}></th>
                       </tr>
                     </thead>
@@ -1111,7 +1136,7 @@ function MembersPage() {
                         <tr key={member.id}>
                           <td title={member.id}>{member.id}</td>
                           <td className="cell-truncate" title={member.name}>{member.name}</td>
-                          <td className="text-center">{member.type}</td>
+                          <td className="cell-truncate" title={member.email}>{member.email}</td>
                           <td>{member.issueDate}</td>
                           <td>{member.lastVisitDate}</td>
                           <td className="text-center">
@@ -1160,6 +1185,10 @@ function MembersPage() {
               <Form.Group className="mb-3" controlId="editCar">
                 <Form.Label>Car</Form.Label>
                 <Form.Control type="text" name="car" value={editForm.car} onChange={handleEditInputChange} />
+              </Form.Group>
+              <Form.Group className="mb-3" controlId="editEmail">
+                <Form.Label>Email</Form.Label>
+                <Form.Control type="email" name="email" value={editForm.email} onChange={handleEditInputChange} placeholder="optional" />
               </Form.Group>
               <Row className="mb-3">
                 <Col md={6}>
@@ -1221,6 +1250,10 @@ function MembersPage() {
               <Form.Group className="mb-3" controlId="loyaltyEditName">
                 <Form.Label>Name</Form.Label>
                 <Form.Control type="text" name="name" value={loyaltyEditForm.name} onChange={handleLoyaltyEditInputChange} required />
+              </Form.Group>
+              <Form.Group className="mb-3" controlId="loyaltyEditEmail">
+                <Form.Label>Email</Form.Label>
+                <Form.Control type="email" name="email" value={loyaltyEditForm.email} onChange={handleLoyaltyEditInputChange} placeholder="optional" />
               </Form.Group>
               <Row className="mb-3">
                 <Col md={6}>
@@ -1289,13 +1322,9 @@ function MembersPage() {
                 <Form.Label>Name</Form.Label>
                 <Form.Control type="text" name="name" value={prepaidEditForm.name} onChange={handlePrepaidEditInputChange} required />
               </Form.Group>
-              <Form.Group className="mb-3" controlId="prepaidEditType">
-                <Form.Label>Type</Form.Label>
-                <Form.Select name="type" value={prepaidEditForm.type} onChange={handlePrepaidEditInputChange}>
-                  <option value="B">Basic</option>
-                  <option value="D">Deluxe</option>
-                  <option value="U">Ultimate</option>
-                </Form.Select>
+              <Form.Group className="mb-3" controlId="prepaidEditEmail">
+                <Form.Label>Email</Form.Label>
+                <Form.Control type="email" name="email" value={prepaidEditForm.email} onChange={handlePrepaidEditInputChange} placeholder="optional" />
               </Form.Group>
               <Row className="mb-3">
                 <Col md={6}>

@@ -98,6 +98,7 @@ describe("User CRUD Operations (emulator)", () => {
         isActive: isActive,
         validPayment: validPayment,
         notes: notes,
+        email: '',
       });
 
       await cleanupTestDoc(userId);

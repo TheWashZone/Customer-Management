@@ -149,8 +149,11 @@ export async function uploadCustomerRecordsFromFile(file, createMember) {
         //     validPayment,
         //   });
 
+          // Default email to empty string
+          const email = '';
+
           // Create the member in Firebase
-          await createMember(id, name, car, isActive, validPayment, notes);
+          await createMember(id, name, car, isActive, validPayment, notes, email);
 
           results.successful++;
         //   console.log(`✓ Row ${rowNumber}: Successfully created member ${id}`);
@@ -243,6 +246,9 @@ export async function uploadCustomerRecords(filePath, createMember) {
           // Default notes to empty string
           const notes = '';
 
+          // Default email to empty string
+          const email = '';
+
           // Validate that we have at least an ID
           if (!id) {
             console.warn(`Row ${rowNumber}: Skipping - no ID found`);
@@ -264,7 +270,7 @@ export async function uploadCustomerRecords(filePath, createMember) {
         //   });
 
           // Create the member in Firebase
-          await createMember(id, name, car, isActive, validPayment, notes);
+          await createMember(id, name, car, isActive, validPayment, notes, email);
 
           results.successful++;
         //   console.log(` Row ${rowNumber}: Successfully created member ${id}`);
