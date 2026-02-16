@@ -9,9 +9,10 @@ import { db } from "./firebaseconfig";
  * @param {boolean} isActive - Whether the user is active
  * @param {boolean} validPayment - Whether payment is valid
  * @param {string} notes - Additional notes
+ * @param {string} email - Email address (optional)
  * @returns {Promise<string>} The user ID
  */
-async function createMember(id, name, car, isActive, validPayment, notes) {
+async function createMember(id, name, car, isActive, validPayment, notes, email = '') {
   const userId = id;
   try {
     const userData = {
@@ -19,7 +20,8 @@ async function createMember(id, name, car, isActive, validPayment, notes) {
       car: car,
       isActive: isActive,
       validPayment: validPayment,
-      notes: notes
+      notes: notes,
+      email: email
     };
     await setDoc(doc(db, "users", userId), userData);
     return userId;
