@@ -24,10 +24,16 @@ import { db } from "./firebaseconfig";
  * Creates the document if it doesn't exist (with count: 1).
  * Uses a transaction to prevent race conditions.
  *
- * @returns {Promise<{date: string, count: number}>} Updated date and count
+ * Optionally tracks customer type and wash type breakdowns:
+ * - Customer type counters: subscription, loyalty, prepaid
+ * - Wash type counters: subB, subD, subU (subscription), preB, preD, preU (prepaid)
+ *
+ * @param {string|null} customerType - 'subscription', 'loyalty', or 'prepaid' (null to skip breakdown)
+ * @param {string|null} washType - 'B', 'D', or 'U' wash type (null to skip wash breakdown)
+ * @returns {Promise<{date: string, count: number, subscription: number, loyalty: number, prepaid: number, subB: number, subD: number, subU: number, preB: number, preD: number, preU: number}>} Updated date and counts
  * @throws {Error} If the operation fails
  */
-async function logDailyVisit() {
+async function logDailyVisit(customerType = null, washType = null) {
   try {
     // Get current date in UTC as YYYY-MM-DD format
     const today = new Date();
@@ -44,11 +50,12 @@ async function logDailyVisit() {
     const result = await runTransaction(db, async (transaction) => {
       const docSnap = await transaction.get(docRef);
       const isNewDocument = !docSnap.exists();
+      const existingData = isNewDocument ? {} : docSnap.data();
 
       // Prepare the update data
       const updateData = {
         date: dayTimestamp,
-        count: isNewDocument ? 1 : (docSnap.data().count || 0) + 1,
+        count: (existingData.count || 0) + 1,
         lastUpdated: serverTimestamp()
       };
 
@@ -57,16 +64,50 @@ async function logDailyVisit() {
         updateData.createdAt = serverTimestamp();
       }
 
+      // Increment customer type counter
+      if (customerType === 'subscription') {
+        updateData.subscription = (existingData.subscription || 0) + 1;
+      }
+      if (customerType === 'loyalty') {
+        updateData.loyalty = (existingData.loyalty || 0) + 1;
+      }
+      if (customerType === 'prepaid') {
+        updateData.prepaid = (existingData.prepaid || 0) + 1;
+      }
+
+      // Increment wash type counter for subscription members
+      if (customerType === 'subscription' && washType) {
+        const key = 'sub' + washType;
+        updateData[key] = (existingData[key] || 0) + 1;
+      }
+
+      // Increment wash type counter for prepaid members
+      if (customerType === 'prepaid' && washType) {
+        const key = 'pre' + washType;
+        updateData[key] = (existingData[key] || 0) + 1;
+      }
+
       // Set the document (creates or updates)
       transaction.set(docRef, updateData, { merge: true });
 
-      // Return the new count
-      return updateData.count;
+      // Return all counts for the response
+      return {
+        count: updateData.count,
+        subscription: updateData.subscription ?? existingData.subscription ?? 0,
+        loyalty: updateData.loyalty ?? existingData.loyalty ?? 0,
+        prepaid: updateData.prepaid ?? existingData.prepaid ?? 0,
+        subB: updateData.subB ?? existingData.subB ?? 0,
+        subD: updateData.subD ?? existingData.subD ?? 0,
+        subU: updateData.subU ?? existingData.subU ?? 0,
+        preB: updateData.preB ?? existingData.preB ?? 0,
+        preD: updateData.preD ?? existingData.preD ?? 0,
+        preU: updateData.preU ?? existingData.preU ?? 0,
+      };
     });
 
     return {
       date: dateString,
-      count: result
+      ...result
     };
   } catch (error) {
     console.error("❌ Error logging daily visit:", error);

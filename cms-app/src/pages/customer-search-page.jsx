@@ -81,7 +81,7 @@ function CustomerSearchPage() {
 
     try {
       if (memberType === "subscription") {
-        await logDailyVisit();
+        await logDailyVisit('subscription', code[0]);
         setLogSuccess(true);
         setTimeout(() => setLogSuccess(false), 3000);
       } else if (memberType === "loyalty") {
@@ -96,7 +96,7 @@ function CustomerSearchPage() {
           lastVisitDate: today,
           visitCount: newVisitCount,
         }));
-        await logDailyVisit();
+        await logDailyVisit('loyalty');
         if (newVisitCount % 10 === 0) {
           setFreeWashEarned(true);
         }
@@ -118,7 +118,7 @@ function CustomerSearchPage() {
           lastVisitDate: today,
           prepaidWashes: newPrepaidWashes,
         }));
-        await logDailyVisit();
+        await logDailyVisit('prepaid', code[0]);
         setLogSuccess(true);
         setTimeout(() => setLogSuccess(false), 3000);
       }

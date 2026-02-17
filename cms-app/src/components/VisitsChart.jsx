@@ -1,7 +1,10 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Card, ButtonGroup, Button, Spinner, Alert } from 'react-bootstrap';
+import { Card, ButtonGroup, Button, Spinner, Alert, Row, Col } from 'react-bootstrap';
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { getDailyVisitsInRange } from '../api/analytics-crud';
+
+const WASH_COLORS = { B: '#0d6efd', U: '#198754', D: '#dc3545' };
+const WASH_NAMES = { B: 'Basic', U: 'Unlimited', D: 'Deluxe' };
 
 function VisitsChart() {
   const [viewMode, setViewMode] = useState('weekly'); // 'weekly' or 'monthly'
@@ -9,6 +12,7 @@ function VisitsChart() {
   const [visitsData, setVisitsData] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [selectedDayIndex, setSelectedDayIndex] = useState(null);
 
   // Calculate date range based on view mode
   const dateRange = useMemo(() => {
@@ -60,6 +64,9 @@ function VisitsChart() {
       return [];
     }
 
+    // Breakdown field names to carry through
+    const breakdownFields = ['subscription', 'loyalty', 'prepaid', 'subB', 'subD', 'subU', 'preB', 'preD', 'preU'];
+
     // Create a map of all dates in range with 0 counts
     const dateMap = new Map();
     const start = new Date(dateRange.start + 'T00:00:00Z');
@@ -67,26 +74,33 @@ function VisitsChart() {
 
     for (let d = new Date(start); d <= end; d.setUTCDate(d.getUTCDate() + 1)) {
       const dateStr = d.toISOString().split('T')[0];
-      dateMap.set(dateStr, {
-        date: dateStr,
-        count: 0,
-        displayDate: formatDate(dateStr)
-      });
+      const entry = { date: dateStr, count: 0, displayDate: formatDate(dateStr) };
+      breakdownFields.forEach(f => { entry[f] = 0; });
+      dateMap.set(dateStr, entry);
     }
 
-    // Fill in actual visit counts
+    // Fill in actual visit counts and breakdown data
     visitsData.forEach(visit => {
       if (dateMap.has(visit.dateString)) {
-        dateMap.set(visit.dateString, {
+        const entry = {
           date: visit.dateString,
           count: visit.count || 0,
           displayDate: formatDate(visit.dateString)
-        });
+        };
+        breakdownFields.forEach(f => { entry[f] = visit[f] || 0; });
+        dateMap.set(visit.dateString, entry);
       }
     });
 
     return Array.from(dateMap.values()).sort((a, b) => a.date.localeCompare(b.date));
   }, [visitsData, dateRange]);
+
+  // Default selectedDayIndex to last day when chartData changes
+  useEffect(() => {
+    if (chartData.length > 0) {
+      setSelectedDayIndex(chartData.length - 1);
+    }
+  }, [chartData]);
 
   // Calculate summary statistics
   const stats = useMemo(() => {
@@ -234,6 +248,99 @@ function VisitsChart() {
           )}
         </Card.Body>
       </Card>
+
+      {/* Daily Breakdown Navigator */}
+      {!isLoading && !error && chartData.length > 0 && selectedDayIndex !== null && (
+        <Card className="mt-4">
+          <Card.Body>
+            {/* Day Navigation */}
+            <div className="d-flex justify-content-between align-items-center mb-3">
+              <Button
+                variant="outline-secondary"
+                size="sm"
+                disabled={selectedDayIndex === 0}
+                onClick={() => setSelectedDayIndex(i => i - 1)}
+              >
+                &larr; Prev
+              </Button>
+              <h5 className="mb-0">
+                {new Date(chartData[selectedDayIndex].date + 'T00:00:00Z').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                <span className="ms-3 text-muted" style={{ fontSize: '0.9rem' }}>
+                  Total: {chartData[selectedDayIndex].count}
+                </span>
+              </h5>
+              <Button
+                variant="outline-secondary"
+                size="sm"
+                disabled={selectedDayIndex === chartData.length - 1}
+                onClick={() => setSelectedDayIndex(i => i + 1)}
+              >
+                Next &rarr;
+              </Button>
+            </div>
+
+            {(() => {
+              const day = chartData[selectedDayIndex];
+              const hasBreakdown = day.subscription > 0 || day.loyalty > 0 || day.prepaid > 0;
+
+              return (
+                <>
+                  {!hasBreakdown && day.count > 0 && (
+                    <div className="text-center text-muted mb-3" style={{ fontSize: '0.85rem' }}>
+                      No breakdown data available for this date (recorded before tracking was enabled).
+                    </div>
+                  )}
+                  <Row>
+                    {/* Subscription Card */}
+                    <Col md={4}>
+                      <Card className="text-center h-100">
+                        <Card.Body>
+                          <Card.Text className="text-muted mb-1">Subscriptions</Card.Text>
+                          <h3 className="mb-2">{day.subscription}</h3>
+                          <div className="d-flex justify-content-center gap-3">
+                            {['B', 'D', 'U'].map(w => (
+                              <span key={w} style={{ color: WASH_COLORS[w], fontWeight: 600 }}>
+                                {WASH_NAMES[w]}: {day['sub' + w]}
+                              </span>
+                            ))}
+                          </div>
+                        </Card.Body>
+                      </Card>
+                    </Col>
+
+                    {/* Loyalty Card */}
+                    <Col md={4}>
+                      <Card className="text-center h-100">
+                        <Card.Body>
+                          <Card.Text className="text-muted mb-1">Loyalty</Card.Text>
+                          <h3 className="mb-0">{day.loyalty}</h3>
+                        </Card.Body>
+                      </Card>
+                    </Col>
+
+                    {/* Prepaid Card */}
+                    <Col md={4}>
+                      <Card className="text-center h-100">
+                        <Card.Body>
+                          <Card.Text className="text-muted mb-1">Prepaid</Card.Text>
+                          <h3 className="mb-2">{day.prepaid}</h3>
+                          <div className="d-flex justify-content-center gap-3">
+                            {['B', 'D', 'U'].map(w => (
+                              <span key={w} style={{ color: WASH_COLORS[w], fontWeight: 600 }}>
+                                {WASH_NAMES[w]}: {day['pre' + w]}
+                              </span>
+                            ))}
+                          </div>
+                        </Card.Body>
+                      </Card>
+                    </Col>
+                  </Row>
+                </>
+              );
+            })()}
+          </Card.Body>
+        </Card>
+      )}
     </div>
   );
 }
