@@ -26,11 +26,11 @@ import { db } from "./firebaseconfig";
  *
  * Optionally tracks customer type and wash type breakdowns:
  * - Customer type counters: subscription, loyalty, prepaid
- * - Wash type counters: subB, subD, subU (subscription), preB, preD, preU (prepaid)
+ * - Wash type counters: subB, subD, subU (subscription), preB, preD, preU (prepaid), loyB, loyD, loyU (loyalty)
  *
  * @param {string|null} customerType - 'subscription', 'loyalty', or 'prepaid' (null to skip breakdown)
  * @param {string|null} washType - 'B', 'D', or 'U' wash type (null to skip wash breakdown)
- * @returns {Promise<{date: string, count: number, subscription: number, loyalty: number, prepaid: number, subB: number, subD: number, subU: number, preB: number, preD: number, preU: number}>} Updated date and counts
+ * @returns {Promise<{date: string, count: number, subscription: number, loyalty: number, prepaid: number, subB: number, subD: number, subU: number, preB: number, preD: number, preU: number, loyB: number, loyD: number, loyU: number}>} Updated date and counts
  * @throws {Error} If the operation fails
  */
 async function logDailyVisit(customerType = null, washType = null) {
@@ -87,6 +87,12 @@ async function logDailyVisit(customerType = null, washType = null) {
         updateData[key] = (existingData[key] || 0) + 1;
       }
 
+      // Increment wash type counter for loyalty members
+      if (customerType === 'loyalty' && washType) {
+        const key = 'loy' + washType;
+        updateData[key] = (existingData[key] || 0) + 1;
+      }
+
       // Set the document (creates or updates)
       transaction.set(docRef, updateData, { merge: true });
 
@@ -102,6 +108,9 @@ async function logDailyVisit(customerType = null, washType = null) {
         preB: updateData.preB ?? existingData.preB ?? 0,
         preD: updateData.preD ?? existingData.preD ?? 0,
         preU: updateData.preU ?? existingData.preU ?? 0,
+        loyB: updateData.loyB ?? existingData.loyB ?? 0,
+        loyD: updateData.loyD ?? existingData.loyD ?? 0,
+        loyU: updateData.loyU ?? existingData.loyU ?? 0,
       };
     });
 

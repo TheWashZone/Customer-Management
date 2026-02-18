@@ -65,7 +65,7 @@ function VisitsChart() {
     }
 
     // Breakdown field names to carry through
-    const breakdownFields = ['subscription', 'loyalty', 'prepaid', 'subB', 'subD', 'subU', 'preB', 'preD', 'preU'];
+    const breakdownFields = ['subscription', 'loyalty', 'prepaid', 'subB', 'subD', 'subU', 'preB', 'preD', 'preU', 'loyB', 'loyD', 'loyU'];
 
     // Create a map of all dates in range with 0 counts
     const dateMap = new Map();
@@ -313,7 +313,14 @@ function VisitsChart() {
                       <Card className="text-center h-100">
                         <Card.Body>
                           <Card.Text className="text-muted mb-1">Loyalty</Card.Text>
-                          <h3 className="mb-0">{day.loyalty}</h3>
+                          <h3 className="mb-2">{day.loyalty}</h3>
+                          <div className="d-flex justify-content-center gap-3">
+                            {['B', 'D', 'U'].map(w => (
+                              <span key={w} style={{ color: WASH_COLORS[w], fontWeight: 600 }}>
+                                {WASH_NAMES[w]}: {day['loy' + w]}
+                              </span>
+                            ))}
+                          </div>
                         </Card.Body>
                       </Card>
                     </Col>
