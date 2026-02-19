@@ -342,6 +342,30 @@ function VisitsChart() {
                       </Card>
                     </Col>
                   </Row>
+
+                  {/* Wash Type Totals */}
+                  <h6 className="text-center text-muted mt-4 mb-3">Totals by Wash Type</h6>
+                  <Row>
+                    {['B', 'D', 'U'].map(w => (
+                      <Col md={4} key={w}>
+                        <Card className="text-center h-100">
+                          <Card.Body>
+                            <Card.Text className="text-muted mb-1" style={{ color: WASH_COLORS[w] }}>
+                              {WASH_NAMES[w]}
+                            </Card.Text>
+                            <h3 className="mb-2" style={{ color: WASH_COLORS[w] }}>
+                              {day['sub' + w] + day['loy' + w] + day['pre' + w]}
+                            </h3>
+                            <div className="d-flex justify-content-center gap-3" style={{ fontSize: '0.85rem' }}>
+                              <span>Sub: {day['sub' + w]}</span>
+                              <span>Loy: {day['loy' + w]}</span>
+                              <span>Pre: {day['pre' + w]}</span>
+                            </div>
+                          </Card.Body>
+                        </Card>
+                      </Col>
+                    ))}
+                  </Row>
                 </>
               );
             })()}
