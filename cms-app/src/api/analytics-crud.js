@@ -33,7 +33,17 @@ import { db } from "./firebaseconfig";
  * @returns {Promise<{date: string, count: number, subscription: number, loyalty: number, prepaid: number, subB: number, subD: number, subU: number, preB: number, preD: number, preU: number, loyB: number, loyD: number, loyU: number}>} Updated date and counts
  * @throws {Error} If the operation fails
  */
+const VALID_CUSTOMER_TYPES = new Set(['subscription', 'loyalty', 'prepaid']);
+const VALID_WASH_TYPES = new Set(['B', 'D', 'U']);
+
 async function logDailyVisit(customerType = null, washType = null) {
+  if (customerType !== null && !VALID_CUSTOMER_TYPES.has(customerType)) {
+    throw new Error(`Invalid customerType: "${customerType}". Must be one of: subscription, loyalty, prepaid`);
+  }
+  if (washType !== null && !VALID_WASH_TYPES.has(washType)) {
+    throw new Error(`Invalid washType: "${washType}". Must be one of: B, D, U`);
+  }
+
   try {
     // Get current date in UTC as YYYY-MM-DD format
     const today = new Date();
