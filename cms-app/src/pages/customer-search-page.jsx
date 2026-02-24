@@ -16,6 +16,7 @@ function CustomerSearchPage() {
   const [logError, setLogError] = useState(null);
   const [memberType, setMemberType] = useState(null); // 'subscription' | 'loyalty' | 'prepaid'
   const [freeWashEarned, setFreeWashEarned] = useState(false);
+  const [showWashSelect, setShowWashSelect] = useState(false);
 
   const handleInput = (value) => {
     setCode((prev) => {
@@ -71,6 +72,38 @@ function CustomerSearchPage() {
     setLogError(null);
     setMemberType(null);
     setFreeWashEarned(false);
+    setShowWashSelect(false);
+  };
+
+  const isNextWashFree = memberType === 'loyalty' && ((memberData?.visitCount || 0) + 1) % 10 === 0;
+
+  const handleWashSelection = async (washType) => {
+    setShowWashSelect(false);
+    setIsLoggingVisit(true);
+    setLogSuccess(false);
+    setLogError(null);
+    setFreeWashEarned(false);
+
+    try {
+      const today = new Date().toISOString().split("T")[0];
+      const newVisitCount = (memberData.visitCount || 0) + 1;
+      await updateLoyaltyMember(memberData.id, {
+        lastVisitDate: today,
+        visitCount: newVisitCount,
+      });
+      setMemberData((prev) => ({
+        ...prev,
+        lastVisitDate: today,
+        visitCount: newVisitCount,
+      }));
+      await logDailyVisit('loyalty', washType);
+      setLogSuccess(true);
+      setTimeout(() => setLogSuccess(false), 3000);
+    } catch (err) {
+      setLogError(`Failed to log visit: ${err.message}`);
+    } finally {
+      setIsLoggingVisit(false);
+    }
   };
 
   const handleLogVisit = async () => {
@@ -81,27 +114,31 @@ function CustomerSearchPage() {
 
     try {
       if (memberType === "subscription") {
-        await logDailyVisit();
+        await logDailyVisit('subscription', code[0]);
         setLogSuccess(true);
         setTimeout(() => setLogSuccess(false), 3000);
       } else if (memberType === "loyalty") {
-        const today = new Date().toISOString().split("T")[0];
-        const newVisitCount = (memberData.visitCount || 0) + 1;
-        await updateLoyaltyMember(memberData.id, {
-          lastVisitDate: today,
-          visitCount: newVisitCount,
-        });
-        setMemberData((prev) => ({
-          ...prev,
-          lastVisitDate: today,
-          visitCount: newVisitCount,
-        }));
-        await logDailyVisit();
-        if (newVisitCount % 10 === 0) {
+        if (isNextWashFree) {
+          const today = new Date().toISOString().split("T")[0];
+          const newVisitCount = (memberData.visitCount || 0) + 1;
+          await updateLoyaltyMember(memberData.id, {
+            lastVisitDate: today,
+            visitCount: newVisitCount,
+          });
+          setMemberData((prev) => ({
+            ...prev,
+            lastVisitDate: today,
+            visitCount: newVisitCount,
+          }));
+          await logDailyVisit('loyalty', 'U');
           setFreeWashEarned(true);
+          setLogSuccess(true);
+          setTimeout(() => setLogSuccess(false), 3000);
+        } else {
+          setIsLoggingVisit(false);
+          setShowWashSelect(true);
+          return;
         }
-        setLogSuccess(true);
-        setTimeout(() => setLogSuccess(false), 3000);
       } else if (memberType === "prepaid") {
         if (memberData.prepaidWashes <= 0) {
           setLogError("No prepaid washes remaining. Cannot log visit.");
@@ -118,7 +155,7 @@ function CustomerSearchPage() {
           lastVisitDate: today,
           prepaidWashes: newPrepaidWashes,
         }));
-        await logDailyVisit();
+        await logDailyVisit('prepaid', code[0]);
         setLogSuccess(true);
         setTimeout(() => setLogSuccess(false), 3000);
       }
@@ -304,7 +341,7 @@ function CustomerSearchPage() {
               disabled={isLoggingVisit || (memberType === "prepaid" && memberData.prepaidWashes <= 0)}
               aria-label="Add one to today's total customer count"
             >
-              {isLoggingVisit ? "Logging..." : "Log Customer"}
+              {isLoggingVisit ? "Logging..." : isNextWashFree ? "Log Free Wash" : "Log Customer"}
             </button>
             {logSuccess && (
               <div className="log-success-message" role="status">
@@ -318,6 +355,44 @@ function CustomerSearchPage() {
               </div>
             )}
           </div>
+
+          {/* WASH TYPE SELECTION POPUP */}
+          {showWashSelect && (
+            <div className="wash-select-overlay" onClick={() => setShowWashSelect(false)}>
+              <div className="wash-select-popup" onClick={(e) => e.stopPropagation()}>
+                <h3>Select Wash Type</h3>
+                <div className="wash-select-buttons">
+                  <button
+                    className="wash-select-btn"
+                    style={{ backgroundColor: '#0d6efd' }}
+                    onClick={() => handleWashSelection('B')}
+                  >
+                    Basic (B)
+                  </button>
+                  <button
+                    className="wash-select-btn"
+                    style={{ backgroundColor: '#dc3545' }}
+                    onClick={() => handleWashSelection('D')}
+                  >
+                    Deluxe (D)
+                  </button>
+                  <button
+                    className="wash-select-btn"
+                    style={{ backgroundColor: '#198754' }}
+                    onClick={() => handleWashSelection('U')}
+                  >
+                    Unlimited (U)
+                  </button>
+                </div>
+                <button
+                  className="wash-select-cancel"
+                  onClick={() => setShowWashSelect(false)}
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     );

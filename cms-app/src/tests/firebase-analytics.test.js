@@ -176,6 +176,123 @@ describe("Analytics CRUD Operations (emulator)", () => {
 
       await cleanupTestVisitDoc(today);
     });
+
+    test("increments subscription breakdown counters", async () => {
+      const today = getDateString(0);
+      await cleanupTestVisitDoc(today);
+
+      const result = await logDailyVisit('subscription', 'B');
+
+      expect(result.count).toBe(1);
+      expect(result.subscription).toBe(1);
+      expect(result.subB).toBe(1);
+
+      // Verify from Firestore
+      const visitData = await getDailyVisitCount(today);
+      expect(visitData.subscription).toBe(1);
+      expect(visitData.subB).toBe(1);
+
+      await cleanupTestVisitDoc(today);
+    });
+
+    test("increments loyalty breakdown counter", async () => {
+      const today = getDateString(0);
+      await cleanupTestVisitDoc(today);
+
+      const result = await logDailyVisit('loyalty', 'D');
+
+      expect(result.count).toBe(1);
+      expect(result.loyalty).toBe(1);
+      expect(result.loyD).toBe(1);
+
+      const visitData = await getDailyVisitCount(today);
+      expect(visitData.loyalty).toBe(1);
+      expect(visitData.loyD).toBe(1);
+
+      await cleanupTestVisitDoc(today);
+    });
+
+    test("increments loyalty wash type counters", async () => {
+      const today = getDateString(0);
+      await cleanupTestVisitDoc(today);
+
+      await logDailyVisit('loyalty', 'B');
+      await logDailyVisit('loyalty', 'B');
+      await logDailyVisit('loyalty', 'D');
+      const result = await logDailyVisit('loyalty', 'U');
+
+      expect(result.loyalty).toBe(4);
+      expect(result.loyB).toBe(2);
+      expect(result.loyD).toBe(1);
+      expect(result.loyU).toBe(1);
+
+      const visitData = await getDailyVisitCount(today);
+      expect(visitData.loyB).toBe(2);
+      expect(visitData.loyD).toBe(1);
+      expect(visitData.loyU).toBe(1);
+
+      await cleanupTestVisitDoc(today);
+    });
+
+    test("increments prepaid breakdown counters", async () => {
+      const today = getDateString(0);
+      await cleanupTestVisitDoc(today);
+
+      const result = await logDailyVisit('prepaid', 'D');
+
+      expect(result.count).toBe(1);
+      expect(result.prepaid).toBe(1);
+      expect(result.preD).toBe(1);
+
+      const visitData = await getDailyVisitCount(today);
+      expect(visitData.prepaid).toBe(1);
+      expect(visitData.preD).toBe(1);
+
+      await cleanupTestVisitDoc(today);
+    });
+
+    test("handles mixed customer types correctly", async () => {
+      const today = getDateString(0);
+      await cleanupTestVisitDoc(today);
+
+      await logDailyVisit('subscription', 'B');
+      await logDailyVisit('subscription', 'D');
+      await logDailyVisit('loyalty', 'B');
+      await logDailyVisit('loyalty', 'U');
+      await logDailyVisit('prepaid', 'U');
+      await logDailyVisit('prepaid', 'U');
+
+      const visitData = await getDailyVisitCount(today);
+      expect(visitData.count).toBe(6);
+      expect(visitData.subscription).toBe(2);
+      expect(visitData.loyalty).toBe(2);
+      expect(visitData.prepaid).toBe(2);
+      expect(visitData.subB).toBe(1);
+      expect(visitData.subD).toBe(1);
+      expect(visitData.loyB).toBe(1);
+      expect(visitData.loyU).toBe(1);
+      expect(visitData.preU).toBe(2);
+
+      await cleanupTestVisitDoc(today);
+    });
+
+    test("maintains backward compatibility with no arguments", async () => {
+      const today = getDateString(0);
+      await cleanupTestVisitDoc(today);
+
+      const result = await logDailyVisit();
+
+      expect(result.count).toBe(1);
+      expect(result.subscription).toBe(0);
+      expect(result.loyalty).toBe(0);
+      expect(result.prepaid).toBe(0);
+
+      // Verify the document doesn't have breakdown fields set
+      const visitData = await getDailyVisitCount(today);
+      expect(visitData.count).toBe(1);
+
+      await cleanupTestVisitDoc(today);
+    });
   });
 
   describe("getDailyVisitCount", () => {
@@ -366,19 +483,32 @@ describe("Analytics CRUD Operations (emulator)", () => {
 
       await cleanupTestVisitDoc(today);
 
-      // Log a visit
-      const logResult = await logDailyVisit();
+      // Log a visit with subscription type
+      const logResult = await logDailyVisit('subscription', 'B');
       expect(logResult.count).toBe(1);
+      expect(logResult.subscription).toBe(1);
+      expect(logResult.subB).toBe(1);
+
+      // Log a loyalty visit with wash type
+      const loyaltyResult = await logDailyVisit('loyalty', 'U');
+      expect(loyaltyResult.count).toBe(2);
+      expect(loyaltyResult.loyalty).toBe(1);
+      expect(loyaltyResult.loyU).toBe(1);
 
       // Get the count
       const visitData = await getDailyVisitCount(today);
-      expect(visitData.count).toBe(1);
+      expect(visitData.count).toBe(2);
+      expect(visitData.subscription).toBe(1);
+      expect(visitData.loyalty).toBe(1);
+      expect(visitData.loyU).toBe(1);
 
       // Get range including today
       const visits = await getDailyVisitsInRange(today, today);
       expect(visits.length).toBeGreaterThanOrEqual(1);
       const todayVisit = visits.find(v => v.id === today);
       expect(todayVisit).toBeDefined();
+      expect(todayVisit.subscription).toBe(1);
+      expect(todayVisit.loyalty).toBe(1);
 
       // Cleanup (shouldn't delete today's data)
       await cleanupOldVisitData();
