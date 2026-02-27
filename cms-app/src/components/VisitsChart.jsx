@@ -65,7 +65,7 @@ function VisitsChart() {
     }
 
     // Breakdown field names to carry through
-    const breakdownFields = ['subscription', 'loyalty', 'prepaid', 'subB', 'subD', 'subU', 'preB', 'preD', 'preU', 'loyB', 'loyD', 'loyU'];
+    const breakdownFields = ['subscription', 'loyalty', 'prepaid', 'cash', 'subB', 'subD', 'subU', 'preB', 'preD', 'preU', 'loyB', 'loyD', 'loyU', 'cashB', 'cashD', 'cashU'];
 
     // Create a map of all dates in range with 0 counts
     const dateMap = new Map();
@@ -281,7 +281,7 @@ function VisitsChart() {
 
             {(() => {
               const day = chartData[selectedDayIndex];
-              const hasBreakdown = day.subscription > 0 || day.loyalty > 0 || day.prepaid > 0;
+              const hasBreakdown = day.subscription > 0 || day.loyalty > 0 || day.prepaid > 0 || day.cash > 0;
 
               return (
                 <>
@@ -292,7 +292,7 @@ function VisitsChart() {
                   )}
                   <Row>
                     {/* Subscription Card */}
-                    <Col md={4}>
+                    <Col md={3}>
                       <Card className="text-center h-100">
                         <Card.Body>
                           <Card.Text className="text-muted mb-1">Subscriptions</Card.Text>
@@ -309,7 +309,7 @@ function VisitsChart() {
                     </Col>
 
                     {/* Loyalty Card */}
-                    <Col md={4}>
+                    <Col md={3}>
                       <Card className="text-center h-100">
                         <Card.Body>
                           <Card.Text className="text-muted mb-1">Loyalty</Card.Text>
@@ -326,7 +326,7 @@ function VisitsChart() {
                     </Col>
 
                     {/* Prepaid Card */}
-                    <Col md={4}>
+                    <Col md={3}>
                       <Card className="text-center h-100">
                         <Card.Body>
                           <Card.Text className="text-muted mb-1">Prepaid</Card.Text>
@@ -335,6 +335,23 @@ function VisitsChart() {
                             {['B', 'D', 'U'].map(w => (
                               <span key={w} style={{ color: WASH_COLORS[w], fontWeight: 600 }}>
                                 {WASH_NAMES[w]}: {day['pre' + w]}
+                              </span>
+                            ))}
+                          </div>
+                        </Card.Body>
+                      </Card>
+                    </Col>
+
+                    {/* Cash Card */}
+                    <Col md={3}>
+                      <Card className="text-center h-100">
+                        <Card.Body>
+                          <Card.Text className="text-muted mb-1">Cash</Card.Text>
+                          <h3 className="mb-2">{day.cash}</h3>
+                          <div className="d-flex justify-content-center gap-3">
+                            {['B', 'D', 'U'].map(w => (
+                              <span key={w} style={{ color: WASH_COLORS[w], fontWeight: 600 }}>
+                                {WASH_NAMES[w]}: {day['cash' + w]}
                               </span>
                             ))}
                           </div>
@@ -354,12 +371,13 @@ function VisitsChart() {
                               {WASH_NAMES[w]}
                             </Card.Text>
                             <h3 className="mb-2" style={{ color: WASH_COLORS[w] }}>
-                              {day['sub' + w] + day['loy' + w] + day['pre' + w]}
+                              {day['sub' + w] + day['loy' + w] + day['pre' + w] + day['cash' + w]}
                             </h3>
                             <div className="d-flex justify-content-center gap-3" style={{ fontSize: '0.85rem' }}>
                               <span>Sub: {day['sub' + w]}</span>
                               <span>Loy: {day['loy' + w]}</span>
                               <span>Pre: {day['pre' + w]}</span>
+                              <span>Cash: {day['cash' + w]}</span>
                             </div>
                           </Card.Body>
                         </Card>

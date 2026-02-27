@@ -28,12 +28,12 @@ import { db } from "./firebaseconfig";
  * - Customer type counters: subscription, loyalty, prepaid
  * - Wash type counters: subB, subD, subU (subscription), preB, preD, preU (prepaid), loyB, loyD, loyU (loyalty)
  *
- * @param {string|null} customerType - 'subscription', 'loyalty', or 'prepaid' (null to skip breakdown)
+ * @param {string|null} customerType - 'subscription', 'loyalty', 'prepaid', or 'cash' (null to skip breakdown)
  * @param {string|null} washType - 'B', 'D', or 'U' wash type (null to skip wash breakdown)
- * @returns {Promise<{date: string, count: number, subscription: number, loyalty: number, prepaid: number, subB: number, subD: number, subU: number, preB: number, preD: number, preU: number, loyB: number, loyD: number, loyU: number}>} Updated date and counts
+ * @returns {Promise<{date: string, count: number, subscription: number, loyalty: number, prepaid: number, cash: number, subB: number, subD: number, subU: number, preB: number, preD: number, preU: number, loyB: number, loyD: number, loyU: number, cashB: number, cashD: number, cashU: number}>} Updated date and counts
  * @throws {Error} If the operation fails
  */
-const VALID_CUSTOMER_TYPES = new Set(['subscription', 'loyalty', 'prepaid']);
+const VALID_CUSTOMER_TYPES = new Set(['subscription', 'loyalty', 'prepaid', 'cash']);
 const VALID_WASH_TYPES = new Set(['B', 'D', 'U']);
 
 async function logDailyVisit(customerType = null, washType = null) {
@@ -103,6 +103,17 @@ async function logDailyVisit(customerType = null, washType = null) {
         updateData[key] = (existingData[key] || 0) + 1;
       }
 
+      // Increment customer type counter for cash customers
+      if (customerType === 'cash') {
+        updateData.cash = (existingData.cash || 0) + 1;
+      }
+
+      // Increment wash type counter for cash customers
+      if (customerType === 'cash' && washType) {
+        const key = 'cash' + washType;
+        updateData[key] = (existingData[key] || 0) + 1;
+      }
+
       // Set the document (creates or updates)
       transaction.set(docRef, updateData, { merge: true });
 
@@ -112,6 +123,7 @@ async function logDailyVisit(customerType = null, washType = null) {
         subscription: updateData.subscription ?? existingData.subscription ?? 0,
         loyalty: updateData.loyalty ?? existingData.loyalty ?? 0,
         prepaid: updateData.prepaid ?? existingData.prepaid ?? 0,
+        cash: updateData.cash ?? existingData.cash ?? 0,
         subB: updateData.subB ?? existingData.subB ?? 0,
         subD: updateData.subD ?? existingData.subD ?? 0,
         subU: updateData.subU ?? existingData.subU ?? 0,
@@ -121,6 +133,9 @@ async function logDailyVisit(customerType = null, washType = null) {
         loyB: updateData.loyB ?? existingData.loyB ?? 0,
         loyD: updateData.loyD ?? existingData.loyD ?? 0,
         loyU: updateData.loyU ?? existingData.loyU ?? 0,
+        cashB: updateData.cashB ?? existingData.cashB ?? 0,
+        cashD: updateData.cashD ?? existingData.cashD ?? 0,
+        cashU: updateData.cashU ?? existingData.cashU ?? 0,
       };
     });
 
