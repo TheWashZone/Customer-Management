@@ -5,6 +5,7 @@ import { getDailyVisitsInRange } from '../api/analytics-crud';
 
 const WASH_COLORS = { B: '#0d6efd', U: '#198754', D: '#dc3545' };
 const WASH_NAMES = { B: 'Basic', U: 'Unlimited', D: 'Deluxe' };
+const WASH_PRICES = { B: 10.00, D: 13.50, U: 16.50 };
 
 function VisitsChart() {
   const [viewMode, setViewMode] = useState('weekly'); // 'weekly' or 'monthly'
@@ -354,6 +355,9 @@ function VisitsChart() {
                                 {WASH_NAMES[w]}: {day['cash' + w]}
                               </span>
                             ))}
+                          </div>
+                          <div className="mt-2 text-success fw-semibold">
+                            Expected: ${(['B', 'D', 'U'].reduce((sum, w) => sum + (day['cash' + w] || 0) * WASH_PRICES[w], 0)).toFixed(2)}
                           </div>
                         </Card.Body>
                       </Card>
