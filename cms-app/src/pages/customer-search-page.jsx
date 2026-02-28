@@ -17,6 +17,10 @@ function CustomerSearchPage() {
   const [memberType, setMemberType] = useState(null); // 'subscription' | 'loyalty' | 'prepaid'
   const [freeWashEarned, setFreeWashEarned] = useState(false);
   const [showWashSelect, setShowWashSelect] = useState(false);
+  const [showCashModal, setShowCashModal] = useState(false);
+  const [cashLogSuccess, setCashLogSuccess] = useState(false);
+  const [cashLogError, setCashLogError] = useState(null);
+  const [isLoggingCash, setIsLoggingCash] = useState(false);
 
   const handleInput = (value) => {
     setCode((prev) => {
@@ -70,6 +74,8 @@ function CustomerSearchPage() {
     setCode("");
     setLogSuccess(false);
     setLogError(null);
+    setCashLogSuccess(false);
+    setCashLogError(null);
     setMemberType(null);
     setFreeWashEarned(false);
     setShowWashSelect(false);
@@ -163,6 +169,23 @@ function CustomerSearchPage() {
       setLogError(`Failed to log visit: ${err.message}`);
     } finally {
       setIsLoggingVisit(false);
+    }
+  };
+
+  const handleCashLog = async (washType) => {
+    setShowCashModal(false);
+    setIsLoggingCash(true);
+    setCashLogSuccess(false);
+    setCashLogError(null);
+
+    try {
+      await logDailyVisit('cash', washType);
+      setCashLogSuccess(true);
+      setTimeout(() => setCashLogSuccess(false), 3000);
+    } catch (err) {
+      setCashLogError(`Failed to log cash customer: ${err.message}`);
+    } finally {
+      setIsLoggingCash(false);
     }
   };
 
@@ -403,6 +426,27 @@ function CustomerSearchPage() {
       <HamburgerMenu />
       <div className="keypad-container">
 
+        {/* Cash Customer Button */}
+        <button
+          className="cash-customer-btn"
+          onClick={() => { setCashLogSuccess(false); setCashLogError(null); setShowCashModal(true); }}
+          disabled={isLoggingCash}
+          aria-label="Log cash customer"
+        >
+          {isLoggingCash ? "Logging..." : "Log Cash Customer"}
+        </button>
+
+        {cashLogSuccess && (
+          <div className="log-success-message" role="status" style={{ marginBottom: '8px' }}>
+            ✓ Cash customer logged
+          </div>
+        )}
+        {cashLogError && (
+          <div className="log-error-message" role="alert" style={{ marginBottom: '8px' }}>
+            {cashLogError}
+          </div>
+        )}
+
         {/* Display Box */}
         <div
           className="display-box"
@@ -480,6 +524,44 @@ function CustomerSearchPage() {
           </button>
         </div>
       </div>
+
+      {/* Cash Customer Modal */}
+      {showCashModal && (
+        <div className="wash-select-overlay" onClick={() => setShowCashModal(false)}>
+          <div className="wash-select-popup" onClick={(e) => e.stopPropagation()}>
+            <h3>Log Cash Customer</h3>
+            <div className="wash-select-buttons">
+              <button
+                className="wash-select-btn"
+                style={{ backgroundColor: '#0d6efd' }}
+                onClick={() => handleCashLog('B')}
+              >
+                Basic (B)
+              </button>
+              <button
+                className="wash-select-btn"
+                style={{ backgroundColor: '#dc3545' }}
+                onClick={() => handleCashLog('D')}
+              >
+                Deluxe (D)
+              </button>
+              <button
+                className="wash-select-btn"
+                style={{ backgroundColor: '#198754' }}
+                onClick={() => handleCashLog('U')}
+              >
+                Unlimited (U)
+              </button>
+            </div>
+            <button
+              className="wash-select-cancel"
+              onClick={() => setShowCashModal(false)}
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
