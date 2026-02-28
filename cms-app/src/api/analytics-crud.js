@@ -25,8 +25,8 @@ import { db } from "./firebaseconfig";
  * Uses a transaction to prevent race conditions.
  *
  * Optionally tracks customer type and wash type breakdowns:
- * - Customer type counters: subscription, loyalty, prepaid
- * - Wash type counters: subB, subD, subU (subscription), preB, preD, preU (prepaid), loyB, loyD, loyU (loyalty)
+ * - Customer type counters: subscription, loyalty, prepaid, cash
+ * - Wash type counters: subB, subD, subU (subscription), preB, preD, preU (prepaid), loyB, loyD, loyU (loyalty), cashB, cashD, cashU (cash)
  *
  * @param {string|null} customerType - 'subscription', 'loyalty', 'prepaid', or 'cash' (null to skip breakdown)
  * @param {string|null} washType - 'B', 'D', or 'U' wash type (null to skip wash breakdown)
@@ -38,7 +38,7 @@ const VALID_WASH_TYPES = new Set(['B', 'D', 'U']);
 
 async function logDailyVisit(customerType = null, washType = null) {
   if (customerType !== null && !VALID_CUSTOMER_TYPES.has(customerType)) {
-    throw new Error(`Invalid customerType: "${customerType}". Must be one of: subscription, loyalty, prepaid`);
+    throw new Error(`Invalid customerType: "${customerType}". Must be one of: ${[...VALID_CUSTOMER_TYPES].join(', ')}`);
   }
   if (washType !== null && !VALID_WASH_TYPES.has(washType)) {
     throw new Error(`Invalid washType: "${washType}". Must be one of: B, D, U`);

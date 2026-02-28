@@ -74,6 +74,8 @@ function CustomerSearchPage() {
     setCode("");
     setLogSuccess(false);
     setLogError(null);
+    setCashLogSuccess(false);
+    setCashLogError(null);
     setMemberType(null);
     setFreeWashEarned(false);
     setShowWashSelect(false);

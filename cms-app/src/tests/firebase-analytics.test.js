@@ -251,6 +251,45 @@ describe("Analytics CRUD Operations (emulator)", () => {
       await cleanupTestVisitDoc(today);
     });
 
+    test("increments cash breakdown counters", async () => {
+      const today = getDateString(0);
+      await cleanupTestVisitDoc(today);
+
+      const result = await logDailyVisit('cash', 'B');
+
+      expect(result.count).toBe(1);
+      expect(result.cash).toBe(1);
+      expect(result.cashB).toBe(1);
+
+      const visitData = await getDailyVisitCount(today);
+      expect(visitData.cash).toBe(1);
+      expect(visitData.cashB).toBe(1);
+
+      await cleanupTestVisitDoc(today);
+    });
+
+    test("increments cash wash type counters", async () => {
+      const today = getDateString(0);
+      await cleanupTestVisitDoc(today);
+
+      await logDailyVisit('cash', 'B');
+      await logDailyVisit('cash', 'B');
+      await logDailyVisit('cash', 'D');
+      const result = await logDailyVisit('cash', 'U');
+
+      expect(result.cash).toBe(4);
+      expect(result.cashB).toBe(2);
+      expect(result.cashD).toBe(1);
+      expect(result.cashU).toBe(1);
+
+      const visitData = await getDailyVisitCount(today);
+      expect(visitData.cashB).toBe(2);
+      expect(visitData.cashD).toBe(1);
+      expect(visitData.cashU).toBe(1);
+
+      await cleanupTestVisitDoc(today);
+    });
+
     test("handles mixed customer types correctly", async () => {
       const today = getDateString(0);
       await cleanupTestVisitDoc(today);
@@ -261,17 +300,22 @@ describe("Analytics CRUD Operations (emulator)", () => {
       await logDailyVisit('loyalty', 'U');
       await logDailyVisit('prepaid', 'U');
       await logDailyVisit('prepaid', 'U');
+      await logDailyVisit('cash', 'B');
+      await logDailyVisit('cash', 'D');
 
       const visitData = await getDailyVisitCount(today);
-      expect(visitData.count).toBe(6);
+      expect(visitData.count).toBe(8);
       expect(visitData.subscription).toBe(2);
       expect(visitData.loyalty).toBe(2);
       expect(visitData.prepaid).toBe(2);
+      expect(visitData.cash).toBe(2);
       expect(visitData.subB).toBe(1);
       expect(visitData.subD).toBe(1);
       expect(visitData.loyB).toBe(1);
       expect(visitData.loyU).toBe(1);
       expect(visitData.preU).toBe(2);
+      expect(visitData.cashB).toBe(1);
+      expect(visitData.cashD).toBe(1);
 
       await cleanupTestVisitDoc(today);
     });
@@ -286,6 +330,7 @@ describe("Analytics CRUD Operations (emulator)", () => {
       expect(result.subscription).toBe(0);
       expect(result.loyalty).toBe(0);
       expect(result.prepaid).toBe(0);
+      expect(result.cash).toBe(0);
 
       // Verify the document doesn't have breakdown fields set
       const visitData = await getDailyVisitCount(today);
