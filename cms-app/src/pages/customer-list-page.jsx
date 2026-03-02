@@ -44,6 +44,7 @@ function MembersPage() {
 
   // --- SUBSCRIPTION Add/Edit/Delete state (existing) ---
   const [showAddForm, setShowAddForm] = useState(false);
+  const [addSubPrefix, setAddSubPrefix] = useState('B');
   const [addForm, setAddForm] = useState({
     id: '',
     name: '',
@@ -95,6 +96,7 @@ function MembersPage() {
   const [filterPrepaidType, setFilterPrepaidType] = useState('all');
 
   const [showPrepaidAddForm, setShowPrepaidAddForm] = useState(false);
+  const [addPrepaidPrefix, setAddPrepaidPrefix] = useState('B');
   const [prepaidAddForm, setPrepaidAddForm] = useState({
     id: '', name: '', issueDate: '', lastVisitDate: '', prepaidWashes: 0, notes: '', email: ''
   });
@@ -242,9 +244,10 @@ function MembersPage() {
     setError('');
     setIdError('');
 
-    const idPattern = /^[BDU]\d{3}$/;
-    if (!idPattern.test(addForm.id.trim())) {
-      setIdError("User ID must be in format B###, D###, or U###.");
+    const fullId = addSubPrefix + addForm.id.trim();
+    const idPattern = /^[BDU]\d{3,5}$/;
+    if (!idPattern.test(fullId)) {
+      setIdError("ID number must be 3–5 digits (e.g. 101).");
       return;
     }
     if (!addForm.name.trim()) {
@@ -254,7 +257,7 @@ function MembersPage() {
 
     try {
       await createMember(
-        addForm.id.trim(),
+        fullId,
         addForm.name.trim(),
         addForm.car.trim(),
         addForm.isActive,
@@ -263,6 +266,7 @@ function MembersPage() {
         addForm.email.trim()
       );
       setAddForm({ id: '', name: '', car: '', isActive: true, validPayment: true, notes: '', email: '' });
+      setAddSubPrefix('B');
       setShowAddForm(false);
     } catch (err) {
       console.error(err);
@@ -463,9 +467,10 @@ function MembersPage() {
     setError('');
     setIdError('');
 
+    const fullId = addPrepaidPrefix + 'B' + prepaidAddForm.id.trim();
     const idPattern = /^[BDU]B\d{3,5}$/;
-    if (!idPattern.test(prepaidAddForm.id.trim())) {
-      setIdError("Prepaid ID must be BB/DB/UB followed by 3-5 digits (e.g. BB101).");
+    if (!idPattern.test(fullId)) {
+      setIdError("ID number must be 3–5 digits (e.g. 101).");
       return;
     }
     if (!prepaidAddForm.name.trim()) {
@@ -475,7 +480,7 @@ function MembersPage() {
 
     try {
       await createPrepaidMember(
-        prepaidAddForm.id.trim(),
+        fullId,
         prepaidAddForm.name.trim(),
         prepaidAddForm.issueDate,
         prepaidAddForm.lastVisitDate,
@@ -484,6 +489,7 @@ function MembersPage() {
         prepaidAddForm.email.trim()
       );
       setPrepaidAddForm({ id: '', name: '', issueDate: '', lastVisitDate: '', prepaidWashes: 0, notes: '', email: '' });
+      setAddPrepaidPrefix('B');
       setShowPrepaidAddForm(false);
     } catch (err) {
       console.error(err);
@@ -559,6 +565,31 @@ function MembersPage() {
   };
 
 
+  // --- Next-ID helpers (compute from already-loaded data) ---
+  const getNextSubscriptionNumber = (prefix) => {
+    const nums = members
+      .filter(m => m.id && m.id[0] === prefix)
+      .map(m => parseInt(m.id.slice(1)))
+      .filter(n => !isNaN(n));
+    const max = nums.length > 0 ? Math.max(...nums) : 0;
+    return String(max + 1).padStart(3, '0');
+  };
+
+  const getNextLoyaltyNumber = () => {
+    const nums = loyaltyMembers.map(m => parseInt(m.id.slice(1))).filter(n => !isNaN(n));
+    const max = nums.length > 0 ? Math.max(...nums) : 0;
+    return String(max + 1).padStart(3, '0');
+  };
+
+  const getNextPrepaidNumber = (prefix) => {
+    const nums = prepaidMembers
+      .filter(m => m.id && m.id[0] === prefix)
+      .map(m => parseInt(m.id.slice(2)))
+      .filter(n => !isNaN(n));
+    const max = nums.length > 0 ? Math.max(...nums) : 0;
+    return String(max + 1).padStart(3, '0');
+  };
+
   // --- Helper: "New Member" button label per tab ---
   const getShowAddForm = () => {
     if (activeTab === 'subscription') return showAddForm;
@@ -568,9 +599,24 @@ function MembersPage() {
   };
 
   const toggleAddForm = () => {
-    if (activeTab === 'subscription') setShowAddForm((prev) => !prev);
-    else if (activeTab === 'loyalty') setShowLoyaltyAddForm((prev) => !prev);
-    else if (activeTab === 'prepaid') setShowPrepaidAddForm((prev) => !prev);
+    if (activeTab === 'subscription') {
+      if (!showAddForm) {
+        setAddSubPrefix('B');
+        setAddForm(prev => ({ ...prev, id: getNextSubscriptionNumber('B') }));
+      }
+      setShowAddForm((prev) => !prev);
+    } else if (activeTab === 'loyalty') {
+      if (!showLoyaltyAddForm) {
+        setLoyaltyAddForm(prev => ({ ...prev, id: 'L' + getNextLoyaltyNumber() }));
+      }
+      setShowLoyaltyAddForm((prev) => !prev);
+    } else if (activeTab === 'prepaid') {
+      if (!showPrepaidAddForm) {
+        setAddPrepaidPrefix('B');
+        setPrepaidAddForm(prev => ({ ...prev, id: getNextPrepaidNumber('B') }));
+      }
+      setShowPrepaidAddForm((prev) => !prev);
+    }
   };
 
   // --- Helper: prepaid washes badge color ---
@@ -711,8 +757,31 @@ function MembersPage() {
                             <Col md={4}>
                               <Form.Group controlId="addId">
                                 <Form.Label>ID <span className="text-danger">*</span></Form.Label>
-                                <Form.Control type="text" name="id" value={addForm.id} onChange={handleAddInputChange} placeholder="e.g. B101" required isInvalid={!!idError} />
-                                <Form.Control.Feedback type="invalid">{idError}</Form.Control.Feedback>
+                                <InputGroup>
+                                  <Form.Select
+                                    style={{ maxWidth: '72px' }}
+                                    value={addSubPrefix}
+                                    onChange={(e) => {
+                                      const p = e.target.value;
+                                      setAddSubPrefix(p);
+                                      setAddForm(prev => ({ ...prev, id: getNextSubscriptionNumber(p) }));
+                                    }}
+                                  >
+                                    <option value="B">B</option>
+                                    <option value="D">D</option>
+                                    <option value="U">U</option>
+                                  </Form.Select>
+                                  <Form.Control
+                                    type="text"
+                                    name="id"
+                                    value={addForm.id}
+                                    onChange={handleAddInputChange}
+                                    placeholder="101"
+                                    required
+                                    isInvalid={!!idError}
+                                  />
+                                  <Form.Control.Feedback type="invalid">{idError}</Form.Control.Feedback>
+                                </InputGroup>
                               </Form.Group>
                             </Col>
                             <Col md={4}>
@@ -909,8 +978,31 @@ function MembersPage() {
                             <Col md={3}>
                               <Form.Group controlId="prepaidAddId">
                                 <Form.Label>ID <span className="text-danger">*</span></Form.Label>
-                                <Form.Control type="text" name="id" value={prepaidAddForm.id} onChange={handlePrepaidAddInputChange} placeholder="e.g. BB101" required isInvalid={!!idError} />
-                                <Form.Control.Feedback type="invalid">{idError}</Form.Control.Feedback>
+                                <InputGroup>
+                                  <Form.Select
+                                    style={{ maxWidth: '80px' }}
+                                    value={addPrepaidPrefix}
+                                    onChange={(e) => {
+                                      const p = e.target.value;
+                                      setAddPrepaidPrefix(p);
+                                      setPrepaidAddForm(prev => ({ ...prev, id: getNextPrepaidNumber(p) }));
+                                    }}
+                                  >
+                                    <option value="B">BB</option>
+                                    <option value="D">DB</option>
+                                    <option value="U">UB</option>
+                                  </Form.Select>
+                                  <Form.Control
+                                    type="text"
+                                    name="id"
+                                    value={prepaidAddForm.id}
+                                    onChange={handlePrepaidAddInputChange}
+                                    placeholder="101"
+                                    required
+                                    isInvalid={!!idError}
+                                  />
+                                  <Form.Control.Feedback type="invalid">{idError}</Form.Control.Feedback>
+                                </InputGroup>
                               </Form.Group>
                             </Col>
                             <Col md={3}>
