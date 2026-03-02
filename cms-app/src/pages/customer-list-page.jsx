@@ -79,7 +79,7 @@ function MembersPage() {
 
   const [showLoyaltyAddForm, setShowLoyaltyAddForm] = useState(false);
   const [loyaltyAddForm, setLoyaltyAddForm] = useState({
-    id: '', name: '', issueDate: '', lastVisitDate: '', visitCount: 0, notes: '', email: ''
+    id: '', name: '', issueDate: new Date().toISOString().slice(0, 10), lastVisitDate: '', visitCount: 0, notes: '', email: ''
   });
 
   const [showLoyaltyEditModal, setShowLoyaltyEditModal] = useState(false);
@@ -98,7 +98,7 @@ function MembersPage() {
   const [showPrepaidAddForm, setShowPrepaidAddForm] = useState(false);
   const [addPrepaidPrefix, setAddPrepaidPrefix] = useState('B');
   const [prepaidAddForm, setPrepaidAddForm] = useState({
-    id: '', name: '', issueDate: '', lastVisitDate: '', prepaidWashes: 0, notes: '', email: ''
+    id: '', name: '', issueDate: new Date().toISOString().slice(0, 10), lastVisitDate: '', prepaidWashes: 5, notes: '', email: ''
   });
 
   const [showPrepaidEditModal, setShowPrepaidEditModal] = useState(false);
@@ -378,7 +378,7 @@ function MembersPage() {
         loyaltyAddForm.notes.trim(),
         loyaltyAddForm.email.trim()
       );
-      setLoyaltyAddForm({ id: '', name: '', issueDate: '', lastVisitDate: '', visitCount: 0, notes: '', email: '' });
+      setLoyaltyAddForm({ id: '', name: '', issueDate: new Date().toISOString().slice(0, 10), lastVisitDate: '', visitCount: 0, notes: '', email: '' });
       setShowLoyaltyAddForm(false);
     } catch (err) {
       console.error(err);
@@ -488,7 +488,7 @@ function MembersPage() {
         prepaidAddForm.notes.trim(),
         prepaidAddForm.email.trim()
       );
-      setPrepaidAddForm({ id: '', name: '', issueDate: '', lastVisitDate: '', prepaidWashes: 0, notes: '', email: '' });
+      setPrepaidAddForm({ id: '', name: '', issueDate: new Date().toISOString().slice(0, 10), lastVisitDate: '', prepaidWashes: 5, notes: '', email: '' });
       setAddPrepaidPrefix('B');
       setShowPrepaidAddForm(false);
     } catch (err) {
