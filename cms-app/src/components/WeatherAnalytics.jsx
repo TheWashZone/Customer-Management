@@ -14,12 +14,16 @@ import { fetchDailyForecast, weatherCodeToDescription } from '../api/open-meteo'
 import { getDailyVisitsInRange } from '../api/analytics-crud';
 
 const getBarColor = (weatherCode) => {
-  if (weatherCode <= 1) return '#198754';   // Clear / mainly clear  — green
-  if (weatherCode <= 3) return '#ffc107';   // Partly cloudy / overcast — amber
-  if (weatherCode <= 48) return '#adb5bd';  // Fog                     — grey
-  if (weatherCode <= 67) return '#0d6efd';  // Drizzle / rain          — blue
-  if (weatherCode <= 77) return '#6c757d';  // Snow                    — dark grey
-  if (weatherCode <= 86) return '#0dcaf0';  // Rain / snow showers     — light blue
+  const code = Number(weatherCode);
+  if (!Number.isFinite(code)) {
+    return '#6c757d';                       // Unknown / missing       — neutral grey
+  }
+  if (code <= 1) return '#198754';          // Clear / mainly clear    — green
+  if (code <= 3) return '#ffc107';          // Partly cloudy / overcast — amber
+  if (code <= 48) return '#adb5bd';         // Fog                     — grey
+  if (code <= 67) return '#0d6efd';         // Drizzle / rain          — blue
+  if (code <= 77) return '#6c757d';         // Snow                    — dark grey
+  if (code <= 86) return '#0dcaf0';         // Rain / snow showers     — light blue
   return '#6f42c1';                         // Thunderstorm            — purple
 };
 
@@ -193,10 +197,18 @@ function WeatherAnalytics() {
     };
   }, [historicalData]);
 
+  // Precompute a lookup map from displayDate to weather emoji for efficient tick rendering
+  const weatherEmojiByDate = useMemo(() => {
+    const map = new Map();
+    historicalData.forEach(d => {
+      map.set(d.displayDate, d.weatherEmoji || '');
+    });
+    return map;
+  }, [historicalData]);
+
   // Custom X-axis tick: weather emoji above the rotated date label
   const renderCustomTick = ({ x, y, payload }) => {
-    const dataPoint = historicalData.find(d => d.displayDate === payload.value);
-    const emoji = dataPoint?.weatherEmoji || '';
+    const emoji = weatherEmojiByDate.get(payload.value) || '';
     return (
       <g transform={`translate(${x},${y})`}>
         <text x={0} y={14} textAnchor="middle" fontSize={13}>{emoji}</text>
@@ -290,8 +302,10 @@ function WeatherAnalytics() {
             {[
               { color: '#198754', label: 'Clear/Sunny' },
               { color: '#ffc107', label: 'Cloudy/Overcast' },
-              { color: '#adb5bd', label: 'Fog/Snow' },
+              { color: '#adb5bd', label: 'Fog' },
+              { color: '#6c757d', label: 'Snow' },
               { color: '#0d6efd', label: 'Rain/Drizzle' },
+              { color: '#0dcaf0', label: 'Showers' },
               { color: '#6f42c1', label: 'Thunderstorm' },
             ].map(({ color, label }) => (
               <span key={label} className="d-flex align-items-center gap-1">
@@ -332,8 +346,8 @@ function WeatherAnalytics() {
                   }}
                 />
                 <Bar dataKey="visits" name="Customer Visits">
-                  {historicalData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={getBarColor(entry.weatherCode)} />
+                  {historicalData.map((entry) => (
+                    <Cell key={entry.date} fill={getBarColor(entry.weatherCode)} />
                   ))}
                 </Bar>
               </ComposedChart>
