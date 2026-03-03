@@ -27,11 +27,11 @@ import HamburgerMenu from '../components/HamburgerMenu';
 
 function MembersPage() {
   const {
-    members, isLoading, createMember, updateMember, deleteMember,
+    members, isLoading, createMember, getMember, updateMember, deleteMember,
     loyaltyMembers, isLoyaltyLoading, loyaltyError, ensureLoyaltyLoaded,
-    createLoyaltyMember, updateLoyaltyMember, deleteLoyaltyMember,
+    createLoyaltyMember, getLoyaltyMember, updateLoyaltyMember, deleteLoyaltyMember,
     prepaidMembers, isPrepaidLoading, prepaidError, ensurePrepaidLoaded,
-    createPrepaidMember, updatePrepaidMember, deletePrepaidMember,
+    createPrepaidMember, getPrepaidMember, updatePrepaidMember, deletePrepaidMember,
   } = useMembers();
 
   // --- TAB STATE ---
@@ -256,6 +256,11 @@ function MembersPage() {
     }
 
     try {
+      const existing = await getMember(fullId);
+      if (existing) {
+        setIdError(`A member with ID "${fullId}" already exists.`);
+        return;
+      }
       await createMember(
         fullId,
         addForm.name.trim(),
@@ -369,8 +374,14 @@ function MembersPage() {
     }
 
     try {
+      const trimmedId = loyaltyAddForm.id.trim();
+      const existing = await getLoyaltyMember(trimmedId);
+      if (existing) {
+        setIdError(`A loyalty member with ID "${trimmedId}" already exists.`);
+        return;
+      }
       await createLoyaltyMember(
-        loyaltyAddForm.id.trim(),
+        trimmedId,
         loyaltyAddForm.name.trim(),
         loyaltyAddForm.issueDate,
         loyaltyAddForm.lastVisitDate,
@@ -479,6 +490,11 @@ function MembersPage() {
     }
 
     try {
+      const existing = await getPrepaidMember(fullId);
+      if (existing) {
+        setIdError(`A prepaid member with ID "${fullId}" already exists.`);
+        return;
+      }
       await createPrepaidMember(
         fullId,
         prepaidAddForm.name.trim(),
@@ -607,13 +623,19 @@ function MembersPage() {
       setShowAddForm((prev) => !prev);
     } else if (activeTab === 'loyalty') {
       if (!showLoyaltyAddForm) {
-        setLoyaltyAddForm(prev => ({ ...prev, id: 'L' + getNextLoyaltyNumber() }));
+        setLoyaltyAddForm({
+          id: 'L' + getNextLoyaltyNumber(), name: '', issueDate: new Date().toISOString().slice(0, 10),
+          lastVisitDate: '', visitCount: 0, notes: '', email: ''
+        });
       }
       setShowLoyaltyAddForm((prev) => !prev);
     } else if (activeTab === 'prepaid') {
       if (!showPrepaidAddForm) {
         setAddPrepaidPrefix('B');
-        setPrepaidAddForm(prev => ({ ...prev, id: getNextPrepaidNumber('B') }));
+        setPrepaidAddForm({
+          id: getNextPrepaidNumber('B'), name: '', issueDate: new Date().toISOString().slice(0, 10),
+          lastVisitDate: '', prepaidWashes: 5, notes: '', email: ''
+        });
       }
       setShowPrepaidAddForm((prev) => !prev);
     }
@@ -648,6 +670,13 @@ function MembersPage() {
                 variant="primary"
                 className="fw-bold"
                 onClick={toggleAddForm}
+                disabled={
+                  !getShowAddForm() && (
+                    (activeTab === 'subscription' && isLoading) ||
+                    (activeTab === 'loyalty' && isLoyaltyLoading) ||
+                    (activeTab === 'prepaid' && isPrepaidLoading)
+                  )
+                }
               >
                 {getShowAddForm() ? 'Close' : '+ New Member'}
               </Button>
