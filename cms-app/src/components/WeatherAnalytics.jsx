@@ -2,17 +2,26 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { Card, Row, Col, Alert, Spinner, Table, Badge } from 'react-bootstrap';
 import {
   ComposedChart,
-  Line,
   Bar,
+  Cell,
   XAxis,
   YAxis,
   CartesianGrid,
   Tooltip,
-  Legend,
   ResponsiveContainer,
 } from 'recharts';
 import { fetchDailyForecast, weatherCodeToDescription } from '../api/open-meteo';
 import { getDailyVisitsInRange } from '../api/analytics-crud';
+
+const getBarColor = (weatherCode) => {
+  if (weatherCode <= 1) return '#198754';   // Clear / mainly clear  — green
+  if (weatherCode <= 3) return '#ffc107';   // Partly cloudy / overcast — amber
+  if (weatherCode <= 48) return '#adb5bd';  // Fog                     — grey
+  if (weatherCode <= 67) return '#0d6efd';  // Drizzle / rain          — blue
+  if (weatherCode <= 77) return '#6c757d';  // Snow                    — dark grey
+  if (weatherCode <= 86) return '#0dcaf0';  // Rain / snow showers     — light blue
+  return '#6f42c1';                         // Thunderstorm            — purple
+};
 
 function WeatherAnalytics() {
   const [weatherData, setWeatherData] = useState(null);
@@ -184,6 +193,26 @@ function WeatherAnalytics() {
     };
   }, [historicalData]);
 
+  // Custom X-axis tick: weather emoji above the rotated date label
+  const renderCustomTick = ({ x, y, payload }) => {
+    const dataPoint = historicalData.find(d => d.displayDate === payload.value);
+    const emoji = dataPoint?.weatherEmoji || '';
+    return (
+      <g transform={`translate(${x},${y})`}>
+        <text x={0} y={14} textAnchor="middle" fontSize={13}>{emoji}</text>
+        <text
+          x={0} y={30}
+          textAnchor="end"
+          fill="#6c757d"
+          fontSize={10}
+          transform="rotate(-40, 0, 30)"
+        >
+          {payload.value}
+        </text>
+      </g>
+    );
+  };
+
   if (isLoading) {
     return (
       <Card>
@@ -255,22 +284,33 @@ function WeatherAnalytics() {
       <Card className="mb-4">
         <Card.Body>
           <h5 className="mb-3">Historical Weather vs Customer Visits (Last 30 Days)</h5>
+
+          {/* Color key */}
+          <div className="d-flex gap-3 mb-3 flex-wrap" style={{ fontSize: '0.8rem' }}>
+            {[
+              { color: '#198754', label: 'Clear/Sunny' },
+              { color: '#ffc107', label: 'Cloudy/Overcast' },
+              { color: '#adb5bd', label: 'Fog/Snow' },
+              { color: '#0d6efd', label: 'Rain/Drizzle' },
+              { color: '#6f42c1', label: 'Thunderstorm' },
+            ].map(({ color, label }) => (
+              <span key={label} className="d-flex align-items-center gap-1">
+                <span style={{ width: 12, height: 12, borderRadius: 3, background: color, display: 'inline-block' }} />
+                {label}
+              </span>
+            ))}
+          </div>
+
           {historicalData.length > 0 ? (
             <ResponsiveContainer width="100%" height={400}>
               <ComposedChart data={historicalData}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis
                   dataKey="displayDate"
-                  angle={-45}
-                  textAnchor="end"
-                  height={80}
+                  height={90}
+                  tick={renderCustomTick}
                 />
-                <YAxis yAxisId="left" label={{ value: 'Visits', angle: -90, position: 'insideLeft' }} />
-                <YAxis
-                  yAxisId="right"
-                  orientation="right"
-                  label={{ value: 'Temperature (°F)', angle: 90, position: 'insideRight' }}
-                />
+                <YAxis label={{ value: 'Visits', angle: -90, position: 'insideLeft' }} />
                 <Tooltip
                   content={({ active, payload }) => {
                     if (active && payload && payload.length) {
@@ -291,10 +331,11 @@ function WeatherAnalytics() {
                     return null;
                   }}
                 />
-                <Legend />
-                <Bar yAxisId="left" dataKey="visits" name="Customer Visits" fill="#0d6efd" />
-                <Line yAxisId="right" type="monotone" dataKey="tempMax" name="High Temp (°F)" stroke="#dc3545" strokeWidth={2} />
-                <Line yAxisId="right" type="monotone" dataKey="tempMin" name="Low Temp (°F)" stroke="#6c757d" strokeWidth={2} />
+                <Bar dataKey="visits" name="Customer Visits">
+                  {historicalData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={getBarColor(entry.weatherCode)} />
+                  ))}
+                </Bar>
               </ComposedChart>
             </ResponsiveContainer>
           ) : (
