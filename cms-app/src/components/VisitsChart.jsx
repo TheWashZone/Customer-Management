@@ -251,7 +251,7 @@ function VisitsChart() {
       </Card>
 
       {/* Daily Breakdown Navigator */}
-      {!isLoading && !error && chartData.length > 0 && selectedDayIndex !== null && (
+      {!isLoading && !error && chartData.length > 0 && selectedDayIndex !== null && selectedDayIndex < chartData.length && (
         <Card className="mt-4">
           <Card.Body>
             {/* Day Navigation */}
