@@ -35,6 +35,34 @@ async function createMember(id, name, car, isActive, validPayment, notes, email 
 }
 
 /**
+ * Upserts a member document, only writing Excel-sourced fields.
+ * If the document already exists, notes and email are preserved.
+ * @param {string} id - The user ID
+ * @param {string} name - User's name
+ * @param {string} car - Car information
+ * @param {boolean} isActive - Whether the user is active
+ * @param {boolean} validPayment - Whether payment is valid
+ * @returns {Promise<{id: string, existed: boolean}>}
+ */
+async function upsertMember(id, name, car, isActive, validPayment) {
+  try {
+    const docRef = doc(db, "users", id);
+    const docSnap = await getDoc(docRef);
+
+    if (docSnap.exists()) {
+      await updateDoc(docRef, { name, car, isActive, validPayment });
+      return { id, existed: true };
+    }
+
+    await setDoc(docRef, { name, car, isActive, validPayment, notes: '', email: '' });
+    return { id, existed: false };
+  } catch (error) {
+    console.error("Error upserting document:", error);
+    throw error;
+  }
+}
+
+/**
  * Reads a single user document from the database
  * @param {string} id - The user ID to retrieve
  * @returns {Promise<Object|null>} User data object or null if not found
@@ -166,6 +194,7 @@ async function deleteMember(id) {
 
 export {
   createMember,
+  upsertMember,
   getMember,
   getAllMembers,
   getMembersByPaymentStatus,
