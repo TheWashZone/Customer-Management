@@ -1,3 +1,4 @@
+/* global describe, test, expect, beforeEach, afterEach */
 import { beforeAll, afterAll, describe, expect, test, vi } from 'vitest';
 import {
   getFirestore,
