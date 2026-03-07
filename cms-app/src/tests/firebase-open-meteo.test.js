@@ -1,4 +1,3 @@
-/* eslint-env vitest */
 import { describe, expect, test, vi, beforeEach, afterEach } from 'vitest';
 import { fetchDailyForecast, weatherCodeToDescription } from '../api/open-meteo.js';
 

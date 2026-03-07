@@ -28,6 +28,13 @@ export default [
         ...globals.browser,
         ...globals.node,
         ...vitest.environments.env.globals,
+        // Add Jest globals here to avoid eslint-env
+        jest: "readonly",
+        describe: "readonly",
+        test: "readonly",
+        expect: "readonly",
+        beforeEach: "readonly",
+        afterEach: "readonly",
       },
       parserOptions: {
         ecmaFeatures: { jsx: true },
@@ -38,20 +45,33 @@ export default [
       "react-hooks": reactHooks,
       vitest,
     },
-    // Start from recommended rule sets
     rules: {
       ...js.configs.recommended.rules,
       ...reactPlugin.configs.flat.recommended.rules,
       ...reactHooks.configs.recommended.rules,
 
-      // Common React tweaks
-      "react/react-in-jsx-scope": "off",     // not needed with the new JSX transform
-      "react/prop-types": "off",             // if you don't use PropTypes
+      "react/react-in-jsx-scope": "off",
+      "react/prop-types": "off",
       "no-unused-vars": ["warn", { argsIgnorePattern: "^_", varsIgnorePattern: "^_" }],
-      "no-console": ["warn", { allow: ["warn", "error"] }],
+      "no-console": ["warn", { allow: ["warn", "error", "log"] }], // allow console.log too
     },
     settings: {
       react: { version: "detect" },
+    },
+  },
+
+  // 3) Test files overrides (optional, more explicit)
+  {
+    files: ["src/tests/**/*.{js,jsx}"],
+    languageOptions: {
+      globals: {
+        jest: "readonly",
+        describe: "readonly",
+        test: "readonly",
+        expect: "readonly",
+        beforeEach: "readonly",
+        afterEach: "readonly",
+      },
     },
   },
 ];

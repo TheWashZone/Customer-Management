@@ -1,4 +1,3 @@
-/* eslint-env vitest */
 import { beforeAll, afterAll, describe, expect, test, vi } from 'vitest';
 import {
   getFirestore,

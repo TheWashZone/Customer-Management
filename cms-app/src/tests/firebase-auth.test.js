@@ -1,4 +1,3 @@
-/* eslint-env vitest */
 import { afterAll, describe, test, expect } from "vitest";
 import {
   getAuth,
