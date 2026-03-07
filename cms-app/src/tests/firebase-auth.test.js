@@ -1,4 +1,3 @@
-/* global describe, test, expect, beforeEach, afterEach */
 import { afterAll, describe, test, expect } from "vitest";
 import {
   getAuth,

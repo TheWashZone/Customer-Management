@@ -1,4 +1,3 @@
-/* global describe, test, expect, beforeEach, afterEach */
 import { describe, test, expect, beforeEach, vi } from 'vitest';
 import { render, screen, waitFor, renderHook, act } from '@testing-library/react';
 import React from 'react';

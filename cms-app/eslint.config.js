@@ -18,6 +18,15 @@ export default [
     ],
   },
 
+   {
+    files: ["src/tests/**/*.js", "src/tests/**/*.jsx"],
+    languageOptions: {
+      globals: {
+        ...globals.jest,
+      },
+    },
+  },
+
   // 2) Base JS rules
   {
     files: ["**/*.{js,jsx,mjs,cjs}"],
