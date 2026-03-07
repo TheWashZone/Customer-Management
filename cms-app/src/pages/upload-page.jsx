@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { useMembers } from '../context/MembersContext';
 import { uploadCustomerRecordsFromFile } from '../utils/excel-upload';
 import HamburgerMenu from '../components/HamburgerMenu';
+import * as XLSX from 'xlsx'; // Add this import
+import { fetchAllCustomers, formatCustomerForExport } from '../lib/firebase/customerService'; // Add this import
 
 function UploadPage() {
   const { createMember } = useMembers();
@@ -10,21 +12,47 @@ function UploadPage() {
   const [selectedFile, setSelectedFile] = useState(null);
   const [uploadResults, setUploadResults] = useState(null);
 
+  // Add this new function for downloading Excel
+  const handleDownloadExcel = async () => {
+    try {
+      setMessage('Downloading customer data...');
+      const customers = await fetchAllCustomers();
+      
+      if (!customers || customers.length === 0) {
+        setMessage('No customer data available');
+        return;
+      }
+
+      const formattedCustomers = customers.map(formatCustomerForExport);
+      const worksheet = XLSX.utils.json_to_sheet(formattedCustomers);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, 'Customers');
+      
+      const date = new Date();
+      const dateString = `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}-${date.getDate().toString().padStart(2, '0')}`;
+      
+      XLSX.writeFile(workbook, `customers_${dateString}.xlsx`);
+      setMessage('Download complete!');
+    } catch (error) {
+      setMessage(`Error downloading: ${error.message}`);
+      console.error('Download failed:', error);
+    }
+  };
+
   const handleCreateMember = async () => {
     try {
       setMessage('Creating member...');
 
       const userId = await createMember(
-        'B000', // id - unique timestamp-based ID
-        "Zachary Kim",            // name
-        "2022 Hyundai Tucson, blue",   // car
-        true,                  // isActive
-        true,                  // validPayment
-        "Test member created from test page" // notes
+        'B000',
+        "Zachary Kim",
+        "2022 Hyundai Tucson, blue",
+        true,
+        true,
+        "Test member created from test page"
       );
 
       setMessage(`Successfully created member with ID: ${userId}`);
-      // console.log('Created member:', userId);
     } catch (error) {
       setMessage(`Error: ${error.message}`);
       console.error('Error creating member:', error);
@@ -54,7 +82,6 @@ function UploadPage() {
 
       setUploadResults(results);
       setMessage('Upload complete! See results below.');
-      // console.log('Upload results:', results);
     } catch (error) {
       setMessage(`Error uploading Excel: ${error.message}`);
       console.error('Error uploading Excel:', error);
@@ -141,10 +168,28 @@ function UploadPage() {
             border: 'none',
             borderRadius: '4px',
             cursor: selectedFile ? 'pointer' : 'not-allowed',
-            minWidth: '150px'
+            minWidth: '150px',
+            marginRight: '10px' // Add margin to separate buttons
           }}
         >
           Upload Excel File
+        </button>
+
+        {/* Add this button for downloading Excel */}
+        <button
+          onClick={handleDownloadExcel}
+          style={{
+            padding: '10px 20px',
+            fontSize: '16px',
+            backgroundColor: '#4CAF50',
+            color: 'white',
+            border: 'none',
+            borderRadius: '4px',
+            cursor: 'pointer',
+            minWidth: '150px'
+          }}
+        >
+          Download Excel
         </button>
       </div>
 
