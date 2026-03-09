@@ -5,34 +5,13 @@ import { seedDemoVisits, clearDemoVisits } from '../api/analytics-crud';
 import HamburgerMenu from '../components/HamburgerMenu';
 
 function UploadPage() {
-  const { createMember, upsertMember, deleteMember, members } = useMembers();
+  const { upsertMember, deleteMember, members } = useMembers();
 
   const [message, setMessage] = useState('');
   const [selectedFile, setSelectedFile] = useState(null);
   const [uploadResults, setUploadResults] = useState(null);
   const [demoMessage, setDemoMessage] = useState('');
   const [demoLoading, setDemoLoading] = useState(false);
-
-  const handleCreateMember = async () => {
-    try {
-      setMessage('Creating member...');
-
-      const userId = await createMember(
-        'B000', // id - unique timestamp-based ID
-        "Zachary Kim",            // name
-        "2022 Hyundai Tucson, blue",   // car
-        true,                  // isActive
-        true,                  // validPayment
-        "Test member created from test page" // notes
-      );
-
-      setMessage(`Successfully created member with ID: ${userId}`);
-      // console.log('Created member:', userId);
-    } catch (error) {
-      setMessage(`Error: ${error.message}`);
-      console.error('Error creating member:', error);
-    }
-  };
 
   const handleSeedDemoData = async () => {
     if (!window.confirm('This will overwrite the past 7 days of visit data with demo logs. Continue?')) return;
@@ -107,31 +86,6 @@ function UploadPage() {
     <div style={{ padding: '20px', maxWidth: '1000px', margin: '0 auto' }}>
       <HamburgerMenu />
       <h1>Test Page</h1>
-
-      <div style={{ 
-        marginBottom: '30px', 
-        padding: '20px', 
-        border: '1px solid #e0e0e0', 
-        borderRadius: '8px',
-        backgroundColor: '#fafafa'
-      }}>
-        <h2 style={{ marginTop: 0 }}>Single Member Test</h2>
-        <button
-          onClick={handleCreateMember}
-          style={{
-            padding: '10px 20px',
-            fontSize: '16px',
-            backgroundColor: '#4CAF50',
-            color: 'white',
-            border: 'none',
-            borderRadius: '4px',
-            cursor: 'pointer',
-            minWidth: '150px'
-          }}
-        >
-          Create Test Member
-        </button>
-      </div>
 
       <div style={{ 
         marginBottom: '30px', 
