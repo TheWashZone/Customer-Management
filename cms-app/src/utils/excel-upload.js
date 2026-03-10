@@ -120,8 +120,8 @@ export async function uploadCustomerRecordsFromFile(file, { upsertMember, delete
             return;
           }
 
-          uploadedIds.add(id);
           await upsertMember(id, name, car, isActive, validPayment);
+          uploadedIds.add(id);
           results.successful++;
         } catch (error) {
           results.failed++;
@@ -143,7 +143,9 @@ export async function uploadCustomerRecordsFromFile(file, { upsertMember, delete
           await deleteMember(id);
           results.pruned++;
         } catch (error) {
-          results.errors.push({ id, error: `Failed to prune member ${id}: ${error.message}` });
+          // Include a `row` property so the UI, which expects `err.row`, can render this error cleanly.
+          // We use the member `id` as the row identifier to avoid "Row undefined" in the display.
+          results.errors.push({ row: id, id, error: `Failed to prune member ${id}: ${error.message}` });
         }
       });
       await Promise.all(prunePromises);
@@ -212,8 +214,8 @@ export async function uploadCustomerRecords(filePath, { upsertMember, deleteMemb
             return;
           }
 
-          uploadedIds.add(id);
           await upsertMember(id, name, car, isActive, validPayment);
+          uploadedIds.add(id);
           results.successful++;
         } catch (error) {
           results.failed++;
@@ -234,7 +236,7 @@ export async function uploadCustomerRecords(filePath, { upsertMember, deleteMemb
           await deleteMember(id);
           results.pruned++;
         } catch (error) {
-          results.errors.push({ id, error: `Failed to prune member ${id}: ${error.message}` });
+          results.errors.push({ row: null, id, error: `Failed to prune member ${id}: ${error.message}` });
         }
       });
       await Promise.all(prunePromises);
