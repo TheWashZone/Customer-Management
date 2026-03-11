@@ -27,6 +27,7 @@ connectAuthEmulator(auth, "http://127.0.0.1:9099", { disableWarnings: true });
 // Import all functions from firebase-users.js
 import {
   createMember,
+  upsertMember,
   getMember,
   getAllMembers,
   getMembersByPaymentStatus,
@@ -313,6 +314,50 @@ describe("User CRUD Operations (emulator)", () => {
       );
 
       consoleErrorSpy.mockRestore();
+    });
+  });
+
+  describe("upsertMember", () => {
+    test("creates a new member with empty notes and email when none exists", async () => {
+      const userId = uniqId("upsert_new");
+
+      const result = await upsertMember(userId, "New Member", "Ford Focus", true, true);
+
+      expect(result).toEqual({ id: userId, existed: false });
+
+      const user = await getMember(userId);
+      expect(user).toEqual({
+        id: userId,
+        name: "New Member",
+        car: "Ford Focus",
+        isActive: true,
+        validPayment: true,
+        notes: '',
+        email: '',
+      });
+
+      await cleanupTestDoc(userId);
+    });
+
+    test("updates existing member's Excel fields and preserves notes and email", async () => {
+      const userId = uniqId("upsert_existing");
+
+      await createMember(userId, "Original Name", "Original Car", true, true, "Keep this note", "keep@example.com");
+
+      const result = await upsertMember(userId, "Updated Name", "Updated Car", false, false);
+
+      expect(result).toEqual({ id: userId, existed: true });
+
+      const user = await getMember(userId);
+      expect(user.name).toBe("Updated Name");
+      expect(user.car).toBe("Updated Car");
+      expect(user.isActive).toBe(false);
+      expect(user.validPayment).toBe(false);
+      // Cache-only fields must be preserved
+      expect(user.notes).toBe("Keep this note");
+      expect(user.email).toBe("keep@example.com");
+
+      await cleanupTestDoc(userId);
     });
   });
 

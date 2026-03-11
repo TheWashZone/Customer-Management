@@ -12,6 +12,7 @@ vi.mock('../api/firebase-crud', () => ({
   getAllMembers: vi.fn(),
   getMember: vi.fn(),
   createMember: vi.fn(),
+  upsertMember: vi.fn(),
   updateMember: vi.fn(),
   deleteMember: vi.fn(),
 }));
@@ -84,6 +85,7 @@ describe('MembersContext', () => {
       expect(result.current).toHaveProperty('error');
       expect(result.current).toHaveProperty('getMember');
       expect(result.current).toHaveProperty('createMember');
+      expect(result.current).toHaveProperty('upsertMember');
       expect(result.current).toHaveProperty('updateMember');
       expect(result.current).toHaveProperty('deleteMember');
       expect(result.current).toHaveProperty('refreshMembers');
@@ -416,6 +418,100 @@ describe('MembersContext', () => {
       await expect(act(async () => {
         await result.current.deleteMember('B001');
       })).rejects.toThrow('Failed to delete');
+
+      consoleErrorSpy.mockRestore();
+    });
+  });
+
+  describe('upsertMember', () => {
+    test('updates existing member and preserves notes and email from cache', async () => {
+      const membersWithEmail = [
+        { id: 'B001', name: 'Alice Smith', car: 'Honda', isActive: true, validPayment: true, notes: 'VIP', email: 'alice@example.com' },
+        ...mockMembers.slice(1),
+      ];
+      firebaseCrud.getAllMembers.mockResolvedValue(membersWithEmail);
+      firebaseCrud.upsertMember.mockResolvedValue({ existed: true });
+
+      const wrapper = ({ children }) => (
+        <MembersProvider user={mockUser}>{children}</MembersProvider>
+      );
+
+      const { result } = renderHook(() => useMembers(), { wrapper });
+
+      await waitFor(() => {
+        expect(result.current.isLoading).toBe(false);
+      });
+
+      let returnValue;
+      await act(async () => {
+        returnValue = await result.current.upsertMember('B001', 'Alice Updated', 'Tesla', false, false);
+      });
+
+      expect(returnValue).toEqual({ id: 'B001', existed: true });
+      expect(firebaseCrud.upsertMember).toHaveBeenCalledWith('B001', 'Alice Updated', 'Tesla', false, false);
+
+      const updatedMember = result.current.members.find(m => m.id === 'B001');
+      expect(updatedMember.name).toBe('Alice Updated');
+      expect(updatedMember.car).toBe('Tesla');
+      expect(updatedMember.isActive).toBe(false);
+      expect(updatedMember.validPayment).toBe(false);
+      // Cache-only fields must not be overwritten
+      expect(updatedMember.notes).toBe('VIP');
+      expect(updatedMember.email).toBe('alice@example.com');
+    });
+
+    test('adds new member to cache with empty notes and email', async () => {
+      firebaseCrud.getAllMembers.mockResolvedValue(mockMembers);
+      firebaseCrud.upsertMember.mockResolvedValue({ existed: false });
+
+      const wrapper = ({ children }) => (
+        <MembersProvider user={mockUser}>{children}</MembersProvider>
+      );
+
+      const { result } = renderHook(() => useMembers(), { wrapper });
+
+      await waitFor(() => {
+        expect(result.current.isLoading).toBe(false);
+      });
+
+      const initialLength = result.current.members.length;
+
+      let returnValue;
+      await act(async () => {
+        returnValue = await result.current.upsertMember('B999', 'New Guy', 'Nissan', true, true);
+      });
+
+      expect(returnValue).toEqual({ id: 'B999', existed: false });
+      expect(result.current.members).toHaveLength(initialLength + 1);
+      expect(result.current.members).toContainEqual({
+        id: 'B999',
+        name: 'New Guy',
+        car: 'Nissan',
+        isActive: true,
+        validPayment: true,
+        notes: '',
+        email: '',
+      });
+    });
+
+    test('throws error when upsertMember fails', async () => {
+      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      firebaseCrud.getAllMembers.mockResolvedValue(mockMembers);
+      firebaseCrud.upsertMember.mockRejectedValue(new Error('Failed to upsert'));
+
+      const wrapper = ({ children }) => (
+        <MembersProvider user={mockUser}>{children}</MembersProvider>
+      );
+
+      const { result } = renderHook(() => useMembers(), { wrapper });
+
+      await waitFor(() => {
+        expect(result.current.isLoading).toBe(false);
+      });
+
+      await expect(act(async () => {
+        await result.current.upsertMember('B001', 'Alice Updated', 'Tesla', true, true);
+      })).rejects.toThrow('Failed to upsert');
 
       consoleErrorSpy.mockRestore();
     });

@@ -1,4 +1,4 @@
-import { doc, setDoc, getDoc, updateDoc, deleteDoc, collection, getDocs, query, where } from "firebase/firestore";
+import { doc, setDoc, getDoc, updateDoc, deleteDoc, collection, getDocs, query, where, runTransaction } from "firebase/firestore";
 import { db } from "./firebaseconfig";
 
 /**
@@ -47,15 +47,18 @@ async function createMember(id, name, car, isActive, validPayment, notes, email 
 async function upsertMember(id, name, car, isActive, validPayment) {
   try {
     const docRef = doc(db, "users", id);
-    const docSnap = await getDoc(docRef);
 
-    if (docSnap.exists()) {
-      await updateDoc(docRef, { name, car, isActive, validPayment });
-      return { id, existed: true };
-    }
+    const existed = await runTransaction(db, async (transaction) => {
+      const docSnap = await transaction.get(docRef);
+      if (docSnap.exists()) {
+        transaction.update(docRef, { name, car, isActive, validPayment });
+        return true;
+      }
+      transaction.set(docRef, { name, car, isActive, validPayment, notes: '', email: '' });
+      return false;
+    });
 
-    await setDoc(docRef, { name, car, isActive, validPayment, notes: '', email: '' });
-    return { id, existed: false };
+    return { id, existed };
   } catch (error) {
     console.error("Error upserting document:", error);
     throw error;

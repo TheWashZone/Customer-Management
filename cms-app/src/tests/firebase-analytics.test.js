@@ -29,7 +29,9 @@ import {
   logDailyVisit,
   getDailyVisitCount,
   getDailyVisitsInRange,
-  cleanupOldVisitData
+  cleanupOldVisitData,
+  seedDemoVisits,
+  clearDemoVisits,
 } from "../api/analytics-crud.js";
 
 // Authenticate a test user before running tests
@@ -64,6 +66,19 @@ function getDateString(daysOffset = 0) {
   const date = new Date();
   date.setDate(date.getDate() + daysOffset);
   return date.toISOString().split('T')[0];
+}
+
+// Returns the UTC date strings that seedDemoVisits(numDays) will write,
+// mirroring its setUTCDate logic so cleanup targets the correct documents.
+function getSeedDates(numDays) {
+  const today = new Date();
+  const dates = [];
+  for (let i = numDays - 1; i >= 0; i--) {
+    const date = new Date(today);
+    date.setUTCDate(today.getUTCDate() - i);
+    dates.push(date.toISOString().split('T')[0]);
+  }
+  return dates;
 }
 
 // Helper function to clean up test visit documents
@@ -519,6 +534,115 @@ describe("Analytics CRUD Operations (emulator)", () => {
 
       expect(typeof deletedCount).toBe('number');
       expect(deletedCount).toBeGreaterThanOrEqual(0);
+    });
+  });
+
+  describe("seedDemoVisits", () => {
+    test("returns the number of days seeded", async () => {
+      const numDays = 3;
+      const dates = getSeedDates(numDays);
+
+      for (const date of dates) await cleanupTestVisitDoc(date);
+
+      const result = await seedDemoVisits(numDays, 10);
+
+      expect(result).toBe(numDays);
+
+      for (const date of dates) await cleanupTestVisitDoc(date);
+    });
+
+    test("creates a document for each day in the range ending today", async () => {
+      const numDays = 3;
+      const dates = getSeedDates(numDays);
+
+      for (const date of dates) await cleanupTestVisitDoc(date);
+
+      await seedDemoVisits(numDays, 10);
+
+      for (const date of dates) {
+        const visitData = await getDailyVisitCount(date);
+        expect(visitData).not.toBeNull();
+        expect(visitData.count).toBeGreaterThan(0);
+      }
+
+      for (const date of dates) await cleanupTestVisitDoc(date);
+    });
+
+    test("each seeded document has all required breakdown fields", async () => {
+      const [today] = getSeedDates(1);
+      await cleanupTestVisitDoc(today);
+
+      await seedDemoVisits(1, 20);
+
+      const visitData = await getDailyVisitCount(today);
+      expect(visitData).not.toBeNull();
+
+      const expectedFields = [
+        'count', 'subscription', 'loyalty', 'prepaid', 'cash',
+        'subB', 'subD', 'subU',
+        'preB', 'preD', 'preU',
+        'loyB', 'loyD', 'loyU',
+        'cashB', 'cashD', 'cashU',
+        'date', 'createdAt', 'lastUpdated',
+      ];
+      for (const field of expectedFields) {
+        expect(visitData).toHaveProperty(field);
+      }
+
+      await cleanupTestVisitDoc(today);
+    });
+
+    test("customer type counts sum to total count", async () => {
+      const [today] = getSeedDates(1);
+      await cleanupTestVisitDoc(today);
+
+      await seedDemoVisits(1, 20);
+
+      const visitData = await getDailyVisitCount(today);
+      const typeSum = visitData.subscription + visitData.loyalty + visitData.prepaid + visitData.cash;
+      expect(typeSum).toBe(visitData.count);
+
+      await cleanupTestVisitDoc(today);
+    });
+
+    test("handles numDays=0 by creating no documents and returning 0", async () => {
+      const result = await seedDemoVisits(0);
+
+      expect(result).toBe(0);
+    });
+  });
+
+  describe("clearDemoVisits", () => {
+    test("returns the number of days cleared", async () => {
+      const numDays = 3;
+      const dates = getSeedDates(numDays);
+
+      await seedDemoVisits(numDays, 5);
+
+      const result = await clearDemoVisits(numDays);
+
+      expect(result).toBe(numDays);
+
+      for (const date of dates) await cleanupTestVisitDoc(date);
+    });
+
+    test("removes all seeded documents from Firestore", async () => {
+      const numDays = 3;
+      const dates = getSeedDates(numDays);
+
+      await seedDemoVisits(numDays, 5);
+      await clearDemoVisits(numDays);
+
+      for (const date of dates) {
+        const visitData = await getDailyVisitCount(date);
+        expect(visitData).toBeNull();
+      }
+    });
+
+    test("handles numDays=0 by deleting nothing and returning 0", async () => {
+      const result = await clearDemoVisits(0);
+
+      expect(result).toBe(0);
     });
   });
 
