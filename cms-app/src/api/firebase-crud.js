@@ -1,4 +1,4 @@
-import { doc, setDoc, getDoc, updateDoc, deleteDoc, collection, getDocs, query, where } from "firebase/firestore";
+import { doc, setDoc, getDoc, updateDoc, deleteDoc, collection, getDocs, query, where, runTransaction } from "firebase/firestore";
 import { db } from "./firebaseconfig";
 
 /**
@@ -30,6 +30,37 @@ async function createMember(id, name, car, isActive, validPayment, notes, email 
     console.error("Error code:", error.code);
     console.error("Error message:", error.message);
     console.error("Error stack:", error.stack);
+    throw error;
+  }
+}
+
+/**
+ * Upserts a member document, only writing Excel-sourced fields.
+ * If the document already exists, notes and email are preserved.
+ * @param {string} id - The user ID
+ * @param {string} name - User's name
+ * @param {string} car - Car information
+ * @param {boolean} isActive - Whether the user is active
+ * @param {boolean} validPayment - Whether payment is valid
+ * @returns {Promise<{id: string, existed: boolean}>}
+ */
+async function upsertMember(id, name, car, isActive, validPayment) {
+  try {
+    const docRef = doc(db, "users", id);
+
+    const existed = await runTransaction(db, async (transaction) => {
+      const docSnap = await transaction.get(docRef);
+      if (docSnap.exists()) {
+        transaction.update(docRef, { name, car, isActive, validPayment });
+        return true;
+      }
+      transaction.set(docRef, { name, car, isActive, validPayment, notes: '', email: '' });
+      return false;
+    });
+
+    return { id, existed };
+  } catch (error) {
+    console.error("Error upserting document:", error);
     throw error;
   }
 }
@@ -166,6 +197,7 @@ async function deleteMember(id) {
 
 export {
   createMember,
+  upsertMember,
   getMember,
   getAllMembers,
   getMembersByPaymentStatus,

@@ -3,6 +3,7 @@ import {
   getAllMembers as fetchAllMembers,
   getMember as getMemberFromDB,
   createMember as createMemberInDB,
+  upsertMember as upsertMemberInDB,
   updateMember as updateMemberInDB,
   deleteMember as deleteMemberInDB,
 } from '../api/firebase-crud';
@@ -155,20 +156,41 @@ export const MembersProvider = ({ children, user }) => {
     try {
       await createMemberInDB(id, name, car, isActive, validPayment, notes, email);
 
-      const newMember = {
-        id,
-        name,
-        car,
-        isActive,
-        validPayment,
-        notes,
-        email,
-      };
+      const newMember = { id, name, car, isActive, validPayment, notes, email };
 
-      setMembers((prev) => [...prev, newMember]);
+      setMembers((prev) => {
+        const idx = prev.findIndex((m) => m.id === id);
+        if (idx !== -1) {
+          const updated = [...prev];
+          updated[idx] = newMember;
+          return updated;
+        }
+        return [...prev, newMember];
+      });
       return id;
     } catch (err) {
       console.error('Failed to create member:', err);
+      throw err;
+    }
+  }, []);
+
+  const upsertMember = useCallback(async (id, name, car, isActive, validPayment) => {
+    try {
+      const { existed } = await upsertMemberInDB(id, name, car, isActive, validPayment);
+      const excelFields = { id, name, car, isActive, validPayment };
+
+      setMembers((prev) => {
+        const idx = prev.findIndex((m) => m.id === id);
+        if (idx !== -1) {
+          const updated = [...prev];
+          updated[idx] = { ...updated[idx], ...excelFields };
+          return updated;
+        }
+        return [...prev, { ...excelFields, notes: '', email: '' }];
+      });
+      return { id, existed };
+    } catch (err) {
+      console.error('Failed to upsert member:', err);
       throw err;
     }
   }, []);
@@ -209,6 +231,7 @@ export const MembersProvider = ({ children, user }) => {
     try {
       const data = await fetchAllMembers();
       setMembers(data);
+      return data;
     } catch (err) {
       console.error('Failed to refresh members:', err);
       setError('Failed to refresh members.');
@@ -413,6 +436,7 @@ export const MembersProvider = ({ children, user }) => {
     error,
     getMember,
     createMember,
+    upsertMember,
     updateMember,
     deleteMember,
     refreshMembers,

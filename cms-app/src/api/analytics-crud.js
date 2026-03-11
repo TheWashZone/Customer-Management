@@ -16,7 +16,7 @@
  * @module api/analytics-crud
  */
 
-import { doc, getDoc, collection, query, where, getDocs, deleteDoc, Timestamp, serverTimestamp, runTransaction } from "firebase/firestore";
+import { doc, getDoc, setDoc, collection, query, where, getDocs, deleteDoc, Timestamp, serverTimestamp, runTransaction } from "firebase/firestore";
 import { db } from "./firebaseconfig";
 
 /**
@@ -265,9 +265,100 @@ async function cleanupOldVisitData() {
   }
 }
 
+/**
+ * Seeds the dailyVisits collection with realistic demo data for the past numDays days.
+ * Overwrites any existing data for those dates. Intended for demo/testing purposes only.
+ *
+ * Distributions used:
+ * - Customer types: ~40% subscription, ~30% loyalty, ~20% prepaid, ~10% cash
+ * - Wash types: ~50% Basic, ~30% Deluxe, ~20% Unlimited
+ * - Daily visit count varies ±30% around visitsPerDay for a natural look
+ *
+ * @param {number} numDays - Number of past days to seed (default: 7)
+ * @param {number} visitsPerDay - Approximate visits per day before variance (default: 30)
+ * @returns {Promise<number>} Number of days seeded
+ */
+async function seedDemoVisits(numDays = 7, visitsPerDay = 30) {
+  // Weighted arrays for realistic distributions
+  const customerTypes = [
+    'subscription', 'subscription', 'subscription', 'subscription',
+    'loyalty', 'loyalty', 'loyalty',
+    'prepaid', 'prepaid',
+    'cash'
+  ];
+  const washTypes = ['B', 'B', 'B', 'B', 'B', 'D', 'D', 'D', 'U', 'U'];
+
+  const today = new Date();
+
+  for (let i = numDays - 1; i >= 0; i--) {
+    const date = new Date(today);
+    date.setUTCDate(today.getUTCDate() - i);
+    const dateString = date.toISOString().split('T')[0];
+    const dayStart = new Date(dateString + 'T00:00:00.000Z');
+    const dayTimestamp = Timestamp.fromDate(dayStart);
+
+    // Vary daily count ±30% for a natural look
+    const variance = 1 + (Math.random() * 0.6 - 0.3);
+    const dailyCount = Math.round(visitsPerDay * variance);
+
+    const counts = {
+      date: dayTimestamp,
+      createdAt: dayTimestamp,
+      lastUpdated: dayTimestamp,
+      count: 0,
+      subscription: 0, loyalty: 0, prepaid: 0, cash: 0,
+      subB: 0, subD: 0, subU: 0,
+      preB: 0, preD: 0, preU: 0,
+      loyB: 0, loyD: 0, loyU: 0,
+      cashB: 0, cashD: 0, cashU: 0,
+    };
+
+    for (let j = 0; j < dailyCount; j++) {
+      const customerType = customerTypes[Math.floor(Math.random() * customerTypes.length)];
+      const washType = washTypes[Math.floor(Math.random() * washTypes.length)];
+
+      counts.count++;
+      counts[customerType]++;
+
+      if (customerType === 'subscription') counts['sub' + washType]++;
+      else if (customerType === 'loyalty') counts['loy' + washType]++;
+      else if (customerType === 'prepaid') counts['pre' + washType]++;
+      else if (customerType === 'cash') counts['cash' + washType]++;
+    }
+
+    await setDoc(doc(db, "dailyVisits", dateString), counts);
+  }
+
+  return numDays;
+}
+
+/**
+ * Deletes seeded demo visit data for today and the past numDays-1 days.
+ * Mirrors the range written by seedDemoVisits.
+ *
+ * @param {number} numDays - Number of days to clear (default: 7, should match seed call)
+ * @returns {Promise<number>} Number of days cleared
+ */
+async function clearDemoVisits(numDays = 7) {
+  const today = new Date();
+  const deletePromises = [];
+
+  for (let i = 0; i < numDays; i++) {
+    const date = new Date(today);
+    date.setUTCDate(today.getUTCDate() - i);
+    const dateString = date.toISOString().split('T')[0];
+    deletePromises.push(deleteDoc(doc(db, "dailyVisits", dateString)));
+  }
+
+  await Promise.all(deletePromises);
+  return numDays;
+}
+
 export {
   logDailyVisit,
   getDailyVisitCount,
   getDailyVisitsInRange,
-  cleanupOldVisitData
+  cleanupOldVisitData,
+  seedDemoVisits,
+  clearDemoVisits
 };

@@ -17,7 +17,7 @@
 
 /* Display box */
 .display-box {
-  width: 190px;
+  width: 100%;
   height: 40px;
   background-color: #c8deef;
   border-radius: 6px;
