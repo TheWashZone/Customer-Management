@@ -120,8 +120,8 @@ export async function uploadCustomerRecordsFromFile(file, { upsertMember, delete
             return;
           }
 
-          await upsertMember(id, name, car, isActive, validPayment);
           uploadedIds.add(id);
+          await upsertMember(id, name, car, isActive, validPayment);
           results.successful++;
         } catch (error) {
           results.failed++;
@@ -135,8 +135,10 @@ export async function uploadCustomerRecordsFromFile(file, { upsertMember, delete
 
     await Promise.all(promises);
 
-    // Prune members that exist in the DB but are absent from the new file
-    if (deleteMember && existingMemberIds.length > 0) {
+    // Prune members that exist in the DB but are absent from the new file.
+    // Skip pruning if any row failed — uploadedIds may be incomplete, and pruning
+    // under partial failure risks deleting members that simply had a transient write error.
+    if (deleteMember && existingMemberIds.length > 0 && results.failed === 0) {
       const staleIds = existingMemberIds.filter((id) => !uploadedIds.has(id));
       const prunePromises = staleIds.map(async (id) => {
         try {
@@ -214,8 +216,8 @@ export async function uploadCustomerRecords(filePath, { upsertMember, deleteMemb
             return;
           }
 
-          await upsertMember(id, name, car, isActive, validPayment);
           uploadedIds.add(id);
+          await upsertMember(id, name, car, isActive, validPayment);
           results.successful++;
         } catch (error) {
           results.failed++;
@@ -229,7 +231,7 @@ export async function uploadCustomerRecords(filePath, { upsertMember, deleteMemb
 
     await Promise.all(promises);
 
-    if (deleteMember && existingMemberIds.length > 0) {
+    if (deleteMember && existingMemberIds.length > 0 && results.failed === 0) {
       const staleIds = existingMemberIds.filter((id) => !uploadedIds.has(id));
       const prunePromises = staleIds.map(async (id) => {
         try {

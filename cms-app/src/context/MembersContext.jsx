@@ -231,6 +231,7 @@ export const MembersProvider = ({ children, user }) => {
     try {
       const data = await fetchAllMembers();
       setMembers(data);
+      return data;
     } catch (err) {
       console.error('Failed to refresh members:', err);
       setError('Failed to refresh members.');

@@ -5,7 +5,7 @@ import { seedDemoVisits, clearDemoVisits } from '../api/analytics-crud';
 import HamburgerMenu from '../components/HamburgerMenu';
 
 function UploadPage() {
-  const { upsertMember, deleteMember, members } = useMembers();
+  const { upsertMember, deleteMember, members, isLoading, refreshMembers } = useMembers();
 
   const [message, setMessage] = useState('');
   const [selectedFile, setSelectedFile] = useState(null);
@@ -58,7 +58,11 @@ function UploadPage() {
       return;
     }
 
-    const willPrune = members.length > 0;
+    // Fetch fresh member list so existingMemberIds is accurate for pruning,
+    // regardless of whether the cache finished loading or has gone stale.
+    const freshMembers = await refreshMembers() ?? [];
+
+    const willPrune = freshMembers.length > 0;
     if (willPrune && !window.confirm(
       'Uploading a new file will update existing members, add new ones, and remove any members not present in the file. Continue?'
     )) return;
@@ -67,7 +71,7 @@ function UploadPage() {
       setMessage('Syncing members from Excel file...');
       setUploadResults(null);
 
-      const existingMemberIds = members.map((m) => m.id);
+      const existingMemberIds = freshMembers.map((m) => m.id);
       const results = await uploadCustomerRecordsFromFile(selectedFile, {
         upsertMember,
         deleteMember,
@@ -128,15 +132,15 @@ function UploadPage() {
 
         <button
           onClick={handleExcelUpload}
-          disabled={!selectedFile}
+          disabled={!selectedFile || isLoading}
           style={{
             padding: '10px 20px',
             fontSize: '16px',
-            backgroundColor: selectedFile ? '#2196F3' : '#ccc',
+            backgroundColor: selectedFile && !isLoading ? '#2196F3' : '#ccc',
             color: 'white',
             border: 'none',
             borderRadius: '4px',
-            cursor: selectedFile ? 'pointer' : 'not-allowed',
+            cursor: selectedFile && !isLoading ? 'pointer' : 'not-allowed',
             minWidth: '150px'
           }}
         >
@@ -144,58 +148,60 @@ function UploadPage() {
         </button>
       </div>
 
-      <div style={{
-        marginBottom: '30px',
-        padding: '20px',
-        border: '1px solid #ffe0b2',
-        borderRadius: '8px',
-        backgroundColor: '#fff8f0'
-      }}>
-        <h2 style={{ marginTop: 0 }}>Demo Data</h2>
-        <p style={{ fontSize: '14px', color: '#666', marginBottom: '15px' }}>
-          Seed ~210 randomized visits across the past 7 days to preview analytics graphs under load.
-          Seeding overwrites existing data for those dates.
-        </p>
-        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-          <button
-            onClick={handleSeedDemoData}
-            disabled={demoLoading}
-            style={{
-              padding: '10px 20px',
-              fontSize: '16px',
-              backgroundColor: demoLoading ? '#ccc' : '#FF9800',
-              color: 'white',
-              border: 'none',
-              borderRadius: '4px',
-              cursor: demoLoading ? 'not-allowed' : 'pointer',
-              minWidth: '180px'
-            }}
-          >
-            {demoLoading ? 'Working...' : 'Seed Demo Data (7 days)'}
-          </button>
-          <button
-            onClick={handleClearDemoData}
-            disabled={demoLoading}
-            style={{
-              padding: '10px 20px',
-              fontSize: '16px',
-              backgroundColor: demoLoading ? '#ccc' : '#f44336',
-              color: 'white',
-              border: 'none',
-              borderRadius: '4px',
-              cursor: demoLoading ? 'not-allowed' : 'pointer',
-              minWidth: '180px'
-            }}
-          >
-            Clear Demo Data (7 days)
-          </button>
-        </div>
-        {demoMessage && (
-          <p style={{ marginTop: '15px', fontSize: '14px', fontWeight: 'bold' }}>
-            {demoMessage}
+      {import.meta.env.DEV && (
+        <div style={{
+          marginBottom: '30px',
+          padding: '20px',
+          border: '1px solid #ffe0b2',
+          borderRadius: '8px',
+          backgroundColor: '#fff8f0'
+        }}>
+          <h2 style={{ marginTop: 0 }}>Demo Data <span style={{ fontSize: '14px', color: '#FF9800', fontWeight: 'normal' }}>(dev only)</span></h2>
+          <p style={{ fontSize: '14px', color: '#666', marginBottom: '15px' }}>
+            Seed ~210 randomized visits across the past 7 days to preview analytics graphs under load.
+            Seeding overwrites existing data for those dates.
           </p>
-        )}
-      </div>
+          <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+            <button
+              onClick={handleSeedDemoData}
+              disabled={demoLoading}
+              style={{
+                padding: '10px 20px',
+                fontSize: '16px',
+                backgroundColor: demoLoading ? '#ccc' : '#FF9800',
+                color: 'white',
+                border: 'none',
+                borderRadius: '4px',
+                cursor: demoLoading ? 'not-allowed' : 'pointer',
+                minWidth: '180px'
+              }}
+            >
+              {demoLoading ? 'Working...' : 'Seed Demo Data (7 days)'}
+            </button>
+            <button
+              onClick={handleClearDemoData}
+              disabled={demoLoading}
+              style={{
+                padding: '10px 20px',
+                fontSize: '16px',
+                backgroundColor: demoLoading ? '#ccc' : '#f44336',
+                color: 'white',
+                border: 'none',
+                borderRadius: '4px',
+                cursor: demoLoading ? 'not-allowed' : 'pointer',
+                minWidth: '180px'
+              }}
+            >
+              Clear Demo Data (7 days)
+            </button>
+          </div>
+          {demoMessage && (
+            <p style={{ marginTop: '15px', fontSize: '14px', fontWeight: 'bold' }}>
+              {demoMessage}
+            </p>
+          )}
+        </div>
+      )}
 
       {message && (
         <p style={{ marginTop: '20px', fontSize: '14px', fontWeight: 'bold' }}>
