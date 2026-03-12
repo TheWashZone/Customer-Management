@@ -39,9 +39,9 @@ describe('MembersContext', () => {
   const mockUser = { uid: 'test-user-123', email: 'test@example.com' };
 
   const mockMembers = [
-    { id: 'B001', name: 'Alice Smith', car: 'Honda', isActive: true, validPayment: true, notes: '' },
-    { id: 'D002', name: 'Bob Jones', car: 'Toyota', isActive: true, validPayment: false, notes: 'Payment pending' },
-    { id: 'U003', name: 'Charlie Brown', car: 'Ford', isActive: false, validPayment: true, notes: 'Inactive' },
+    { id: 'B001', name: 'Alice Smith', car: 'Honda', status: 'active', notes: '' },
+    { id: 'D002', name: 'Bob Jones', car: 'Toyota', status: 'payment_needed', notes: 'Payment pending' },
+    { id: 'U003', name: 'Charlie Brown', car: 'Ford', status: 'inactive', notes: 'Inactive' },
   ];
 
   const mockLoyaltyMembers = [
@@ -195,7 +195,7 @@ describe('MembersContext', () => {
     });
 
     test('fetches member from DB if not in cache', async () => {
-      const newMember = { id: 'B999', name: 'New Member', car: 'BMW', isActive: true, validPayment: true, notes: '' };
+      const newMember = { id: 'B999', name: 'New Member', car: 'BMW', status: 'active', notes: '' };
       firebaseCrud.getAllMembers.mockResolvedValue(mockMembers);
       firebaseCrud.getMember.mockResolvedValue(newMember);
 
@@ -220,7 +220,7 @@ describe('MembersContext', () => {
     });
 
     test('adds fetched member to cache', async () => {
-      const newMember = { id: 'B999', name: 'New Member', car: 'BMW', isActive: true, validPayment: true, notes: '' };
+      const newMember = { id: 'B999', name: 'New Member', car: 'BMW', status: 'active', notes: '' };
       firebaseCrud.getAllMembers.mockResolvedValue(mockMembers);
       firebaseCrud.getMember.mockResolvedValue(newMember);
 
@@ -284,18 +284,17 @@ describe('MembersContext', () => {
 
       let memberId;
       await act(async () => {
-        memberId = await result.current.createMember('B123', 'John Doe', 'Toyota', true, true, 'Test member');
+        memberId = await result.current.createMember('B123', 'John Doe', 'Toyota', 'active', 'Test member');
       });
 
       expect(memberId).toBe('B123');
-      expect(firebaseCrud.createMember).toHaveBeenCalledWith('B123', 'John Doe', 'Toyota', true, true, 'Test member', '');
+      expect(firebaseCrud.createMember).toHaveBeenCalledWith('B123', 'John Doe', 'Toyota', 'active', 'Test member', '');
       expect(result.current.members).toHaveLength(initialLength + 1);
       expect(result.current.members).toContainEqual({
         id: 'B123',
         name: 'John Doe',
         car: 'Toyota',
-        isActive: true,
-        validPayment: true,
+        status: 'active',
         notes: 'Test member',
         email: '',
       });
@@ -317,7 +316,7 @@ describe('MembersContext', () => {
       });
 
       await expect(act(async () => {
-        await result.current.createMember('B123', 'John Doe', 'Toyota', true, true, 'Test');
+        await result.current.createMember('B123', 'John Doe', 'Toyota', 'active', 'Test');
       })).rejects.toThrow('Failed to create');
 
       consoleErrorSpy.mockRestore();
@@ -348,7 +347,7 @@ describe('MembersContext', () => {
       const updatedMember = result.current.members.find(m => m.id === 'B001');
       expect(updatedMember.car).toBe('Tesla');
       expect(updatedMember.name).toBe('Alice Updated');
-      expect(updatedMember.isActive).toBe(true); // Other fields unchanged
+      expect(updatedMember.status).toBe('active'); // Other fields unchanged
     });
 
     test('throws error when updateMember fails', async () => {
@@ -426,7 +425,7 @@ describe('MembersContext', () => {
   describe('upsertMember', () => {
     test('updates existing member and preserves notes and email from cache', async () => {
       const membersWithEmail = [
-        { id: 'B001', name: 'Alice Smith', car: 'Honda', isActive: true, validPayment: true, notes: 'VIP', email: 'alice@example.com' },
+        { id: 'B001', name: 'Alice Smith', car: 'Honda', status: 'active', notes: 'VIP', email: 'alice@example.com' },
         ...mockMembers.slice(1),
       ];
       firebaseCrud.getAllMembers.mockResolvedValue(membersWithEmail);
@@ -444,17 +443,16 @@ describe('MembersContext', () => {
 
       let returnValue;
       await act(async () => {
-        returnValue = await result.current.upsertMember('B001', 'Alice Updated', 'Tesla', false, false);
+        returnValue = await result.current.upsertMember('B001', 'Alice Updated', 'Tesla', 'inactive');
       });
 
       expect(returnValue).toEqual({ id: 'B001', existed: true });
-      expect(firebaseCrud.upsertMember).toHaveBeenCalledWith('B001', 'Alice Updated', 'Tesla', false, false);
+      expect(firebaseCrud.upsertMember).toHaveBeenCalledWith('B001', 'Alice Updated', 'Tesla', 'inactive');
 
       const updatedMember = result.current.members.find(m => m.id === 'B001');
       expect(updatedMember.name).toBe('Alice Updated');
       expect(updatedMember.car).toBe('Tesla');
-      expect(updatedMember.isActive).toBe(false);
-      expect(updatedMember.validPayment).toBe(false);
+      expect(updatedMember.status).toBe('inactive');
       // Cache-only fields must not be overwritten
       expect(updatedMember.notes).toBe('VIP');
       expect(updatedMember.email).toBe('alice@example.com');
@@ -478,7 +476,7 @@ describe('MembersContext', () => {
 
       let returnValue;
       await act(async () => {
-        returnValue = await result.current.upsertMember('B999', 'New Guy', 'Nissan', true, true);
+        returnValue = await result.current.upsertMember('B999', 'New Guy', 'Nissan', 'active');
       });
 
       expect(returnValue).toEqual({ id: 'B999', existed: false });
@@ -487,8 +485,7 @@ describe('MembersContext', () => {
         id: 'B999',
         name: 'New Guy',
         car: 'Nissan',
-        isActive: true,
-        validPayment: true,
+        status: 'active',
         notes: '',
         email: '',
       });
@@ -510,7 +507,7 @@ describe('MembersContext', () => {
       });
 
       await expect(act(async () => {
-        await result.current.upsertMember('B001', 'Alice Updated', 'Tesla', true, true);
+        await result.current.upsertMember('B001', 'Alice Updated', 'Tesla', 'active');
       })).rejects.toThrow('Failed to upsert');
 
       consoleErrorSpy.mockRestore();
@@ -1233,7 +1230,7 @@ describe('MembersContext', () => {
 
       // Create
       await act(async () => {
-        await result.current.createMember('B123', 'John Doe', 'Toyota', true, true, 'New');
+        await result.current.createMember('B123', 'John Doe', 'Toyota', 'active', 'New');
       });
       expect(result.current.members).toHaveLength(4);
 
@@ -1277,7 +1274,7 @@ describe('MembersContext', () => {
     });
 
     test('fetched member is added to cache and not fetched again', async () => {
-      const newMember = { id: 'B999', name: 'New Member', car: 'BMW', isActive: true, validPayment: true, notes: '' };
+      const newMember = { id: 'B999', name: 'New Member', car: 'BMW', status: 'active', notes: '' };
       firebaseCrud.getAllMembers.mockResolvedValue(mockMembers);
       firebaseCrud.getMember.mockResolvedValue(newMember);
 

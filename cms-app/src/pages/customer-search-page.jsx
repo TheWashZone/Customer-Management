@@ -110,8 +110,7 @@ function CustomerSearchPage() {
           email: editForm.email,
           notes: editForm.notes,
           car: editForm.car,
-          isActive: editForm.isActive,
-          validPayment: editForm.validPayment,
+          status: editForm.status,
         };
         await updateMember(memberData.id, updates);
       } else if (memberType === 'loyalty') {
@@ -261,8 +260,16 @@ function CustomerSearchPage() {
 
   // If member data is loaded, show member details view
   if (memberData) {
-    const formatYesNo = (val) => {
-      return val ? "Yes" : "No";
+    const getStatusClass = (status) => {
+      if (status === 'inactive') return 'inactive-card';
+      if (status === 'payment_needed') return 'invalid-payment-card';
+      return 'ok-card';
+    };
+
+    const getStatusLabel = (status) => {
+      if (status === 'inactive') return 'Inactive';
+      if (status === 'payment_needed') return 'Payment Needed';
+      return 'Active';
     };
 
     const getPrepaidWashesClass = () => {
@@ -317,24 +324,9 @@ function CustomerSearchPage() {
               </div>
 
               <div className="status-section">
-                <div
-                  className={`status-card ${memberData.isActive === "No" || memberData.isActive === false
-                    ? "inactive-card"
-                    : "ok-card"
-                    }`}
-                >
-                  <span className="status-label">Active:</span>
-                  <span className="status-value">{formatYesNo(memberData.isActive)}</span>
-                </div>
-
-                <div
-                  className={`status-card ${memberData.validPayment === "No" || memberData.validPayment === false
-                    ? "invalid-payment-card"
-                    : "ok-card"
-                    }`}
-                >
-                  <span className="status-label">Valid Payment:</span>
-                  <span className="status-value">{formatYesNo(memberData.validPayment)}</span>
+                <div className={`status-card ${getStatusClass(memberData.status)}`}>
+                  <span className="status-label">Status:</span>
+                  <span className="status-value">{getStatusLabel(memberData.status)}</span>
                 </div>
               </div>
             </>
@@ -548,41 +540,28 @@ function CustomerSearchPage() {
                       </div>
 
                       <div className="edit-toggle-row">
-                        <span className="edit-label">Active</span>
+                        <span className="edit-label">Status</span>
                         <div className="edit-toggle-group">
                           <button
                             type="button"
-                            className={`edit-toggle-btn${editForm.isActive === true || editForm.isActive === 'Yes' ? ' selected' : ''}`}
-                            onClick={() => setEditForm(prev => ({ ...prev, isActive: true }))}
+                            className={`edit-toggle-btn${editForm.status === 'active' ? ' selected' : ''}`}
+                            onClick={() => setEditForm(prev => ({ ...prev, status: 'active' }))}
                           >
-                            Yes
+                            Active
                           </button>
                           <button
                             type="button"
-                            className={`edit-toggle-btn${editForm.isActive === false || editForm.isActive === 'No' ? ' selected' : ''}`}
-                            onClick={() => setEditForm(prev => ({ ...prev, isActive: false }))}
+                            className={`edit-toggle-btn${editForm.status === 'inactive' ? ' selected' : ''}`}
+                            onClick={() => setEditForm(prev => ({ ...prev, status: 'inactive' }))}
                           >
-                            No
-                          </button>
-                        </div>
-                      </div>
-
-                      <div className="edit-toggle-row">
-                        <span className="edit-label">Valid Payment</span>
-                        <div className="edit-toggle-group">
-                          <button
-                            type="button"
-                            className={`edit-toggle-btn${editForm.validPayment === true || editForm.validPayment === 'Yes' ? ' selected' : ''}`}
-                            onClick={() => setEditForm(prev => ({ ...prev, validPayment: true }))}
-                          >
-                            Yes
+                            Inactive
                           </button>
                           <button
                             type="button"
-                            className={`edit-toggle-btn${editForm.validPayment === false || editForm.validPayment === 'No' ? ' selected' : ''}`}
-                            onClick={() => setEditForm(prev => ({ ...prev, validPayment: false }))}
+                            className={`edit-toggle-btn${editForm.status === 'payment_needed' ? ' selected' : ''}`}
+                            onClick={() => setEditForm(prev => ({ ...prev, status: 'payment_needed' }))}
                           >
-                            No
+                            Pmt Needed
                           </button>
                         </div>
                       </div>

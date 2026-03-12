@@ -39,7 +39,7 @@ function MembershipStats() {
 
     members.forEach(member => {
       // Count active/inactive
-      if (member.isActive) {
+      if (member.status === 'active') {
         stats.active++;
       } else {
         stats.inactive++;
@@ -49,7 +49,7 @@ function MembershipStats() {
       const type = member.id?.[0]?.toUpperCase();
       if (type === 'B' || type === 'U' || type === 'D') {
         stats.byType[type]++;
-        if (member.isActive) {
+        if (member.status === 'active') {
           stats.byTypeActive[type]++;
         }
       }

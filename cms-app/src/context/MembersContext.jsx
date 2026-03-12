@@ -152,11 +152,11 @@ export const MembersProvider = ({ children, user }) => {
     }
   }, [members]);
 
-  const createMember = useCallback(async (id, name, car, isActive, validPayment, notes, email = '') => {
+  const createMember = useCallback(async (id, name, car, status, notes, email = '') => {
     try {
-      await createMemberInDB(id, name, car, isActive, validPayment, notes, email);
+      await createMemberInDB(id, name, car, status, notes, email);
 
-      const newMember = { id, name, car, isActive, validPayment, notes, email };
+      const newMember = { id, name, car, status, notes, email };
 
       setMembers((prev) => {
         const idx = prev.findIndex((m) => m.id === id);
@@ -174,10 +174,10 @@ export const MembersProvider = ({ children, user }) => {
     }
   }, []);
 
-  const upsertMember = useCallback(async (id, name, car, isActive, validPayment) => {
+  const upsertMember = useCallback(async (id, name, car, status) => {
     try {
-      const { existed } = await upsertMemberInDB(id, name, car, isActive, validPayment);
-      const excelFields = { id, name, car, isActive, validPayment };
+      const { existed } = await upsertMemberInDB(id, name, car, status);
+      const excelFields = { id, name, car, status };
 
       setMembers((prev) => {
         const idx = prev.findIndex((m) => m.id === id);
