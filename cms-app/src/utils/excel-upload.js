@@ -103,12 +103,22 @@ export async function uploadCustomerRecordsFromFile(file, { upsertMember, delete
 
       const processRow = async () => {
         try {
-          results.total++;
-
           const name = row.getCell(1).value?.toString().trim() || '';
           const idPart1 = row.getCell(2).value?.toString().trim() || '';
-          const idPart2 = row.getCell(3).value?.toString().trim() || '';
+          const idPart2Raw = row.getCell(3).value;
           const car = row.getCell(4).value?.toString().trim() || '';
+
+          // Col 3 must be a number (the sticker/ID number).
+          // Rows where it is missing or non-numeric are annotation/note rows — skip silently
+          // so they neither count as failures nor block the prune guard.
+          const idPart2Num = Number(idPart2Raw);
+          if (!idPart2Raw || !Number.isFinite(idPart2Num)) {
+            return;
+          }
+
+          results.total++;
+
+          const idPart2 = idPart2Raw.toString().trim();
           const id = `${idPart1}${idPart2}`;
 
           const isActive = !rowHasColor(row, 'gray');
@@ -199,12 +209,22 @@ export async function uploadCustomerRecords(filePath, { upsertMember, deleteMemb
 
       const processRow = async () => {
         try {
-          results.total++;
-
           const name = row.getCell(1).value?.toString().trim() || '';
           const idPart1 = row.getCell(2).value?.toString().trim() || '';
-          const idPart2 = row.getCell(3).value?.toString().trim() || '';
+          const idPart2Raw = row.getCell(3).value;
           const car = row.getCell(4).value?.toString().trim() || '';
+
+          // Col 3 must be a number (the sticker/ID number).
+          // Rows where it is missing or non-numeric are annotation/note rows — skip silently
+          // so they neither count as failures nor block the prune guard.
+          const idPart2Num = Number(idPart2Raw);
+          if (!idPart2Raw || !Number.isFinite(idPart2Num)) {
+            return;
+          }
+
+          results.total++;
+
+          const idPart2 = idPart2Raw.toString().trim();
           const id = `${idPart1}${idPart2}`;
 
           const isActive = !rowHasColor(row, 'gray');
