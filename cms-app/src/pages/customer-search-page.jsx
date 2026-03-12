@@ -5,7 +5,7 @@ import HamburgerMenu from "../components/HamburgerMenu";
 import { logDailyVisit } from "../api/analytics-crud";
 
 function CustomerSearchPage() {
-  const { getMember, getLoyaltyMember, updateLoyaltyMember, getPrepaidMember, updatePrepaidMember } = useMembers();
+  const { getMember, updateMember, getLoyaltyMember, updateLoyaltyMember, getPrepaidMember, updatePrepaidMember } = useMembers();
 
   const [code, setCode] = useState("");
   const [memberData, setMemberData] = useState(null);
@@ -21,6 +21,10 @@ function CustomerSearchPage() {
   const [cashLogSuccess, setCashLogSuccess] = useState(false);
   const [cashLogError, setCashLogError] = useState(null);
   const [isLoggingCash, setIsLoggingCash] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editForm, setEditForm] = useState({});
+  const [isSaving, setIsSaving] = useState(false);
+  const [editError, setEditError] = useState(null);
 
   const handleInput = (value) => {
     setCode((prev) => {
@@ -79,6 +83,65 @@ function CustomerSearchPage() {
     setMemberType(null);
     setFreeWashEarned(false);
     setShowWashSelect(false);
+    setShowEditModal(false);
+    setEditForm({});
+    setEditError(null);
+  };
+
+  const handleOpenEdit = () => {
+    setEditForm({ ...memberData });
+    setEditError(null);
+    setShowEditModal(true);
+  };
+
+  const handleEditChange = (e) => {
+    const { name, value, type, checked } = e.target;
+    setEditForm(prev => ({ ...prev, [name]: type === 'checkbox' ? checked : value }));
+  };
+
+  const handleEditSave = async () => {
+    setIsSaving(true);
+    setEditError(null);
+    try {
+      let updates = {};
+      if (memberType === 'subscription') {
+        updates = {
+          name: editForm.name,
+          email: editForm.email,
+          notes: editForm.notes,
+          car: editForm.car,
+          isActive: editForm.isActive,
+          validPayment: editForm.validPayment,
+        };
+        await updateMember(memberData.id, updates);
+      } else if (memberType === 'loyalty') {
+        updates = {
+          name: editForm.name,
+          email: editForm.email,
+          notes: editForm.notes,
+          issueDate: editForm.issueDate,
+          lastVisitDate: editForm.lastVisitDate,
+          visitCount: Number(editForm.visitCount),
+        };
+        await updateLoyaltyMember(memberData.id, updates);
+      } else if (memberType === 'prepaid') {
+        updates = {
+          name: editForm.name,
+          email: editForm.email,
+          notes: editForm.notes,
+          issueDate: editForm.issueDate,
+          lastVisitDate: editForm.lastVisitDate,
+          prepaidWashes: Number(editForm.prepaidWashes),
+        };
+        await updatePrepaidMember(memberData.id, updates);
+      }
+      setMemberData(prev => ({ ...prev, ...updates }));
+      setShowEditModal(false);
+    } catch (err) {
+      setEditError(`Failed to save: ${err.message}`);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const isNextWashFree = memberType === 'loyalty' && ((memberData?.visitCount || 0) + 1) % 10 === 0;
@@ -356,6 +419,13 @@ function CustomerSearchPage() {
             </div>
           )}
 
+          {/* EDIT MEMBER BUTTON */}
+          <div className="log-visit-container">
+            <button onClick={handleOpenEdit} className="edit-member-btn">
+              Edit Member
+            </button>
+          </div>
+
           {/* LOG CUSTOMER COUNT BUTTON */}
           <div className="log-visit-container">
             <button
@@ -413,6 +483,214 @@ function CustomerSearchPage() {
                 >
                   Cancel
                 </button>
+              </div>
+            </div>
+          )}
+
+          {/* EDIT MEMBER POPUP */}
+          {showEditModal && (
+            <div className="wash-select-overlay" onClick={() => setShowEditModal(false)}>
+              <div className="edit-popup" onClick={(e) => e.stopPropagation()}>
+                <h3>Edit Member</h3>
+                <div className="edit-form">
+
+                  {/* All types: Name */}
+                  <div className="edit-field">
+                    <label className="edit-label" htmlFor="edit-name">Name</label>
+                    <input
+                      id="edit-name"
+                      className="edit-input"
+                      type="text"
+                      name="name"
+                      value={editForm.name || ''}
+                      onChange={handleEditChange}
+                    />
+                  </div>
+
+                  {/* All types: Email */}
+                  <div className="edit-field">
+                    <label className="edit-label" htmlFor="edit-email">Email</label>
+                    <input
+                      id="edit-email"
+                      className="edit-input"
+                      type="email"
+                      name="email"
+                      value={editForm.email || ''}
+                      onChange={handleEditChange}
+                    />
+                  </div>
+
+                  {/* All types: Notes */}
+                  <div className="edit-field">
+                    <label className="edit-label" htmlFor="edit-notes">Notes</label>
+                    <textarea
+                      id="edit-notes"
+                      className="edit-textarea"
+                      name="notes"
+                      value={editForm.notes || ''}
+                      onChange={handleEditChange}
+                    />
+                  </div>
+
+                  {/* Subscription only */}
+                  {memberType === 'subscription' && (
+                    <>
+                      <div className="edit-field">
+                        <label className="edit-label" htmlFor="edit-car">Car</label>
+                        <input
+                          id="edit-car"
+                          className="edit-input"
+                          type="text"
+                          name="car"
+                          value={editForm.car || ''}
+                          onChange={handleEditChange}
+                        />
+                      </div>
+
+                      <div className="edit-toggle-row">
+                        <span className="edit-label">Active</span>
+                        <div className="edit-toggle-group">
+                          <button
+                            type="button"
+                            className={`edit-toggle-btn${editForm.isActive === true || editForm.isActive === 'Yes' ? ' selected' : ''}`}
+                            onClick={() => setEditForm(prev => ({ ...prev, isActive: true }))}
+                          >
+                            Yes
+                          </button>
+                          <button
+                            type="button"
+                            className={`edit-toggle-btn${editForm.isActive === false || editForm.isActive === 'No' ? ' selected' : ''}`}
+                            onClick={() => setEditForm(prev => ({ ...prev, isActive: false }))}
+                          >
+                            No
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="edit-toggle-row">
+                        <span className="edit-label">Valid Payment</span>
+                        <div className="edit-toggle-group">
+                          <button
+                            type="button"
+                            className={`edit-toggle-btn${editForm.validPayment === true || editForm.validPayment === 'Yes' ? ' selected' : ''}`}
+                            onClick={() => setEditForm(prev => ({ ...prev, validPayment: true }))}
+                          >
+                            Yes
+                          </button>
+                          <button
+                            type="button"
+                            className={`edit-toggle-btn${editForm.validPayment === false || editForm.validPayment === 'No' ? ' selected' : ''}`}
+                            onClick={() => setEditForm(prev => ({ ...prev, validPayment: false }))}
+                          >
+                            No
+                          </button>
+                        </div>
+                      </div>
+                    </>
+                  )}
+
+                  {/* Loyalty only */}
+                  {memberType === 'loyalty' && (
+                    <>
+                      <div className="edit-field">
+                        <label className="edit-label" htmlFor="edit-issueDate">Issue Date</label>
+                        <input
+                          id="edit-issueDate"
+                          className="edit-input"
+                          type="date"
+                          name="issueDate"
+                          value={editForm.issueDate || ''}
+                          onChange={handleEditChange}
+                        />
+                      </div>
+                      <div className="edit-field">
+                        <label className="edit-label" htmlFor="edit-lastVisitDate">Last Visit</label>
+                        <input
+                          id="edit-lastVisitDate"
+                          className="edit-input"
+                          type="date"
+                          name="lastVisitDate"
+                          value={editForm.lastVisitDate || ''}
+                          onChange={handleEditChange}
+                        />
+                      </div>
+                      <div className="edit-field">
+                        <label className="edit-label" htmlFor="edit-visitCount">Visit Count</label>
+                        <input
+                          id="edit-visitCount"
+                          className="edit-input"
+                          type="number"
+                          name="visitCount"
+                          min="0"
+                          value={editForm.visitCount ?? ''}
+                          onChange={handleEditChange}
+                        />
+                      </div>
+                    </>
+                  )}
+
+                  {/* Prepaid only */}
+                  {memberType === 'prepaid' && (
+                    <>
+                      <div className="edit-field">
+                        <label className="edit-label" htmlFor="edit-issueDate">Issue Date</label>
+                        <input
+                          id="edit-issueDate"
+                          className="edit-input"
+                          type="date"
+                          name="issueDate"
+                          value={editForm.issueDate || ''}
+                          onChange={handleEditChange}
+                        />
+                      </div>
+                      <div className="edit-field">
+                        <label className="edit-label" htmlFor="edit-lastVisitDate">Last Visit</label>
+                        <input
+                          id="edit-lastVisitDate"
+                          className="edit-input"
+                          type="date"
+                          name="lastVisitDate"
+                          value={editForm.lastVisitDate || ''}
+                          onChange={handleEditChange}
+                        />
+                      </div>
+                      <div className="edit-field">
+                        <label className="edit-label" htmlFor="edit-prepaidWashes">Prepaid Washes</label>
+                        <input
+                          id="edit-prepaidWashes"
+                          className="edit-input"
+                          type="number"
+                          name="prepaidWashes"
+                          min="0"
+                          value={editForm.prepaidWashes ?? ''}
+                          onChange={handleEditChange}
+                        />
+                      </div>
+                    </>
+                  )}
+
+                </div>
+
+                {editError && (
+                  <div className="edit-error-message" role="alert">{editError}</div>
+                )}
+
+                <div className="edit-actions">
+                  <button
+                    className="edit-save-btn"
+                    onClick={handleEditSave}
+                    disabled={isSaving}
+                  >
+                    {isSaving ? 'Saving...' : 'Save'}
+                  </button>
+                  <button
+                    className="wash-select-cancel"
+                    onClick={() => setShowEditModal(false)}
+                    disabled={isSaving}
+                  >
+                    Cancel
+                  </button>
+                </div>
               </div>
             </div>
           )}
