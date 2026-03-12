@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Card, ButtonGroup, Button, Spinner, Alert, Row, Col } from 'react-bootstrap';
+import { Card, ButtonGroup, Button, Spinner, Alert, Row, Col, Modal, Form } from 'react-bootstrap';
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { getDailyVisitsInRange } from '../api/analytics-crud';
+import { getWashPrices, updateWashPrices } from '../api/settings-crud';
 
 const WASH_COLORS = { B: '#0d6efd', U: '#198754', D: '#dc3545' };
 const WASH_NAMES = { B: 'Basic', U: 'Unlimited', D: 'Deluxe' };
-const WASH_PRICES = { B: 10.00, D: 13.50, U: 16.50 };
+const DEFAULT_PRICES = { B: 10.00, D: 13.50, U: 16.50 };
 
 function VisitsChart() {
   const [viewMode, setViewMode] = useState('weekly'); // 'weekly' or 'monthly'
@@ -14,6 +15,11 @@ function VisitsChart() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [selectedDayIndex, setSelectedDayIndex] = useState(null);
+  const [washPrices, setWashPrices] = useState(DEFAULT_PRICES);
+  const [showPriceModal, setShowPriceModal] = useState(false);
+  const [priceForm, setPriceForm] = useState({});
+  const [isSavingPrices, setIsSavingPrices] = useState(false);
+  const [priceError, setPriceError] = useState(null);
 
   // Calculate date range based on view mode
   const dateRange = useMemo(() => {
@@ -52,6 +58,44 @@ function VisitsChart() {
 
     fetchData();
   }, [dateRange]);
+
+  // Fetch wash prices on mount
+  useEffect(() => {
+    getWashPrices().then(setWashPrices).catch(() => {/* silently use defaults */});
+  }, []);
+
+  const handleOpenPriceModal = () => {
+    setPriceForm({ ...washPrices });
+    setPriceError(null);
+    setShowPriceModal(true);
+  };
+
+  const handlePriceChange = (washType, value) => {
+    setPriceForm(prev => ({ ...prev, [washType]: value }));
+  };
+
+  const handlePriceSave = async () => {
+    const parsed = {
+      B: parseFloat(priceForm.B),
+      D: parseFloat(priceForm.D),
+      U: parseFloat(priceForm.U),
+    };
+    if (Object.values(parsed).some(v => isNaN(v) || v < 0)) {
+      setPriceError('All prices must be valid non-negative numbers.');
+      return;
+    }
+    setIsSavingPrices(true);
+    setPriceError(null);
+    try {
+      await updateWashPrices(parsed);
+      setWashPrices(parsed);
+      setShowPriceModal(false);
+    } catch (err) {
+      setPriceError(`Failed to save: ${err.message}`);
+    } finally {
+      setIsSavingPrices(false);
+    }
+  };
 
   // Format date for display
   const formatDate = (dateString) => {
@@ -357,8 +401,16 @@ function VisitsChart() {
                             ))}
                           </div>
                           <div className="mt-2 text-success fw-semibold">
-                            Expected: ${(['B', 'D', 'U'].reduce((sum, w) => sum + (day['cash' + w] || 0) * WASH_PRICES[w], 0)).toFixed(2)}
+                            Expected: ${(['B', 'D', 'U'].reduce((sum, w) => sum + (day['cash' + w] || 0) * washPrices[w], 0)).toFixed(2)}
                           </div>
+                          <Button
+                            variant="outline-secondary"
+                            size="sm"
+                            className="mt-2"
+                            onClick={handleOpenPriceModal}
+                          >
+                            Edit Prices
+                          </Button>
                         </Card.Body>
                       </Card>
                     </Col>
@@ -394,6 +446,36 @@ function VisitsChart() {
           </Card.Body>
         </Card>
       )}
+
+      {/* Wash Price Editor */}
+      <Modal show={showPriceModal} onHide={() => setShowPriceModal(false)} centered>
+        <Modal.Header closeButton>
+          <Modal.Title>Edit Wash Prices</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          {['B', 'D', 'U'].map(w => (
+            <Form.Group key={w} className="mb-3">
+              <Form.Label>{WASH_NAMES[w]} (${washPrices[w].toFixed(2)} current)</Form.Label>
+              <Form.Control
+                type="number"
+                min="0"
+                step="0.01"
+                value={priceForm[w] ?? ''}
+                onChange={e => handlePriceChange(w, e.target.value)}
+              />
+            </Form.Group>
+          ))}
+          {priceError && <Alert variant="danger" className="mb-0">{priceError}</Alert>}
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={() => setShowPriceModal(false)} disabled={isSavingPrices}>
+            Cancel
+          </Button>
+          <Button variant="success" onClick={handlePriceSave} disabled={isSavingPrices}>
+            {isSavingPrices ? 'Saving…' : 'Save Prices'}
+          </Button>
+        </Modal.Footer>
+      </Modal>
     </div>
   );
 }
