@@ -24,6 +24,7 @@ function MembershipStats() {
         total: 0,
         active: 0,
         inactive: 0,
+        paymentNeeded: 0,
         byType: { B: 0, U: 0, D: 0 },
         byTypeActive: { B: 0, U: 0, D: 0 },
       };
@@ -33,14 +34,16 @@ function MembershipStats() {
       total: members.length,
       active: 0,
       inactive: 0,
+      paymentNeeded: 0,
       byType: { B: 0, U: 0, D: 0 },
       byTypeActive: { B: 0, U: 0, D: 0 },
     };
 
     members.forEach(member => {
-      // Count active/inactive
       if (member.status === 'active') {
         stats.active++;
+      } else if (member.status === 'payment_needed') {
+        stats.paymentNeeded++;
       } else {
         stats.inactive++;
       }
@@ -84,8 +87,8 @@ function MembershipStats() {
       <h2 className="mb-4">Subscription Overview</h2>
 
       {/* Summary Cards */}
-      <Row className="mb-4">
-        <Col md={3}>
+      <Row className="mb-4 g-3">
+        <Col xs={6} md={4}>
           <Card className="text-center">
             <Card.Body>
               <h3 className="text-primary mb-2">{stats.total}</h3>
@@ -93,7 +96,7 @@ function MembershipStats() {
             </Card.Body>
           </Card>
         </Col>
-        <Col md={3}>
+        <Col xs={6} md={4}>
           <Card className="text-center">
             <Card.Body>
               <h3 className="text-success mb-2">{stats.active}</h3>
@@ -101,7 +104,7 @@ function MembershipStats() {
             </Card.Body>
           </Card>
         </Col>
-        <Col md={3}>
+        <Col xs={6} md={4}>
           <Card className="text-center">
             <Card.Body>
               <h3 className="text-secondary mb-2">{stats.inactive}</h3>
@@ -109,7 +112,15 @@ function MembershipStats() {
             </Card.Body>
           </Card>
         </Col>
-        <Col md={3}>
+        <Col xs={6} md={4}>
+          <Card className="text-center">
+            <Card.Body>
+              <h3 className="text-warning mb-2">{stats.paymentNeeded}</h3>
+              <Card.Text className="text-muted">Payment Needed</Card.Text>
+            </Card.Body>
+          </Card>
+        </Col>
+        <Col xs={6} md={4}>
           <Card className="text-center">
             <Card.Body>
               <h3 className="text-info mb-2">
