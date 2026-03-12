@@ -45,9 +45,9 @@ The app manages three membership programs, each stored in its own Firestore coll
 
 | Type | Collection | ID Format | Example |
 |---|---|---|---|
-| Subscription | `users` | `[B\|D\|U]` + 3–5 digits | `B101`, `D42` |
+| Subscription | `users` | `[B\|D\|U]` + 3–5 digits | `B101`, `D424` |
 | Loyalty | `loyaltyMembers` | `L` + 3–5 digits | `L202` |
-| Prepaid | `prepaidMembers` | `[B\|D\|U]B` + 3–5 digits | `BB101`, `UB55` |
+| Prepaid | `prepaidMembers` | `[B\|D\|U]B` + 3–5 digits | `BB101`, `UB555` |
 
 The first letter of a subscription/prepaid ID encodes the wash tier: **B**asic, **D**eluxe, **U**nlimited.
 
