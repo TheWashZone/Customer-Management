@@ -67,7 +67,7 @@ function rowHasColor(row, colorType) {
  *
  * @param {File} file - File object from browser input
  * @param {Object} options
- * @param {Function} options.upsertMember  - (id, name, car, isActive, validPayment) => Promise
+ * @param {Function} options.upsertMember  - (id, name, car, status) => Promise
  * @param {Function} options.deleteMember  - (id) => Promise  (used for pruning)
  * @param {string[]} options.existingMemberIds - IDs currently in the database
  * @returns {Promise<Object>} - Results with success / error / pruned counts
@@ -121,8 +121,11 @@ export async function uploadCustomerRecordsFromFile(file, { upsertMember, delete
           const idPart2 = idPart2Raw.toString().trim();
           const id = `${idPart1}${idPart2}`;
 
-          const isActive = !rowHasColor(row, 'gray');
-          const validPayment = !rowHasColor(row, 'yellow');
+          const status = rowHasColor(row, 'gray')
+            ? 'inactive'
+            : rowHasColor(row, 'yellow')
+              ? 'payment_needed'
+              : 'active';
 
           if (!id) {
             results.failed++;
@@ -131,7 +134,7 @@ export async function uploadCustomerRecordsFromFile(file, { upsertMember, delete
           }
 
           uploadedIds.add(id);
-          await upsertMember(id, name, car, isActive, validPayment);
+          await upsertMember(id, name, car, status);
           results.successful++;
         } catch (error) {
           results.failed++;
@@ -174,7 +177,7 @@ export async function uploadCustomerRecordsFromFile(file, { upsertMember, delete
  * Reads Excel file and uploads customer records to Firebase (Node.js version)
  * @param {string} filePath - Path to the Excel file
  * @param {Object} options
- * @param {Function} options.upsertMember  - (id, name, car, isActive, validPayment) => Promise
+ * @param {Function} options.upsertMember  - (id, name, car, status) => Promise
  * @param {Function} [options.deleteMember]  - (id) => Promise  (used for pruning)
  * @param {string[]} [options.existingMemberIds] - IDs currently in the database
  * @returns {Promise<Object>} - Results with success / error / pruned counts
@@ -227,8 +230,11 @@ export async function uploadCustomerRecords(filePath, { upsertMember, deleteMemb
           const idPart2 = idPart2Raw.toString().trim();
           const id = `${idPart1}${idPart2}`;
 
-          const isActive = !rowHasColor(row, 'gray');
-          const validPayment = !rowHasColor(row, 'yellow');
+          const status = rowHasColor(row, 'gray')
+            ? 'inactive'
+            : rowHasColor(row, 'yellow')
+              ? 'payment_needed'
+              : 'active';
 
           if (!id) {
             results.failed++;
@@ -237,7 +243,7 @@ export async function uploadCustomerRecords(filePath, { upsertMember, deleteMemb
           }
 
           uploadedIds.add(id);
-          await upsertMember(id, name, car, isActive, validPayment);
+          await upsertMember(id, name, car, status);
           results.successful++;
         } catch (error) {
           results.failed++;

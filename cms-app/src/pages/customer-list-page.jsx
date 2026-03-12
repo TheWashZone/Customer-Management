@@ -49,8 +49,7 @@ function MembersPage() {
     id: '',
     name: '',
     car: '',
-    isActive: true,
-    validPayment: true,
+    status: 'active',
     notes: '',
     email: '',
   });
@@ -60,8 +59,7 @@ function MembersPage() {
     id: '',
     name: '',
     car: '',
-    isActive: true,
-    validPayment: true,
+    status: 'active',
     notes: '',
     email: '',
   });
@@ -70,8 +68,7 @@ function MembersPage() {
   const [memberToDelete, setMemberToDelete] = useState(null);
 
   const [filterSubscription, setFilterSubscription] = useState('all');
-  const [filterActive, setFilterActive] = useState('all');
-  const [filterPayment, setFilterPayment] = useState('all');
+  const [filterStatus, setFilterStatus] = useState('all');
 
   // --- LOYALTY STATE ---
   const [filteredLoyaltyMembers, setFilteredLoyaltyMembers] = useState([]);
@@ -124,20 +121,19 @@ function MembersPage() {
 
     if (activeTab === 'subscription') {
       const worksheet = workbook.addWorksheet('Subscription Members');
-      worksheet.addRow(['ID', 'Name', 'Car', 'Active', 'Valid Payment', 'Notes', 'Email']);
+      worksheet.addRow(['ID', 'Name', 'Car', 'Status', 'Notes', 'Email']);
       filteredMembers.forEach((m) => {
         const row = worksheet.addRow([
           m.id, m.name, m.car,
-          m.isActive ? 'Yes' : 'No',
-          m.validPayment ? 'Yes' : 'No',
+          m.status || 'active',
           m.notes,
           m.email || '',
         ]);
-        if (!m.isActive) {
+        if (m.status === 'inactive') {
           row.eachCell((cell) => {
             cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFAAAAAA' } };
           });
-        } else if (!m.validPayment) {
+        } else if (m.status === 'payment_needed') {
           row.eachCell((cell) => {
             cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFFF99' } };
           });
@@ -188,20 +184,13 @@ function MembersPage() {
 
       if (!matchesSearch) return false;
       if (filterSubscription !== 'all' && subscription !== filterSubscription) return false;
-
-      const isActive = m.isActive === true || m.isActive === 'true';
-      if (filterActive === 'active' && !isActive) return false;
-      if (filterActive === 'inactive' && isActive) return false;
-
-      const hasPayment = m.validPayment === true || m.validPayment === 'true';
-      if (filterPayment === 'paid' && !hasPayment) return false;
-      if (filterPayment === 'needed' && hasPayment) return false;
+      if (filterStatus !== 'all' && m.status !== filterStatus) return false;
 
       return true;
     });
 
     setFilteredMembers(filtered);
-  }, [searchTerm, members, filterSubscription, filterActive, filterPayment]);
+  }, [searchTerm, members, filterSubscription, filterStatus]);
 
   // --- LOYALTY FILTER ---
   useEffect(() => {
@@ -265,12 +254,11 @@ function MembersPage() {
         fullId,
         addForm.name.trim(),
         addForm.car.trim(),
-        addForm.isActive,
-        addForm.validPayment,
+        addForm.status,
         addForm.notes.trim(),
         addForm.email.trim()
       );
-      setAddForm({ id: '', name: '', car: '', isActive: true, validPayment: true, notes: '', email: '' });
+      setAddForm({ id: '', name: '', car: '', status: 'active', notes: '', email: '' });
       setAddSubPrefix('B');
       setShowAddForm(false);
     } catch (err) {
@@ -284,8 +272,7 @@ function MembersPage() {
       id: member.id,
       name: member.name || '',
       car: member.car || '',
-      isActive: !!member.isActive,
-      validPayment: !!member.validPayment,
+      status: member.status || 'active',
       notes: member.notes || '',
       email: member.email || '',
     });
@@ -313,8 +300,7 @@ function MembersPage() {
       const updates = {
         name: editForm.name.trim(),
         car: editForm.car.trim(),
-        isActive: editForm.isActive,
-        validPayment: editForm.validPayment,
+        status: editForm.status,
         notes: editForm.notes.trim(),
         email: editForm.email.trim(),
       };
@@ -750,24 +736,14 @@ function MembersPage() {
 
                 <Form.Select
                   className="filter-select"
-                  value={filterActive}
-                  onChange={(e) => setFilterActive(e.target.value)}
-                  style={{ width: 'auto', minWidth: '130px' }}
+                  value={filterStatus}
+                  onChange={(e) => setFilterStatus(e.target.value)}
+                  style={{ width: 'auto', minWidth: '160px' }}
                 >
                   <option value="all">Status: All</option>
                   <option value="active">Active</option>
                   <option value="inactive">Inactive</option>
-                </Form.Select>
-
-                <Form.Select
-                  className="filter-select"
-                  value={filterPayment}
-                  onChange={(e) => setFilterPayment(e.target.value)}
-                  style={{ width: 'auto', minWidth: '145px' }}
-                >
-                  <option value="all">Payment: All</option>
-                  <option value="paid">Paid</option>
-                  <option value="needed">Needed</option>
+                  <option value="payment_needed">Payment Needed</option>
                 </Form.Select>
               </div>
 
@@ -833,14 +809,14 @@ function MembersPage() {
                                 <Form.Control type="email" name="email" value={addForm.email} onChange={handleAddInputChange} placeholder="optional" />
                               </Form.Group>
                             </Col>
-                            <Col md={2}>
-                              <Form.Group controlId="addIsActive" className="pt-4">
-                                <Form.Check type="checkbox" label="Active" name="isActive" checked={addForm.isActive} onChange={handleAddInputChange} />
-                              </Form.Group>
-                            </Col>
-                            <Col md={2}>
-                              <Form.Group controlId="addValidPayment" className="pt-4">
-                                <Form.Check type="checkbox" label="Valid Payment" name="validPayment" checked={addForm.validPayment} onChange={handleAddInputChange} />
+                            <Col md={4}>
+                              <Form.Group controlId="addStatus">
+                                <Form.Label>Status</Form.Label>
+                                <Form.Select name="status" value={addForm.status} onChange={handleAddInputChange}>
+                                  <option value="active">Active</option>
+                                  <option value="inactive">Inactive</option>
+                                  <option value="payment_needed">Payment Needed</option>
+                                </Form.Select>
                               </Form.Group>
                             </Col>
                             <Col md={6}>
@@ -1114,26 +1090,13 @@ function MembersPage() {
                         <th style={{ width: '15%' }}>Member</th>
                         <th style={{ width: '12%' }}>Vehicle</th>
                         <th style={{ width: '15%' }}>Email</th>
-                        <th className="text-center" style={{ width: '8%' }}>Status</th>
-                        <th className="text-center" style={{ width: '8%' }}>Payment</th>
+                        <th className="text-center" style={{ width: '10%' }}>Status</th>
                         <th style={{ width: '17%' }}>Notes</th>
                         <th className="text-end" style={{ width: '17%' }}></th>
                       </tr>
                     </thead>
                     <tbody>
                       {filteredMembers.map((member) => {
-                        const isActive =
-                          member.isActive === true ||
-                          member.isActive === 'true' ||
-                          member.isActive === 1 ||
-                          member.isActive === '1';
-
-                        const validPayment =
-                          member.validPayment === true ||
-                          member.validPayment === 'true' ||
-                          member.validPayment === 1 ||
-                          member.validPayment === '1';
-
                         return (
                           <tr key={member.id}>
                             <td title={member.id}>{member.id}</td>
@@ -1141,15 +1104,11 @@ function MembersPage() {
                             <td className="cell-truncate" title={member.car}>{member.car}</td>
                             <td className="cell-truncate" title={member.email}>{member.email}</td>
                             <td className="text-center">
-                              {isActive
-                                ? <span className="badge bg-success">Active</span>
-                                : <span className="badge bg-secondary">Inactive</span>
-                              }
-                            </td>
-                            <td className="text-center">
-                              {validPayment
-                                ? <span className="badge bg-success">Paid</span>
-                                : <span className="badge bg-warning">Needed</span>
+                              {member.status === 'inactive'
+                                ? <span className="badge bg-secondary">Inactive</span>
+                                : member.status === 'payment_needed'
+                                  ? <span className="badge bg-warning text-dark">Pmt Needed</span>
+                                  : <span className="badge bg-success">Active</span>
                               }
                             </td>
                             <td className="cell-truncate" title={member.notes}>{member.notes}</td>
@@ -1311,18 +1270,14 @@ function MembersPage() {
                 <Form.Label>Email</Form.Label>
                 <Form.Control type="email" name="email" value={editForm.email} onChange={handleEditInputChange} placeholder="optional" />
               </Form.Group>
-              <Row className="mb-3">
-                <Col md={6}>
-                  <Form.Group controlId="editIsActive">
-                    <Form.Check type="checkbox" label="Active" name="isActive" checked={editForm.isActive} onChange={handleEditInputChange} />
-                  </Form.Group>
-                </Col>
-                <Col md={6}>
-                  <Form.Group controlId="editValidPayment">
-                    <Form.Check type="checkbox" label="Valid Payment" name="validPayment" checked={editForm.validPayment} onChange={handleEditInputChange} />
-                  </Form.Group>
-                </Col>
-              </Row>
+              <Form.Group className="mb-3" controlId="editStatus">
+                <Form.Label>Status</Form.Label>
+                <Form.Select name="status" value={editForm.status} onChange={handleEditInputChange}>
+                  <option value="active">Active</option>
+                  <option value="inactive">Inactive</option>
+                  <option value="payment_needed">Payment Needed</option>
+                </Form.Select>
+              </Form.Group>
               <Form.Group className="mb-3" controlId="editNotes">
                 <Form.Label>Notes</Form.Label>
                 <Form.Control as="textarea" rows={3} name="notes" value={editForm.notes} onChange={handleEditInputChange} />

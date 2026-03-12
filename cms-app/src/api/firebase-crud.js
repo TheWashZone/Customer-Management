@@ -6,20 +6,18 @@ import { db } from "./firebaseconfig";
  * @param {string} id - The user ID
  * @param {string} name - User's name
  * @param {string} car - Car information
- * @param {boolean} isActive - Whether the user is active
- * @param {boolean} validPayment - Whether payment is valid
+ * @param {'active'|'inactive'|'payment_needed'} status - Member status
  * @param {string} notes - Additional notes
  * @param {string} email - Email address (optional)
  * @returns {Promise<string>} The user ID
  */
-async function createMember(id, name, car, isActive, validPayment, notes, email = '') {
+async function createMember(id, name, car, status, notes, email = '') {
   const userId = id;
   try {
     const userData = {
       name: name,
       car: car,
-      isActive: isActive,
-      validPayment: validPayment,
+      status: status,
       notes: notes,
       email: email
     };
@@ -40,21 +38,20 @@ async function createMember(id, name, car, isActive, validPayment, notes, email 
  * @param {string} id - The user ID
  * @param {string} name - User's name
  * @param {string} car - Car information
- * @param {boolean} isActive - Whether the user is active
- * @param {boolean} validPayment - Whether payment is valid
+ * @param {'active'|'inactive'|'payment_needed'} status - Member status
  * @returns {Promise<{id: string, existed: boolean}>}
  */
-async function upsertMember(id, name, car, isActive, validPayment) {
+async function upsertMember(id, name, car, status) {
   try {
     const docRef = doc(db, "users", id);
 
     const existed = await runTransaction(db, async (transaction) => {
       const docSnap = await transaction.get(docRef);
       if (docSnap.exists()) {
-        transaction.update(docRef, { name, car, isActive, validPayment });
+        transaction.update(docRef, { name, car, status });
         return true;
       }
-      transaction.set(docRef, { name, car, isActive, validPayment, notes: '', email: '' });
+      transaction.set(docRef, { name, car, status, notes: '', email: '' });
       return false;
     });
 
@@ -117,13 +114,13 @@ async function getAllMembers() {
 }
 
 /**
- * Queries users by payment status
- * @param {boolean} validPayment - Payment status to filter by
+ * Queries members by status
+ * @param {'active'|'inactive'|'payment_needed'} status - Status to filter by
  * @returns {Promise<Array>} Array of user objects matching the criteria
  */
-async function getMembersByPaymentStatus(validPayment) {
+async function getMembersByStatus(status) {
   try {
-    const q = query(collection(db, "users"), where("validPayment", "==", validPayment));
+    const q = query(collection(db, "users"), where("status", "==", status));
     const querySnapshot = await getDocs(q);
     const members = [];
     querySnapshot.forEach((doc) => {
@@ -200,7 +197,7 @@ export {
   upsertMember,
   getMember,
   getAllMembers,
-  getMembersByPaymentStatus,
+  getMembersByStatus,
   updateMember,
   deleteMember
 };
