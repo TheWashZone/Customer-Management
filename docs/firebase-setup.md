@@ -78,3 +78,19 @@ firebase emulators:start
 ```
 
 make sure you are in the cms-app director when you run this.
+
+## Post Setup Configuration
+
+firestore.rules determines which users can access which Firebase endpoints. Take the following example from the file:
+
+```
+// Users collection
+match /users/{userId} {
+  // Allow read/write only if the user is authenticated
+  allow read, write: if request.auth != null;
+}
+```
+
+This configuration allows and user to read and write and user in the doc /users if they are authenticated. Changes to permissions, such as role based access where authenticated users are subdivided into roles with different rights, will need to have the appropriate rules set in the .rules file.
+
+Updates to Rules
