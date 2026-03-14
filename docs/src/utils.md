@@ -1,83 +1,67 @@
-# 🛠️ Utility Functions Documentation (`excel-upload.js`)
+# Utils
 
-This file contains helper functions for reading data from Excel spreadsheets, primarily focusing on identifying row status based on cell coloring and mapping the spreadsheet data columns to the Firebase `createMember` function for bulk upload.
-
----
-
-## 🎨 Color Helper Functions
-
-These helpers are used to interpret visual cues (cell fill colors) in the Excel file as boolean flags for member status.
-
-### `hasFillColor(cell, colorType)`
-
-Checks if a specific Excel cell has a defined fill color pattern, primarily used for identifying 'gray' (inactive) and 'yellow' (payment needed) status.
-
-| Parameter | Type | Description |
-| :--- | :--- | :--- |
-| `cell` | `Object` | An ExcelJS cell object. |
-| `colorType` | `string` | The color to check for ('gray' or 'yellow'). |
-
-#### Returns
-* `boolean`: `true` if the cell has the specified color; `false` otherwise.
-
-### `rowHasColor(row, colorType)`
-
-Checks if any of the key data cells (columns 1 through 4: ID, Name, Car) in a given row have the specified fill color.
-
-| Parameter | Type | Description |
-| :--- | :--- | :--- |
-| `row` | `Object` | An ExcelJS row object. |
-| `colorType` | `string` | The color to check for ('gray' or 'yellow'). |
-
-#### Returns
-* `boolean`: `true` if any cell in columns 1-4 has the specified color; `false` otherwise.
+`cms-app/src/utils/` contains helper modules that are not React components or API calls.
 
 ---
 
-## ⬆️ Excel Upload Functions
+## excel-upload.js
 
-These are the primary functions for parsing an Excel file and executing the batch upload.
+Handles parsing an Excel file and syncing its contents to Firestore. Used by `UploadPage`.
 
-### `uploadCustomerRecordsFromFile(file, createMember)`
+### Functions
 
-This is the **browser-based** entry point for Excel uploading, designed to work with a standard HTML `File` object from an input element.
+#### `uploadCustomerRecordsFromFile(file, options)` — browser version
 
-| Parameter | Type | Description |
-| :--- | :--- | :--- |
-| `file` | `File` | The File object selected by the user. |
-| `createMember` | `Function` | The function used to write the record to Firebase (e.g., from `useMembers`). |
+Takes a browser `File` object (from `<input type="file">`).
 
-#### Data Mapping Logic
-The function iterates through the first worksheet, skipping the header row (row 1), and maps columns to the `createMember` arguments as follows:
+```js
+const results = await uploadCustomerRecordsFromFile(file, {
+  upsertMember,       // from MembersContext
+  deleteMember,       // from MembersContext
+  existingMemberIds,  // string[] of all current member IDs
+});
+```
 
-| Database Field | Excel Column | Derivation |
-| :--- | :--- | :--- |
-| `name` | Column A | Cell value (string). |
-| `id` | Columns B & C | Concatenated: `Column B + Column C`. |
-| `car` | Column D | Cell value (string). |
-| `isActive` | Row Color | `!rowHasColor(row, 'gray')`. |
-| `validPayment` | Row Color | `!rowHasColor(row, 'yellow')`. |
-| `notes` | N/A | Defaulted to an empty string (`''`). |
+Returns:
+```js
+{ total, successful, failed, pruned, errors: [{ row, error }] }
+```
 
-#### Returns
-* `Promise<Object>`: A promise that resolves with an object summarizing the upload process:
-    ```javascript
-    {
-      total: number,      // Total rows attempted
-      successful: number, // Total successful creates
-      failed: number,     // Total failed creates
-      errors: Array<{row: number, error: string}> // List of row-specific errors
-    }
-    ```
+#### `uploadCustomerRecords(filePath, options)` — Node.js version
 
-### `uploadCustomerRecords(filePath, createMember)`
+Same logic but accepts a file path string instead of a `File` object. Intended for scripts run outside the browser.
 
-This is the **Node.js-based** entry point, designed for back-end scripts or serverless functions where the Excel file is referenced by a file system path.
+---
 
-| Parameter | Type | Description |
-| :--- | :--- | :--- |
-| `filePath` | `string` | The full path to the Excel file on the file system. |
-| `createMember` | `Function` | The function used to write the record to Firebase. |
+### Expected Excel format
 
-* **Logic:** The data mapping and result structure are identical to `uploadCustomerRecordsFromFile`.
-* **Key Difference:** It uses `workbook.xlsx.readFile(filePath)` instead of consuming a browser `File` object.
+| Column A | Column B | Column C | Column D |
+|---|---|---|---|
+| Name | ID prefix (e.g., `B`, `D`) | ID number (e.g., `101`) | Car description |
+
+- Row 1 is a header and is skipped.
+- The full member ID is constructed as `${columnB}${columnC}` (e.g., `B101`).
+- Rows where Column C is missing or non-numeric are silently skipped (treated as annotation rows).
+
+---
+
+### Status detection from cell fill color
+
+Member status is inferred from Excel cell background color — no text column needed:
+
+| Fill color | Status |
+|---|---|
+| No fill / white | `active` |
+| Gray (theme 2, tint ≈ -0.5) | `inactive` |
+| Yellow (`#FFFF00`) | `payment_needed` |
+
+---
+
+### Pruning behavior
+
+After upserting all rows, any member ID that exists in Firestore but was **absent** from the uploaded file is deleted ("pruned"). This keeps the database in sync with the master Excel spreadsheet.
+
+**Pruning is skipped if:**
+- Any row failed to upsert (to avoid deleting members due to a partial upload)
+- `existingMemberIds` is empty
+- `deleteMember` is not provided
