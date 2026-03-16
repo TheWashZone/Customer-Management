@@ -31,12 +31,12 @@ cms-app$ firebase init
 After "firebase init" is run an option box will appear. Use space bar to select options and enter to confirm. Most things will be left as default except a few options
 
 - For Features:
-  - Firestone
+  - Firestore
   - Emulators
   - Hosting (not app hosting)
 - For project setup:
   - use existing project and then choose Washzone-cms.
-- for firestone setup
+- for firestore setup
   - location: us-west1
   - everything else should be default
 - for emulator setup
@@ -47,6 +47,21 @@ After "firebase init" is run an option box will appear. Use space bar to select 
   - Leave everything else as default or Y.
 
 - For hosting setup, make sure you select all the defaults but set the build directory to dist/ instead of the default Public/. Otherwise, Firebase will look in Public/ for the build files, when Vite builds to dist/
+  - Additionally, input Y for Single Page Firebase Hosting and N for automatic Github deploys
+
+Before running the app locally you will need to add a .env file in the cms-app containing the actual values of the following:
+
+cms-app/.env
+
+```env
+VITE_FIREBASE_API_KEY = "Your Key",
+VITE_FIREBASE_AUTH_DOMAIN = "Your Domain",
+VITE_FIREBASE_PROJECT_ID = "Your ProjectID",
+VITE_FIREBASE_STORAGE_BUCKET = "Your Bucket" ,
+VITE_FIREBASE_MESSAGING_SENDER_ID = "Your Sender ID",
+VITE_FIREBASE_APP_ID = "Your APP ID",
+VITE_FIREBASE_MEASUREMENT_ID = "Your Measurement ID"
+```
 
 Now start the Firebase emulators:
 
@@ -72,7 +87,13 @@ cms-app$ firebase emulators:exec "npm run test"
 
 ## Deployment
 
+Build and Deploy app to Firebase Hosting:
 ```
 cms-app$ npm run build
 cms-app$ firebase deploy --only hosting
+```
+
+Push Firestore Access Rules in firestore.rules to Firebase:
+```
+firebase deploy --only firestore:rules
 ```
