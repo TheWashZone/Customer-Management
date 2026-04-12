@@ -89,7 +89,7 @@ function MonthlySubscriptionPage() {
       } else {
         navigate('/');
       }
-    } catch (error) {
+    } catch {
       setErrors({ general: 'Failed to save. Please try again.' });
     } finally {
       setIsLoading(false);
