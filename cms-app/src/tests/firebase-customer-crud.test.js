@@ -219,11 +219,6 @@ describe("getCustomer", () => {
   });
 });
 
-import {
-  createCustomer,
-  getAllCustomers,
-} from "../api/customer-crud.js";
-
 describe("getAllCustomers", () => {
   test("retrieves all customer documents", async () => {
     const id1 = uniqId("ALL1");

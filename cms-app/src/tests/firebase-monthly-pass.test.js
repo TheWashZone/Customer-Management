@@ -415,13 +415,6 @@ describe("updateMembership", () => {
   });
 });
 
-import { createCustomer } from "../api/customer-crud.js";
-import {
-  createMonthlyPass,
-  getMonthlyPass,
-  cancelMonthlyPass,
-} from "../api/monthly-pass-crud.js";
-
 describe("cancelMonthlyPass", () => {
   test("adds a cancelled_date to an existing monthly pass without removing existing fields", async () => {
     const customerId = uniqId("CUSTOMER");

@@ -174,10 +174,6 @@ async function cancelMonthlyPass(customerId, passId) {
   }
 }
 
-export {
-  createCustomer, upsertCustomer, getCustomer, getAllCustomers, updateCustomer, deleteCustomer, cancelMonthlyPass
-};
 
 
-
-export {createMonthlyPass, upsertMonthlyPass, getMonthlyPass, getAllMonthlyPasses, updateMembership};
+export {createMonthlyPass, upsertMonthlyPass, getMonthlyPass, getAllMonthlyPasses, updateMembership, cancelMonthlyPass};
