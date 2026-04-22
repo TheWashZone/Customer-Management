@@ -760,6 +760,38 @@ function MembersPage() {
                         <Form onSubmit={handleAddSubmit}>
                           <Row className="mb-3">
                             <Col md={4}>
+                              <Form.Group controlId="addName">
+                                <Form.Label>Name <span className="text-danger">*</span></Form.Label>
+                                <Form.Control type="text" name="name" value={addForm.name} onChange={handleAddInputChange} required />
+                              </Form.Group>
+                            </Col>
+                            <Col md={4}>
+                              <Form.Group controlId="addContact">
+                                <Form.Label>Contact person</Form.Label>
+                                <Form.Control type="text" name="contactPerson" value={addForm.contactPerson} onChange={handleAddInputChange} />
+                              </Form.Group>
+                            </Col>
+                            <Col md={4}>
+                              <Form.Group controlId="addPhoneNumber">
+                                <Form.Label>Phone Number</Form.Label>
+                                <Form.Control type="phoneNumber" name="phoneNumber" value={addForm.phoneNumber} onChange={handleAddInputChange} />
+                              </Form.Group>
+                            </Col>
+                            <Col md={4}>
+                              <Form.Group controlId="addAddress">
+                                <Form.Label>Address</Form.Label>
+                                <Form.Control type="address" name="address" value={addForm.address} onChange={handleAddInputChange} />
+                              </Form.Group>
+                            </Col>
+                            <Col md={4}>
+                              <Form.Group controlId="addEmail">
+                                <Form.Label>Email</Form.Label>
+                                <Form.Control type="email" name="email" value={addForm.email} onChange={handleAddInputChange} placeholder="optional" />
+                              </Form.Group>
+                            </Col>
+                          </Row>
+                          <Row className="mb-3">
+                            <Col md={4}>
                               <Form.Group controlId="addId">
                                 <Form.Label>ID <span className="text-danger">*</span></Form.Label>
                                 <InputGroup>
@@ -790,23 +822,9 @@ function MembersPage() {
                               </Form.Group>
                             </Col>
                             <Col md={4}>
-                              <Form.Group controlId="addName">
-                                <Form.Label>Name <span className="text-danger">*</span></Form.Label>
-                                <Form.Control type="text" name="name" value={addForm.name} onChange={handleAddInputChange} required />
-                              </Form.Group>
-                            </Col>
-                            <Col md={4}>
                               <Form.Group controlId="addCar">
                                 <Form.Label>Vehicle</Form.Label>
                                 <Form.Control type="text" name="car" value={addForm.car} onChange={handleAddInputChange} />
-                              </Form.Group>
-                            </Col>
-                          </Row>
-                          <Row className="mb-3">
-                            <Col md={4}>
-                              <Form.Group controlId="addEmail">
-                                <Form.Label>Email</Form.Label>
-                                <Form.Control type="email" name="email" value={addForm.email} onChange={handleAddInputChange} placeholder="optional" />
                               </Form.Group>
                             </Col>
                             <Col md={4}>
