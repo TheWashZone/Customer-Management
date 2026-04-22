@@ -277,12 +277,6 @@ describe("getAllCustomers", () => {
   });
 });
 
-import {
-  createCustomer,
-  getCustomer,
-  updateCustomer,
-} from "../api/customer-crud.js";
-
 describe("updateCustomer", () => {
   test("updates specific fields of an existing customer", async () => {
     const id = uniqId("UPDATE");
@@ -348,12 +342,6 @@ describe("updateCustomer", () => {
     ).rejects.toThrow(`Customer with ID ${id} does not exist`);
   });
 });
-
-import {
-  createCustomer,
-  getCustomer,
-  deleteCustomer,
-} from "../api/customer-crud.js";
 
 describe("deleteCustomer", () => {
   test("deletes an existing customer document", async () => {
