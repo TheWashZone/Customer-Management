@@ -8,6 +8,14 @@ import {
   deleteMember as deleteMemberInDB,
 } from '../api/firebase-crud';
 import {
+  getAllMonthlyPasses as fetchAllMonthlyPasses,
+  getMonthlyPass as getMonthlyPassFromDB,
+  createMonthlyPass as createMonthlyPassInDB,
+  upsertMonthlyPass as upsertMonthlyPassInDB,
+  updateMembership as updateMembershipInDB,
+  cancelMonthlyPass as cancelMonthlyPassInDB,
+} from '../api/monthly-pass-crud';
+import {
   getAllLoyaltyMembers as fetchAllLoyaltyMembers,
   getLoyaltyMember as getLoyaltyMemberFromDB,
   createLoyaltyMember as createLoyaltyMemberInDB,
@@ -39,6 +47,11 @@ export const MembersProvider = ({ children, user }) => {
   const [error, setError] = useState(null);
   const [isInitialized, setIsInitialized] = useState(false);
 
+  // --- Monthly pass state ---
+  const [monthlyPassesByUser, setMonthlyPassesByUser] = useState({});
+  const [isMonthlyPassLoading, setIsMonthlyPassLoading] = useState(false);
+  const [monthlyPassError, setMonthlyPassError] = useState(null);
+
   // --- Loyalty state ---
   const [loyaltyMembers, setLoyaltyMembers] = useState([]);
   const [isLoyaltyLoading, setIsLoyaltyLoading] = useState(false);
@@ -66,6 +79,9 @@ export const MembersProvider = ({ children, user }) => {
         setIsPrepaidLoading(false);
         setIsPrepaidInitialized(false);
         setPrepaidError(null);
+        setMonthlyPassesByUser({});
+        setIsMonthlyPassLoading(false);
+        setMonthlyPassError(null);
         return;
       }
 
@@ -286,17 +302,36 @@ export const MembersProvider = ({ children, user }) => {
     }
   }, []);
 
-  const deleteMember = useCallback(async (id) => {
-    try {
-      await deleteMemberInDB(id);
+  // const deleteMember = useCallback(async (id) => {
+  //   try {
+  //     await deleteMemberInDB(id);
 
-      setMembers((prev) => prev.filter((member) => member.id !== id));
-      return id;
-    } catch (err) {
-      console.error('Failed to delete member:', err);
-      throw err;
-    }
-  }, []);
+  //     setMembers((prev) => prev.filter((member) => member.id !== id));
+  //     return id;
+  //   } catch (err) {
+  //     console.error('Failed to delete member:', err);
+  //     throw err;
+  //   }
+  // }, []);
+
+    const deleteMember = useCallback(async (id) => {
+      try {
+        await deleteMemberInDB(id);
+
+        setMembers((prev) => prev.filter((member) => member.id !== id));
+        setMonthlyPassesByUser((prev) => {
+          const updated = { ...prev };
+          delete updated[id];
+          return updated;
+        });
+
+        return id;
+      } catch (err) {
+        console.error('Failed to delete member:', err);
+        throw err;
+      }
+    }, []);
+
 
   const refreshMembers = useCallback(async () => {
     if (!user) return;
@@ -315,6 +350,188 @@ export const MembersProvider = ({ children, user }) => {
       setIsLoading(false);
     }
   }, [user]);
+
+  // =============================================
+  //  Monthly Passs CRUD
+  // =============================================
+
+  const getMonthlyPassesForUser = useCallback((userId) => {
+    return monthlyPassesByUser[userId] || [];
+  }, [monthlyPassesByUser]);
+
+  const refreshMonthlyPassesForUser = useCallback(async (userId) => {
+    try {
+      setIsMonthlyPassLoading(true);
+      setMonthlyPassError(null);
+
+      const passes = await fetchAllMonthlyPasses(userId);
+
+      setMonthlyPassesByUser((prev) => ({
+        ...prev,
+        [userId]: passes,
+      }));
+
+      return passes;
+    } catch (err) {
+      console.error('Failed to refresh monthly passes:', err);
+      setMonthlyPassError('Failed to refresh monthly passes.');
+      throw err;
+    } finally {
+      setIsMonthlyPassLoading(false);
+    }
+  }, []);
+
+  const getMonthlyPass = useCallback(async (userId, passId) => {
+    try {
+      const cachedPass = (monthlyPassesByUser[userId] || []).find((p) => p.passId === passId);
+
+      if (cachedPass) {
+        return cachedPass;
+      }
+
+      const passFromDB = await getMonthlyPassFromDB(userId, passId);
+
+      if (passFromDB) {
+        setMonthlyPassesByUser((prev) => ({
+          ...prev,
+          [userId]: prev[userId]?.find((p) => p.passId === passFromDB.passId)
+            ? prev[userId]
+            : [...(prev[userId] || []), passFromDB],
+        }));
+      }
+
+      return passFromDB;
+    } catch (err) {
+      console.error('Failed to get monthly pass:', err);
+      throw err;
+    }
+  }, [monthlyPassesByUser]);
+
+  const createMonthlyPass = useCallback(async (
+    userId,
+    passId,
+    plan_type,
+    update_flag,
+    vehicle,
+    notes = ''
+  ) => {
+    try {
+      await createMonthlyPassInDB(userId, passId, plan_type, update_flag, vehicle, notes);
+
+      const newPass = {
+        passId,
+        creation_date: new Date().toISOString().split('T')[0],
+        plan_type,
+        update_flag,
+        vehicle,
+        notes,
+      };
+
+      setMonthlyPassesByUser((prev) => ({
+        ...prev,
+        [userId]: [...(prev[userId] || []), newPass],
+      }));
+
+      return passId;
+    } catch (err) {
+      console.error('Failed to create monthly pass:', err);
+      throw err;
+    }
+  }, []);
+
+  const upsertMonthlyPass = useCallback(async (
+    userId,
+    passId,
+    plan_type,
+    update_flag,
+    vehicle,
+    notes = ''
+  ) => {
+    try {
+      const { existed } = await upsertMonthlyPassInDB(
+        userId,
+        passId,
+        plan_type,
+        update_flag,
+        vehicle,
+        notes
+      );
+
+      const passFields = {
+        passId,
+        plan_type,
+        update_flag,
+        vehicle,
+        notes,
+      };
+
+      setMonthlyPassesByUser((prev) => {
+        const existing = prev[userId] || [];
+        const idx = existing.findIndex((p) => p.passId === passId);
+
+        if (idx !== -1) {
+          const updated = [...existing];
+          updated[idx] = { ...updated[idx], ...passFields };
+          return { ...prev, [userId]: updated };
+        }
+
+        return {
+          ...prev,
+          [userId]: [
+            ...existing,
+            {
+              creation_date: new Date().toISOString().split('T')[0],
+              ...passFields,
+            },
+          ],
+        };
+      });
+
+      return { id: passId, existed };
+    } catch (err) {
+      console.error('Failed to upsert monthly pass:', err);
+      throw err;
+    }
+  }, []);
+
+  const updateMembership = useCallback(async (userId, passId, updates) => {
+    try {
+      await updateMembershipInDB(userId, passId, updates);
+
+      setMonthlyPassesByUser((prev) => ({
+        ...prev,
+        [userId]: (prev[userId] || []).map((pass) =>
+          pass.passId === passId ? { ...pass, ...updates } : pass
+        ),
+      }));
+
+      return passId;
+    } catch (err) {
+      console.error('Failed to update monthly pass:', err);
+      throw err;
+    }
+  }, []);
+
+  const cancelMonthlyPass = useCallback(async (userId, passId) => {
+    try {
+      await cancelMonthlyPassInDB(userId, passId);
+
+      const cancelled_date = new Date().toISOString().split('T')[0];
+
+      setMonthlyPassesByUser((prev) => ({
+        ...prev,
+        [userId]: (prev[userId] || []).map((pass) =>
+          pass.passId === passId ? { ...pass, cancelled_date } : pass
+        ),
+      }));
+
+      return passId;
+    } catch (err) {
+      console.error('Failed to cancel monthly pass:', err);
+      throw err;
+    }
+  }, []);
+
 
   // =============================================
   //  LOYALTY CRUD
@@ -515,6 +732,17 @@ export const MembersProvider = ({ children, user }) => {
     updateMember,
     deleteMember,
     refreshMembers,
+    // Monthly Passes
+    monthlyPassesByUser,
+    isMonthlyPassLoading,
+    monthlyPassError,
+    getMonthlyPassesForUser,
+    refreshMonthlyPassesForUser,
+    getMonthlyPass,
+    createMonthlyPass,
+    upsertMonthlyPass,
+    updateMembership,
+    cancelMonthlyPass,
     // Loyalty
     loyaltyMembers,
     isLoyaltyLoading,
