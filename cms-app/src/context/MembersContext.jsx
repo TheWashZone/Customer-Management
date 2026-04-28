@@ -152,11 +152,41 @@ export const MembersProvider = ({ children, user }) => {
     }
   }, [members]);
 
-  const createMember = useCallback(async (id, name, car, status, notes, email = '') => {
-    try {
-      await createMemberInDB(id, name, car, status, notes, email);
+  // const createMember = useCallback(async (id, name, car, status, notes, email = '') => {
+  //   try {
+  //     await createMemberInDB(id, name, car, status, notes, email);
 
-      const newMember = { id, name, car, status, notes, email };
+  //     const newMember = { id, name, car, status, notes, email };
+
+  //     setMembers((prev) => {
+  //       const idx = prev.findIndex((m) => m.id === id);
+  //       if (idx !== -1) {
+  //         const updated = [...prev];
+  //         updated[idx] = newMember;
+  //         return updated;
+  //       }
+  //       return [...prev, newMember];
+  //     });
+  //     return id;
+  //   } catch (err) {
+  //     console.error('Failed to create member:', err);
+  //     throw err;
+  //   }
+  // }, []);
+
+  const createMember = useCallback(async (id, name, contact_person, address, phone_number, email = '') => {
+    try {
+      await createMemberInDB(id, name, contact_person, address, phone_number, email);
+
+      const newMember = {
+        id,
+        date: new Date().toISOString().split('T')[0],
+        name,
+        contact_person,
+        address,
+        phone_number,
+        email,
+      };
 
       setMembers((prev) => {
         const idx = prev.findIndex((m) => m.id === id);
@@ -167,6 +197,7 @@ export const MembersProvider = ({ children, user }) => {
         }
         return [...prev, newMember];
       });
+
       return id;
     } catch (err) {
       console.error('Failed to create member:', err);
@@ -174,20 +205,64 @@ export const MembersProvider = ({ children, user }) => {
     }
   }, []);
 
-  const upsertMember = useCallback(async (id, name, car, status) => {
+  // const upsertMember = useCallback(async (id, name, car, status) => {
+  //   try {
+  //     const { existed } = await upsertMemberInDB(id, name, car, status);
+  //     const excelFields = { id, name, car, status };
+
+  //     setMembers((prev) => {
+  //       const idx = prev.findIndex((m) => m.id === id);
+  //       if (idx !== -1) {
+  //         const updated = [...prev];
+  //         updated[idx] = { ...updated[idx], ...excelFields };
+  //         return updated;
+  //       }
+  //       return [...prev, { ...excelFields, notes: '', email: '' }];
+  //     });
+  //     return { id, existed };
+  //   } catch (err) {
+  //     console.error('Failed to upsert member:', err);
+  //     throw err;
+  //   }
+  // }, []);
+
+  const upsertMember = useCallback(async (id, name, contact_person, address, phone_number, email = '') => {
     try {
-      const { existed } = await upsertMemberInDB(id, name, car, status);
-      const excelFields = { id, name, car, status };
+      const { existed } = await upsertMemberInDB(
+        id,
+        name,
+        contact_person,
+        address,
+        phone_number,
+        email
+      );
+
+      const memberFields = {
+        id,
+        name,
+        contact_person,
+        address,
+        phone_number,
+        email,
+      };
 
       setMembers((prev) => {
         const idx = prev.findIndex((m) => m.id === id);
         if (idx !== -1) {
           const updated = [...prev];
-          updated[idx] = { ...updated[idx], ...excelFields };
+          updated[idx] = { ...updated[idx], ...memberFields };
           return updated;
         }
-        return [...prev, { ...excelFields, notes: '', email: '' }];
+
+        return [
+          ...prev,
+          {
+            date: new Date().toISOString().split('T')[0],
+            ...memberFields,
+          },
+        ];
       });
+
       return { id, existed };
     } catch (err) {
       console.error('Failed to upsert member:', err);
