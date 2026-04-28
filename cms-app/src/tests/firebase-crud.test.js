@@ -16,36 +16,28 @@ import {
 import { deleteApp } from "firebase/app";
 import { app } from "../api/firebaseconfig.js";
 
-// Connect to the Firestore emulator using the same app instance
-const db = getFirestore(app);
-connectFirestoreEmulator(db, "127.0.0.1", 8080);
-
-// Connect to the Auth emulator
-const auth = getAuth(app);
-connectAuthEmulator(auth, "http://127.0.0.1:9099", { disableWarnings: true });
-
-// Import all functions from firebase-crud.js
 import {
   createMember,
   upsertMember,
   getMember,
   getAllMembers,
-  getMembersByStatus,
   updateMember,
   deleteMember,
 } from "../api/firebase-crud.js";
 
-// Authenticate a test user before running tests
+const db = getFirestore(app);
+connectFirestoreEmulator(db, "127.0.0.1", 8080);
+
+const auth = getAuth(app);
+connectAuthEmulator(auth, "http://127.0.0.1:9099", { disableWarnings: true });
+
 beforeAll(async () => {
   try {
-    // Try to sign in with test user
     await signInWithEmailAndPassword(auth, "test@example.com", "password123");
   } catch {
-    // If sign in fails, try to create the user
     try {
       await createUserWithEmailAndPassword(auth, "test@example.com", "password123");
     } catch (createError) {
-      // If user already exists, try signing in again
       if (createError.code === 'auth/email-already-in-use') {
         await signInWithEmailAndPassword(auth, "test@example.com", "password123");
       } else {
@@ -56,18 +48,26 @@ beforeAll(async () => {
   }
 });
 
-// Cleanup after all tests to prevent hanging processes
 afterAll(async () => {
   await signOut(auth);
   await deleteApp(app);
 });
 
-// Helper function to generate unique user IDs for testing
 function uniqId(prefix = "user") {
   return `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2)}`;
 }
 
-// Helper function to clean up test documents
+function buildMemberData(overrides = {}) {
+  return {
+    name: "John Doe",
+    contact_person: "Jane Doe",
+    address: "123 Main St",
+    phone_number: "555-123-4567",
+    email: "",
+    ...overrides,
+  };
+}
+
 async function cleanupTestDoc(userId) {
   try {
     await deleteDoc(doc(db, "users", userId));
@@ -80,40 +80,57 @@ describe("User CRUD Operations (emulator)", () => {
   describe("createMember", () => {
     test("successfully creates a new user document", async () => {
       const userId = uniqId("create");
-      const name = "John Doe";
-      const carInfo = "Toyota Camry 2020";
-      const status = 'active';
-      const notes = "Premium member";
+      const member = buildMemberData();
+      const today = new Date().toISOString().split("T")[0];
 
-      const returnedId = await createMember(userId, name, carInfo, status, notes);
+      const returnedId = await createMember(
+        userId,
+        member.name,
+        member.contact_person,
+        member.address,
+        member.phone_number,
+        member.email
+      );
 
       expect(returnedId).toBe(userId);
 
-      // Verify using getMember
       const user = await getMember(userId);
       expect(user).toEqual({
         id: userId,
-        name: name,
-        car: carInfo,
-        status: status,
-        notes: notes,
-        email: '',
+        date: today,
+        ...member,
       });
 
       await cleanupTestDoc(userId);
     });
 
-    test("overwrites existing user document", async () => {
+    test("overwrites an existing user document", async () => {
       const userId = uniqId("overwrite");
 
-      await createMember(userId, "Old Name", "Old Car", 'active', "Old notes");
-      await createMember(userId, "New Name", "New Car", 'inactive', "New notes");
+      await createMember(
+        userId,
+        "Old Name",
+        "Old Contact",
+        "Old Address",
+        "111-111-1111",
+        "old@example.com"
+      );
+
+      await createMember(
+        userId,
+        "New Name",
+        "New Contact",
+        "New Address",
+        "222-222-2222",
+        "new@example.com"
+      );
 
       const user = await getMember(userId);
       expect(user.name).toBe("New Name");
-      expect(user.car).toBe("New Car");
-      expect(user.status).toBe('inactive');
-      expect(user.notes).toBe("New notes");
+      expect(user.contact_person).toBe("New Contact");
+      expect(user.address).toBe("New Address");
+      expect(user.phone_number).toBe("222-222-2222");
+      expect(user.email).toBe("new@example.com");
 
       await cleanupTestDoc(userId);
     });
@@ -122,26 +139,38 @@ describe("User CRUD Operations (emulator)", () => {
   describe("getMember", () => {
     test("retrieves an existing user document", async () => {
       const userId = uniqId("get");
-      const name = "Jane Smith";
-      const carInfo = "Honda Accord 2021";
-      const status = 'active';
-      const notes = "Test user";
+      const member = buildMemberData({
+        name: "Jane Smith",
+        contact_person: "Sam Smith",
+        address: "456 Oak Ave",
+        phone_number: "555-987-6543",
+        email: "jane@example.com",
+      });
 
-      await createMember(userId, name, carInfo, status, notes);
+      await createMember(
+        userId,
+        member.name,
+        member.contact_person,
+        member.address,
+        member.phone_number,
+        member.email
+      );
 
       const user = await getMember(userId);
 
       expect(user).toBeDefined();
       expect(user.id).toBe(userId);
-      expect(user.name).toBe(name);
-      expect(user.car).toBe(carInfo);
-      expect(user.status).toBe(status);
-      expect(user.notes).toBe(notes);
+      expect(user.name).toBe(member.name);
+      expect(user.contact_person).toBe(member.contact_person);
+      expect(user.address).toBe(member.address);
+      expect(user.phone_number).toBe(member.phone_number);
+      expect(user.email).toBe(member.email);
+      expect(user.date).toBe(new Date().toISOString().split("T")[0]);
 
       await cleanupTestDoc(userId);
     });
 
-    test("returns null for non-existent user", async () => {
+    test("returns null for a non-existent user", async () => {
       const userId = uniqId("nonexistent");
       const user = await getMember(userId);
 
@@ -155,13 +184,12 @@ describe("User CRUD Operations (emulator)", () => {
       const userId2 = uniqId("all2");
       const userId3 = uniqId("all3");
 
-      await createMember(userId1, "User 1", "Car 1", 'active', "Notes 1");
-      await createMember(userId2, "User 2", "Car 2", 'inactive', "Notes 2");
-      await createMember(userId3, "User 3", "Car 3", 'active', "Notes 3");
+      await createMember(userId1, "User 1", "Contact 1", "Address 1", "555-000-0001");
+      await createMember(userId2, "User 2", "Contact 2", "Address 2", "555-000-0002");
+      await createMember(userId3, "User 3", "Contact 3", "Address 3", "555-000-0003");
 
       const allMembers = await getAllMembers();
 
-      // Should include at least our 3 test users
       expect(allMembers.length).toBeGreaterThanOrEqual(3);
 
       const testUsers = allMembers.filter(
@@ -174,125 +202,72 @@ describe("User CRUD Operations (emulator)", () => {
       await cleanupTestDoc(userId3);
     });
 
-    test("returns empty array when no users exist", async () => {
-      // This test assumes emulator is cleared, but may have other users
+    test("returns an array", async () => {
       const allMembers = await getAllMembers();
       expect(Array.isArray(allMembers)).toBe(true);
     });
   });
 
-  describe("getMembersByStatus", () => {
-    test("retrieves active members", async () => {
-      const userId1 = uniqId("active1");
-      const userId2 = uniqId("active2");
-      const userId3 = uniqId("inactive");
-
-      await createMember(userId1, "Active User 1", "Car 1", 'active', "Active");
-      await createMember(userId2, "Active User 2", "Car 2", 'active', "Active");
-      await createMember(userId3, "Inactive User", "Car 3", 'inactive', "Inactive");
-
-      const activeMembers = await getMembersByStatus('active');
-
-      const testUsers = activeMembers.filter(
-        (u) => u.id === userId1 || u.id === userId2
-      );
-      expect(testUsers.length).toBe(2);
-
-      // Should not include the inactive user
-      const inactiveUser = activeMembers.find((u) => u.id === userId3);
-      expect(inactiveUser).toBeUndefined();
-
-      await cleanupTestDoc(userId1);
-      await cleanupTestDoc(userId2);
-      await cleanupTestDoc(userId3);
-    });
-
-    test("retrieves inactive members", async () => {
-      const userId1 = uniqId("inact1");
-      const userId2 = uniqId("inact2");
-      const userId3 = uniqId("act");
-
-      await createMember(userId1, "Inactive User 1", "Car 1", 'inactive', "Inactive");
-      await createMember(userId2, "Inactive User 2", "Car 2", 'inactive', "Inactive");
-      await createMember(userId3, "Active User", "Car 3", 'active', "Active");
-
-      const inactiveMembers = await getMembersByStatus('inactive');
-
-      const testUsers = inactiveMembers.filter(
-        (u) => u.id === userId1 || u.id === userId2
-      );
-      expect(testUsers.length).toBe(2);
-
-      await cleanupTestDoc(userId1);
-      await cleanupTestDoc(userId2);
-      await cleanupTestDoc(userId3);
-    });
-
-    test("retrieves payment_needed members", async () => {
-      const userId1 = uniqId("pmtneeded");
-      const userId2 = uniqId("active");
-
-      await createMember(userId1, "Pmt Needed User", "Car 1", 'payment_needed', "Needs pmt");
-      await createMember(userId2, "Active User", "Car 2", 'active', "Active");
-
-      const pmtMembers = await getMembersByStatus('payment_needed');
-
-      const found = pmtMembers.find((u) => u.id === userId1);
-      expect(found).toBeDefined();
-      expect(found.status).toBe('payment_needed');
-
-      const notFound = pmtMembers.find((u) => u.id === userId2);
-      expect(notFound).toBeUndefined();
-
-      await cleanupTestDoc(userId1);
-      await cleanupTestDoc(userId2);
-    });
-  });
-
   describe("updateMember", () => {
-    test("updates specific fields of a user", async () => {
+    test("updates specific fields of an existing user", async () => {
       const userId = uniqId("update");
 
-      await createMember(userId, "Original Name", "Original Car", 'active', "Original notes");
+      await createMember(
+        userId,
+        "Original Name",
+        "Original Contact",
+        "Original Address",
+        "555-111-1111",
+        "original@example.com"
+      );
 
       await updateMember(userId, {
-        car: "Updated Car",
-        notes: "Updated notes",
+        address: "Updated Address",
+        phone_number: "555-222-2222",
       });
 
       const user = await getMember(userId);
-      expect(user.name).toBe("Original Name"); // Should remain unchanged
-      expect(user.car).toBe("Updated Car");
-      expect(user.status).toBe('active'); // Should remain unchanged
-      expect(user.notes).toBe("Updated notes");
+      expect(user.name).toBe("Original Name");
+      expect(user.contact_person).toBe("Original Contact");
+      expect(user.address).toBe("Updated Address");
+      expect(user.phone_number).toBe("555-222-2222");
+      expect(user.email).toBe("original@example.com");
 
       await cleanupTestDoc(userId);
     });
 
-    test("updates status field only", async () => {
+    test("updates only one field without changing the others", async () => {
       const userId = uniqId("partial");
 
-      await createMember(userId, "Test User", "Car", 'active', "Notes");
+      await createMember(
+        userId,
+        "Test User",
+        "Test Contact",
+        "Test Address",
+        "555-333-3333",
+        "test@example.com"
+      );
 
       await updateMember(userId, {
-        status: 'payment_needed',
+        contact_person: "Updated Contact",
       });
 
       const user = await getMember(userId);
       expect(user.name).toBe("Test User");
-      expect(user.car).toBe("Car");
-      expect(user.status).toBe('payment_needed');
-      expect(user.notes).toBe("Notes");
+      expect(user.contact_person).toBe("Updated Contact");
+      expect(user.address).toBe("Test Address");
+      expect(user.phone_number).toBe("555-333-3333");
+      expect(user.email).toBe("test@example.com");
 
       await cleanupTestDoc(userId);
     });
 
-    test("throws error when updating non-existent user", async () => {
+    test("throws when updating a non-existent user", async () => {
       const userId = uniqId("noexist");
       const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
       await expect(
-        updateMember(userId, { car: "New Car" })
+        updateMember(userId, { address: "New Address" })
       ).rejects.toThrow(`User with ID ${userId} does not exist`);
 
       consoleErrorSpy.mockRestore();
@@ -303,22 +278,25 @@ describe("User CRUD Operations (emulator)", () => {
     test("deletes an existing user document", async () => {
       const userId = uniqId("delete");
 
-      await createMember(userId, "Delete User", "Car", 'active', "Notes");
+      await createMember(
+        userId,
+        "Delete User",
+        "Delete Contact",
+        "Delete Address",
+        "555-444-4444"
+      );
 
-      // Verify it exists
       let user = await getMember(userId);
       expect(user).toBeDefined();
 
-      // Delete it
       const deletedId = await deleteMember(userId);
       expect(deletedId).toBe(userId);
 
-      // Verify it's gone
       user = await getMember(userId);
       expect(user).toBeNull();
     });
 
-    test("throws error when deleting non-existent user", async () => {
+    test("throws when deleting a non-existent user", async () => {
       const userId = uniqId("nothere");
       const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
@@ -331,10 +309,16 @@ describe("User CRUD Operations (emulator)", () => {
   });
 
   describe("upsertMember", () => {
-    test("creates a new member with empty notes and email when none exists", async () => {
+    test("creates a new member when none exists", async () => {
       const userId = uniqId("upsert_new");
 
-      const result = await upsertMember(userId, "New Member", "Ford Focus", 'active');
+      const result = await upsertMember(
+        userId,
+        "New Member",
+        "New Contact",
+        "New Address",
+        "555-555-5555"
+      );
 
       expect(result).toEqual({ id: userId, existed: false });
 
@@ -342,98 +326,101 @@ describe("User CRUD Operations (emulator)", () => {
       expect(user).toEqual({
         id: userId,
         name: "New Member",
-        car: "Ford Focus",
-        status: 'active',
-        notes: '',
-        email: '',
+        contact_person: "New Contact",
+        address: "New Address",
+        phone_number: "555-555-5555",
+        email: "",
       });
 
       await cleanupTestDoc(userId);
     });
 
-    test("updates existing member's Excel fields and preserves notes and email", async () => {
+    test("updates an existing member and returns existed true", async () => {
       const userId = uniqId("upsert_existing");
 
-      await createMember(userId, "Original Name", "Original Car", 'active', "Keep this note", "keep@example.com");
+      await createMember(
+        userId,
+        "Original Name",
+        "Original Contact",
+        "Original Address",
+        "555-666-6666",
+        "original@example.com"
+      );
 
-      const result = await upsertMember(userId, "Updated Name", "Updated Car", 'inactive');
+      const result = await upsertMember(
+        userId,
+        "Updated Name",
+        "Updated Contact",
+        "Updated Address",
+        "555-777-7777",
+        "updated@example.com"
+      );
 
       expect(result).toEqual({ id: userId, existed: true });
 
       const user = await getMember(userId);
       expect(user.name).toBe("Updated Name");
-      expect(user.car).toBe("Updated Car");
-      expect(user.status).toBe('inactive');
-      // Cache-only fields must be preserved
-      expect(user.notes).toBe("Keep this note");
-      expect(user.email).toBe("keep@example.com");
+      expect(user.contact_person).toBe("Updated Contact");
+      expect(user.address).toBe("Updated Address");
+      expect(user.phone_number).toBe("555-777-7777");
+      expect(user.email).toBe("updated@example.com");
+      expect(user.date).toBe(new Date().toISOString().split("T")[0]);
 
       await cleanupTestDoc(userId);
     });
 
-    test("upsert stores payment_needed status correctly", async () => {
-      const userId = uniqId("upsert_pmt");
+    test("stores the provided email on new records", async () => {
+      const userId = uniqId("upsert_email");
 
-      await upsertMember(userId, "Pmt User", "Car", 'payment_needed');
+      await upsertMember(
+        userId,
+        "Email User",
+        "Email Contact",
+        "Email Address",
+        "555-888-8888",
+        "emailuser@example.com"
+      );
 
       const user = await getMember(userId);
-      expect(user.status).toBe('payment_needed');
+      expect(user.email).toBe("emailuser@example.com");
 
       await cleanupTestDoc(userId);
     });
   });
 
   describe("Integration tests", () => {
-    test("complete CRUD workflow", async () => {
+    test("completes the full CRUD workflow", async () => {
       const userId = uniqId("workflow");
 
-      // Create
-      await createMember(userId, "Workflow User", "Toyota", 'active', "New customer");
+      await createMember(
+        userId,
+        "Workflow User",
+        "Workflow Contact",
+        "Workflow Address",
+        "555-999-9999"
+      );
+
       let user = await getMember(userId);
       expect(user.name).toBe("Workflow User");
-      expect(user.car).toBe("Toyota");
-      expect(user.status).toBe('active');
+      expect(user.contact_person).toBe("Workflow Contact");
+      expect(user.address).toBe("Workflow Address");
 
-      // Update
-      await updateMember(userId, { car: "Honda", notes: "Regular customer" });
+      await updateMember(userId, {
+        address: "Updated Workflow Address",
+        email: "workflow@example.com",
+      });
+
       user = await getMember(userId);
-      expect(user.car).toBe("Honda");
-      expect(user.notes).toBe("Regular customer");
+      expect(user.address).toBe("Updated Workflow Address");
+      expect(user.email).toBe("workflow@example.com");
 
-      // Read from list
       const allMembers = await getAllMembers();
       const foundUser = allMembers.find((u) => u.id === userId);
       expect(foundUser).toBeDefined();
 
-      // Delete
       await deleteMember(userId);
       user = await getMember(userId);
       expect(user).toBeNull();
-    });
-
-    test("query after status change", async () => {
-      const userId1 = uniqId("query1");
-      const userId2 = uniqId("query2");
-
-      // Create both as active
-      await createMember(userId1, "Query User 1", "Car 1", 'active', "Notes 1");
-      await createMember(userId2, "Query User 2", "Car 2", 'active', "Notes 2");
-
-      // Change one to payment_needed
-      await updateMember(userId2, { status: 'payment_needed' });
-
-      // Query for active
-      const activeMembers = await getMembersByStatus('active');
-      const testActiveUsers = activeMembers.filter((u) => u.id === userId1);
-      expect(testActiveUsers.length).toBe(1);
-
-      // Query for payment_needed
-      const pmtMembers = await getMembersByStatus('payment_needed');
-      const testPmtUsers = pmtMembers.filter((u) => u.id === userId2);
-      expect(testPmtUsers.length).toBe(1);
-
-      await cleanupTestDoc(userId1);
-      await cleanupTestDoc(userId2);
     });
   });
 });

@@ -250,7 +250,7 @@ function MembersPage() {
         setIdError(`A member with ID "${fullId}" already exists.`);
         return;
       }
-      await createMember(
+      await createCustomer(
         fullId,
         addForm.name.trim(),
         addForm.car.trim(),

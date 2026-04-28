@@ -4,8 +4,12 @@ service cloud.firestore {
   match /databases/{database}/documents {
     // Users collection
     match /users/{userId} {
-      // Allow read/write only if the user is authenticated
-      allow read, write: if request.auth != null;
+      // Allow CRUD operations only if the user is authenticated
+      allow get, list, create, update, delete: if request.auth != null;
+
+      match /monthlyPasses/{passId} {
+        allow read, write: if request.auth != null;
+      }
     }
 
     // Loyalty members collection
@@ -16,15 +20,6 @@ service cloud.firestore {
     // Prepaid members collection
     match /prepaidMembers/{memberId} {
       allow read, write: if request.auth != null;
-    }
-
-    // Customers collection
-    match /customers/{customerId} {
-      allow read, write: if request.auth != null;
-
-      match /monthlyPasses/{passId} {
-        allow read, write: if request.auth != null;
-      }
     }
 
     match /visits/{visitId} {
