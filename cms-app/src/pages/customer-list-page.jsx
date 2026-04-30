@@ -247,7 +247,7 @@ function MembersPage() {
     });
 
     setFilteredMemberPassRows(rows);
-  }, [searchTerm, members, monthlyPassesByUser]);
+  }, [searchTerm, members, monthlyPassesByUser, getMonthlyPassesForUser]);
 
   useEffect(() => {
     const loadMonthlyPasses = async () => {
