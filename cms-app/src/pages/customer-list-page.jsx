@@ -408,17 +408,17 @@ function MembersPage() {
     }
   };
 
-  const handleOpenEditModal = (member) => {
-    setEditForm({
-      id: member.id,
-      name: member.name || '',
-      car: member.car || '',
-      status: member.status || 'active',
-      notes: member.notes || '',
-      email: member.email || '',
-    });
-    setShowEditModal(true);
-  };
+  // const handleOpenEditModal = (member) => {
+  //   setEditForm({
+  //     id: member.id,
+  //     name: member.name || '',
+  //     car: member.car || '',
+  //     status: member.status || 'active',
+  //     notes: member.notes || '',
+  //     email: member.email || '',
+  //   });
+  //   setShowEditModal(true);
+  // };
 
   const handleEditInputChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -453,10 +453,10 @@ function MembersPage() {
     }
   };
 
-  const handleOpenDeleteModal = (member) => {
-    setMemberToDelete(member);
-    setShowDeleteModal(true);
-  };
+  // const handleOpenDeleteModal = (member) => {
+  //   setMemberToDelete(member);
+  //   setShowDeleteModal(true);
+  // };
 
   const handleConfirmDelete = async () => {
     if (!memberToDelete) return;
