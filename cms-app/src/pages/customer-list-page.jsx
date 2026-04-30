@@ -32,6 +32,7 @@ function MembersPage() {
     createLoyaltyMember, getLoyaltyMember, updateLoyaltyMember, deleteLoyaltyMember,
     prepaidMembers, isPrepaidLoading, prepaidError, ensurePrepaidLoaded,
     createPrepaidMember, getPrepaidMember, updatePrepaidMember, deletePrepaidMember,
+    createMonthlyPass,
   } = useMembers();
 
   // --- TAB STATE ---
@@ -48,10 +49,13 @@ function MembersPage() {
   const [addForm, setAddForm] = useState({
     id: '',
     name: '',
+    contactPerson: '',
+    phoneNumber: '',
+    address: '',
+    email: '',
     car: '',
     status: 'active',
     notes: '',
-    email: '',
   });
 
   const [showEditModal, setShowEditModal] = useState(false);
@@ -228,6 +232,45 @@ function MembersPage() {
     }));
   };
 
+  // const handleAddSubmit = async (e) => {
+  //   e.preventDefault();
+  //   setError('');
+  //   setIdError('');
+
+  //   const fullId = addSubPrefix + addForm.id.trim();
+  //   const idPattern = /^[BDU]\d{3,5}$/;
+  //   if (!idPattern.test(fullId)) {
+  //     setIdError("ID number must be 3–5 digits (e.g. 101).");
+  //     return;
+  //   }
+  //   if (!addForm.name.trim()) {
+  //     setError("Name is required to create a member.");
+  //     return;
+  //   }
+
+  //   try {
+  //     const existing = await getMember(fullId);
+  //     if (existing) {
+  //       setIdError(`A member with ID "${fullId}" already exists.`);
+  //       return;
+  //     }
+  //     await createCustomer(
+  //       fullId,
+  //       addForm.name.trim(),
+  //       addForm.car.trim(),
+  //       addForm.status,
+  //       addForm.notes.trim(),
+  //       addForm.email.trim()
+  //     );
+  //     setAddForm({ id: '', name: '', car: '', status: 'active', notes: '', email: '' });
+  //     setAddSubPrefix('B');
+  //     setShowAddForm(false);
+  //   } catch (err) {
+  //     console.error(err);
+  //     setError("Failed to create member. Please check the console for details.");
+  //   }
+  // };
+
   const handleAddSubmit = async (e) => {
     e.preventDefault();
     setError('');
@@ -250,15 +293,33 @@ function MembersPage() {
         setIdError(`A member with ID "${fullId}" already exists.`);
         return;
       }
-      await createCustomer(
-        fullId,
+      await createMember(
+        "1111",
         addForm.name.trim(),
-        addForm.car.trim(),
-        addForm.status,
-        addForm.notes.trim(),
+        addForm.contactPerson.trim(),
+        addForm.address,
+        addForm.phoneNumber.trim(),
         addForm.email.trim()
       );
-      setAddForm({ id: '', name: '', car: '', status: 'active', notes: '', email: '' });
+      await createMonthlyPass(
+        "1111", 
+        fullId, 
+        "B", 
+        false, 
+        addForm.car, 
+        addForm.notes
+      );
+      setAddForm({ 
+        name: '', 
+        contactPerson: '', 
+        phoneNumber: '',
+        address: '', 
+        email: '', 
+        id: '',
+        car: '',
+        status: 'active',
+        notes: ''
+      });
       setAddSubPrefix('B');
       setShowAddForm(false);
     } catch (err) {
