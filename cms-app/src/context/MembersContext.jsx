@@ -352,7 +352,7 @@ export const MembersProvider = ({ children, user }) => {
   }, [user]);
 
   // =============================================
-  //  Monthly Passs CRUD
+  //  Monthly Pass CRUD
   // =============================================
 
   const getMonthlyPassesForUser = useCallback((userId) => {
