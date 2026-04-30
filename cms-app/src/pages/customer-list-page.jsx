@@ -34,13 +34,19 @@ function MembersPage() {
     createLoyaltyMember, getLoyaltyMember, updateLoyaltyMember, deleteLoyaltyMember,
     prepaidMembers, isPrepaidLoading, prepaidError, ensurePrepaidLoaded,
     createPrepaidMember, getPrepaidMember, updatePrepaidMember, deletePrepaidMember,
-    createMonthlyPass,
+    createMonthlyPass, monthlyPassesByUser, getMonthlyPassesForUser, refreshMonthlyPassesForUser
   } = useMembers();
 
   // --- TAB STATE ---
   const [activeTab, setActiveTab] = useState('subscription');
 
-  const [filteredMembers, setFilteredMembers] = useState([]);
+  // const [filteredMembers, setFilteredMembers] = useState([]);
+
+  const [filteredMemberPassRows, setFilteredMemberPassRows] = useState([]);
+  const filteredMembers = Array.from(
+    new Map(filteredMemberPassRows.map((row) => [row.member.id, row.member])).values()
+  );
+
   const [searchTerm, setSearchTerm] = useState('');
   const [error, setError] = useState('');
   const [idError, setIdError] = useState('');
@@ -172,31 +178,96 @@ function MembersPage() {
   };
 
   // --- SUBSCRIPTION FILTER (existing) ---
+  // useEffect(() => {
+  //   const term = (searchTerm || '').trim().toLowerCase();
+
+  //   const filtered = (members || []).filter((m) => {
+  //     const name = (m.name || '').toLowerCase();
+  //     const id = (m.id || '').toString().toLowerCase();
+  //     const subscription = (m.subscription || (m.id ? m.id[0] : '')).toUpperCase();
+  //     const subscriptionId = (m.subscriptionId || m.subId || '').toString().toLowerCase();
+
+  //     let matchesSearch =
+  //       !term ||
+  //       name.includes(term) ||
+  //       id.includes(term) ||
+  //       (subscription + id).replace(/\s+/g, '').includes(term) ||
+  //       subscriptionId.includes(term);
+
+  //     if (!matchesSearch) return false;
+  //     if (filterSubscription !== 'all' && subscription !== filterSubscription) return false;
+  //     if (filterStatus !== 'all' && m.status !== filterStatus) return false;
+
+  //     return true;
+  //   });
+
+  //   setFilteredMembers(filtered);
+  // }, [searchTerm, members, filterSubscription, filterStatus]);
+
   useEffect(() => {
     const term = (searchTerm || '').trim().toLowerCase();
 
-    const filtered = (members || []).filter((m) => {
-      const name = (m.name || '').toLowerCase();
-      const id = (m.id || '').toString().toLowerCase();
-      const subscription = (m.subscription || (m.id ? m.id[0] : '')).toUpperCase();
-      const subscriptionId = (m.subscriptionId || m.subId || '').toString().toLowerCase();
+    const rows = (members || []).flatMap((member) => {
+      const memberPasses = getMonthlyPassesForUser(member.id) || [];
 
-      let matchesSearch =
+      const baseMatchesSearch =
         !term ||
-        name.includes(term) ||
-        id.includes(term) ||
-        (subscription + id).replace(/\s+/g, '').includes(term) ||
-        subscriptionId.includes(term);
+        (member.name || '').toLowerCase().includes(term) ||
+        (member.id || '').toString().toLowerCase().includes(term) ||
+        (member.contact_person || '').toLowerCase().includes(term) ||
+        (member.phone_number || '').toLowerCase().includes(term) ||
+        (member.address || '').toLowerCase().includes(term) ||
+        (member.email || '').toLowerCase().includes(term);
 
-      if (!matchesSearch) return false;
-      if (filterSubscription !== 'all' && subscription !== filterSubscription) return false;
-      if (filterStatus !== 'all' && m.status !== filterStatus) return false;
+      if (!memberPasses.length) {
+        if (!baseMatchesSearch) return [];
+        return [
+          {
+            member,
+            pass: null,
+          },
+        ];
+      }
 
-      return true;
+      return memberPasses
+        .filter((pass) => {
+          const passMatchesSearch =
+            !term ||
+            (pass.passId || '').toLowerCase().includes(term) ||
+            (pass.plan_type || '').toLowerCase().includes(term) ||
+            (pass.vehicle || '').toLowerCase().includes(term) ||
+            (pass.notes || '').toLowerCase().includes(term);
+
+          return baseMatchesSearch || passMatchesSearch;
+        })
+        .map((pass) => ({
+          member,
+          pass,
+        }));
     });
 
-    setFilteredMembers(filtered);
-  }, [searchTerm, members, filterSubscription, filterStatus]);
+    setFilteredMemberPassRows(rows);
+  }, [searchTerm, members, monthlyPassesByUser]);
+
+  useEffect(() => {
+    const loadMonthlyPasses = async () => {
+      for (const member of members || []) {
+        if (!monthlyPassesByUser[member.id]) {
+          try {
+            await refreshMonthlyPassesForUser(member.id);
+          } catch (err) {
+            console.error(`Failed to load monthly passes for member ${member.id}`, err);
+          }
+        }
+      }
+    };
+
+    if (members && members.length > 0) {
+      loadMonthlyPasses();
+    }
+  }, [members, monthlyPassesByUser, refreshMonthlyPassesForUser]);
+
+
 
   // --- LOYALTY FILTER ---
   useEffect(() => {
@@ -1174,17 +1245,26 @@ function MembersPage() {
                   <Table hover size="sm" className="mb-0 w-100">
                     <thead className="table-light">
                       <tr>
-                        <th style={{ width: '8%' }}>ID</th>
+                        {/* <th style={{ width: '8%' }}>Plan ID</th>
                         <th style={{ width: '15%' }}>Member</th>
                         <th style={{ width: '12%' }}>Vehicle</th>
                         <th style={{ width: '15%' }}>Email</th>
                         <th className="text-center" style={{ width: '10%' }}>Status</th>
                         <th style={{ width: '17%' }}>Notes</th>
-                        <th className="text-end" style={{ width: '17%' }}></th>
+                        <th className="text-end" style={{ width: '17%' }}></th> */}
+                        {/* <th>ID</th> */}
+                        <th className="passId-width">Pass ID</th>
+                        <th>Name</th>
+                        <th>Contact Person</th>
+                        <th>Phone Number</th>
+                        <th>Address</th>
+                        <th>Email</th>
+                        <th>Vehicle</th>
+                        <th>Pass Notes</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {filteredMembers.map((member) => {
+                      {/* {filteredMembers.map((member) => {
                         return (
                           <tr key={member.id}>
                             <td title={member.id}>{member.id}</td>
@@ -1210,7 +1290,20 @@ function MembersPage() {
                             </td>
                           </tr>
                         );
-                      })}
+                      })} */}
+                      {filteredMemberPassRows.map(({ member, pass }) => (
+                        <tr key={pass ? `${member.id}-${pass.passId}` : `${member.id}-nopass`}>
+                          {/* <td>{member.id}</td> */}
+                          <td className="passId-width">{pass ? pass.passId : '-'}</td>
+                          <td>{member.name}</td>
+                          <td>{member.contact_person}</td>
+                          <td>{member.phone_number}</td>
+                          <td>{member.address}</td>
+                          <td className="cell-truncate">{member.email}</td>
+                          <td>{pass ? pass.vehicle : '-'}</td>
+                          <td>{pass ? pass.notes : '-'}</td>
+                        </tr>
+                      ))}
                     </tbody>
                   </Table>
                 )}
