@@ -19,6 +19,8 @@ import {
   Badge,
 } from 'react-bootstrap';
 
+import { getNextId } from '../api/memberId-counter'
+
 import { useMembers } from '../context/MembersContext';
 
 import ExcelJS from 'exceljs';
@@ -276,6 +278,13 @@ function MembersPage() {
     setError('');
     setIdError('');
 
+    const nextId = await getNextId();
+    const memberId = String(nextId);
+    if (nextId == null) {
+      setError('Failed to generate a new member ID.');
+      return;
+    }
+
     const fullId = addSubPrefix + addForm.id.trim();
     const idPattern = /^[BDU]\d{3,5}$/;
     if (!idPattern.test(fullId)) {
@@ -294,7 +303,7 @@ function MembersPage() {
         return;
       }
       await createMember(
-        "1111",
+        memberId,
         addForm.name.trim(),
         addForm.contactPerson.trim(),
         addForm.address,
@@ -302,7 +311,7 @@ function MembersPage() {
         addForm.email.trim()
       );
       await createMonthlyPass(
-        "1111", 
+        memberId, 
         fullId, 
         "B", 
         false, 
