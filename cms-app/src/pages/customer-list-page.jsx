@@ -265,7 +265,7 @@ function MembersPage() {
     if (members && members.length > 0) {
       loadMonthlyPasses();
     }
-  }, [members, monthlyPassesByUser, refreshMonthlyPassesForUser]);
+  }, [members, monthlyPassesByUser, refreshMonthlyPassesForUser, getMonthlyPassesForUser]);
 
 
 
