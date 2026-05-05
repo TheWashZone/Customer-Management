@@ -19,6 +19,8 @@ import {
   Badge,
 } from 'react-bootstrap';
 
+import { getNextId } from '../api/memberId-counter'
+
 import { useMembers } from '../context/MembersContext';
 
 import ExcelJS from 'exceljs';
@@ -32,12 +34,19 @@ function MembersPage() {
     createLoyaltyMember, getLoyaltyMember, updateLoyaltyMember, deleteLoyaltyMember,
     prepaidMembers, isPrepaidLoading, prepaidError, ensurePrepaidLoaded,
     createPrepaidMember, getPrepaidMember, updatePrepaidMember, deletePrepaidMember,
+    createMonthlyPass, monthlyPassesByUser, getMonthlyPassesForUser, refreshMonthlyPassesForUser
   } = useMembers();
 
   // --- TAB STATE ---
   const [activeTab, setActiveTab] = useState('subscription');
 
-  const [filteredMembers, setFilteredMembers] = useState([]);
+  // const [filteredMembers, setFilteredMembers] = useState([]);
+
+  const [filteredMemberPassRows, setFilteredMemberPassRows] = useState([]);
+  const filteredMembers = Array.from(
+    new Map(filteredMemberPassRows.map((row) => [row.member.id, row.member])).values()
+  );
+
   const [searchTerm, setSearchTerm] = useState('');
   const [error, setError] = useState('');
   const [idError, setIdError] = useState('');
@@ -48,10 +57,13 @@ function MembersPage() {
   const [addForm, setAddForm] = useState({
     id: '',
     name: '',
+    contactPerson: '',
+    phoneNumber: '',
+    address: '',
+    email: '',
     car: '',
     status: 'active',
     notes: '',
-    email: '',
   });
 
   const [showEditModal, setShowEditModal] = useState(false);
@@ -166,31 +178,96 @@ function MembersPage() {
   };
 
   // --- SUBSCRIPTION FILTER (existing) ---
+  // useEffect(() => {
+  //   const term = (searchTerm || '').trim().toLowerCase();
+
+  //   const filtered = (members || []).filter((m) => {
+  //     const name = (m.name || '').toLowerCase();
+  //     const id = (m.id || '').toString().toLowerCase();
+  //     const subscription = (m.subscription || (m.id ? m.id[0] : '')).toUpperCase();
+  //     const subscriptionId = (m.subscriptionId || m.subId || '').toString().toLowerCase();
+
+  //     let matchesSearch =
+  //       !term ||
+  //       name.includes(term) ||
+  //       id.includes(term) ||
+  //       (subscription + id).replace(/\s+/g, '').includes(term) ||
+  //       subscriptionId.includes(term);
+
+  //     if (!matchesSearch) return false;
+  //     if (filterSubscription !== 'all' && subscription !== filterSubscription) return false;
+  //     if (filterStatus !== 'all' && m.status !== filterStatus) return false;
+
+  //     return true;
+  //   });
+
+  //   setFilteredMembers(filtered);
+  // }, [searchTerm, members, filterSubscription, filterStatus]);
+
   useEffect(() => {
     const term = (searchTerm || '').trim().toLowerCase();
 
-    const filtered = (members || []).filter((m) => {
-      const name = (m.name || '').toLowerCase();
-      const id = (m.id || '').toString().toLowerCase();
-      const subscription = (m.subscription || (m.id ? m.id[0] : '')).toUpperCase();
-      const subscriptionId = (m.subscriptionId || m.subId || '').toString().toLowerCase();
+    const rows = (members || []).flatMap((member) => {
+      const memberPasses = getMonthlyPassesForUser(member.id) || [];
 
-      let matchesSearch =
+      const baseMatchesSearch =
         !term ||
-        name.includes(term) ||
-        id.includes(term) ||
-        (subscription + id).replace(/\s+/g, '').includes(term) ||
-        subscriptionId.includes(term);
+        (member.name || '').toLowerCase().includes(term) ||
+        (member.id || '').toString().toLowerCase().includes(term) ||
+        (member.contact_person || '').toLowerCase().includes(term) ||
+        (member.phone_number || '').toLowerCase().includes(term) ||
+        (member.address || '').toLowerCase().includes(term) ||
+        (member.email || '').toLowerCase().includes(term);
 
-      if (!matchesSearch) return false;
-      if (filterSubscription !== 'all' && subscription !== filterSubscription) return false;
-      if (filterStatus !== 'all' && m.status !== filterStatus) return false;
+      if (!memberPasses.length) {
+        if (!baseMatchesSearch) return [];
+        return [
+          {
+            member,
+            pass: null,
+          },
+        ];
+      }
 
-      return true;
+      return memberPasses
+        .filter((pass) => {
+          const passMatchesSearch =
+            !term ||
+            (pass.passId || '').toLowerCase().includes(term) ||
+            (pass.plan_type || '').toLowerCase().includes(term) ||
+            (pass.vehicle || '').toLowerCase().includes(term) ||
+            (pass.notes || '').toLowerCase().includes(term);
+
+          return baseMatchesSearch || passMatchesSearch;
+        })
+        .map((pass) => ({
+          member,
+          pass,
+        }));
     });
 
-    setFilteredMembers(filtered);
-  }, [searchTerm, members, filterSubscription, filterStatus]);
+    setFilteredMemberPassRows(rows);
+  }, [searchTerm, members, monthlyPassesByUser, getMonthlyPassesForUser]);
+
+  useEffect(() => {
+    const loadMonthlyPasses = async () => {
+      for (const member of members || []) {
+        if (!monthlyPassesByUser[member.id]) {
+          try {
+            await refreshMonthlyPassesForUser(member.id);
+          } catch (err) {
+            console.error(`Failed to load monthly passes for member ${member.id}`, err);
+          }
+        }
+      }
+    };
+
+    if (members && members.length > 0) {
+      loadMonthlyPasses();
+    }
+  }, [members, monthlyPassesByUser, refreshMonthlyPassesForUser, getMonthlyPassesForUser]);
+
+
 
   // --- LOYALTY FILTER ---
   useEffect(() => {
@@ -228,10 +305,56 @@ function MembersPage() {
     }));
   };
 
+  // const handleAddSubmit = async (e) => {
+  //   e.preventDefault();
+  //   setError('');
+  //   setIdError('');
+
+  //   const fullId = addSubPrefix + addForm.id.trim();
+  //   const idPattern = /^[BDU]\d{3,5}$/;
+  //   if (!idPattern.test(fullId)) {
+  //     setIdError("ID number must be 3–5 digits (e.g. 101).");
+  //     return;
+  //   }
+  //   if (!addForm.name.trim()) {
+  //     setError("Name is required to create a member.");
+  //     return;
+  //   }
+
+  //   try {
+  //     const existing = await getMember(fullId);
+  //     if (existing) {
+  //       setIdError(`A member with ID "${fullId}" already exists.`);
+  //       return;
+  //     }
+  //     await createCustomer(
+  //       fullId,
+  //       addForm.name.trim(),
+  //       addForm.car.trim(),
+  //       addForm.status,
+  //       addForm.notes.trim(),
+  //       addForm.email.trim()
+  //     );
+  //     setAddForm({ id: '', name: '', car: '', status: 'active', notes: '', email: '' });
+  //     setAddSubPrefix('B');
+  //     setShowAddForm(false);
+  //   } catch (err) {
+  //     console.error(err);
+  //     setError("Failed to create member. Please check the console for details.");
+  //   }
+  // };
+
   const handleAddSubmit = async (e) => {
     e.preventDefault();
     setError('');
     setIdError('');
+
+    const nextId = await getNextId();
+    const memberId = String(nextId);
+    if (nextId == null) {
+      setError('Failed to generate a new member ID.');
+      return;
+    }
 
     const fullId = addSubPrefix + addForm.id.trim();
     const idPattern = /^[BDU]\d{3,5}$/;
@@ -251,14 +374,32 @@ function MembersPage() {
         return;
       }
       await createMember(
-        fullId,
+        memberId,
         addForm.name.trim(),
-        addForm.car.trim(),
-        addForm.status,
-        addForm.notes.trim(),
+        addForm.contactPerson.trim(),
+        addForm.address,
+        addForm.phoneNumber.trim(),
         addForm.email.trim()
       );
-      setAddForm({ id: '', name: '', car: '', status: 'active', notes: '', email: '' });
+      await createMonthlyPass(
+        memberId, 
+        fullId, 
+        "B", 
+        false, 
+        addForm.car, 
+        addForm.notes
+      );
+      setAddForm({ 
+        name: '', 
+        contactPerson: '', 
+        phoneNumber: '',
+        address: '', 
+        email: '', 
+        id: '',
+        car: '',
+        status: 'active',
+        notes: ''
+      });
       setAddSubPrefix('B');
       setShowAddForm(false);
     } catch (err) {
@@ -267,17 +408,17 @@ function MembersPage() {
     }
   };
 
-  const handleOpenEditModal = (member) => {
-    setEditForm({
-      id: member.id,
-      name: member.name || '',
-      car: member.car || '',
-      status: member.status || 'active',
-      notes: member.notes || '',
-      email: member.email || '',
-    });
-    setShowEditModal(true);
-  };
+  // const handleOpenEditModal = (member) => {
+  //   setEditForm({
+  //     id: member.id,
+  //     name: member.name || '',
+  //     car: member.car || '',
+  //     status: member.status || 'active',
+  //     notes: member.notes || '',
+  //     email: member.email || '',
+  //   });
+  //   setShowEditModal(true);
+  // };
 
   const handleEditInputChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -312,10 +453,10 @@ function MembersPage() {
     }
   };
 
-  const handleOpenDeleteModal = (member) => {
-    setMemberToDelete(member);
-    setShowDeleteModal(true);
-  };
+  // const handleOpenDeleteModal = (member) => {
+  //   setMemberToDelete(member);
+  //   setShowDeleteModal(true);
+  // };
 
   const handleConfirmDelete = async () => {
     if (!memberToDelete) return;
@@ -760,6 +901,38 @@ function MembersPage() {
                         <Form onSubmit={handleAddSubmit}>
                           <Row className="mb-3">
                             <Col md={4}>
+                              <Form.Group controlId="addName">
+                                <Form.Label>Name <span className="text-danger">*</span></Form.Label>
+                                <Form.Control type="text" name="name" value={addForm.name} onChange={handleAddInputChange} required />
+                              </Form.Group>
+                            </Col>
+                            <Col md={4}>
+                              <Form.Group controlId="addContact">
+                                <Form.Label>Contact person</Form.Label>
+                                <Form.Control type="text" name="contactPerson" value={addForm.contactPerson} onChange={handleAddInputChange} />
+                              </Form.Group>
+                            </Col>
+                            <Col md={4}>
+                              <Form.Group controlId="addPhoneNumber">
+                                <Form.Label>Phone Number</Form.Label>
+                                <Form.Control type="phoneNumber" name="phoneNumber" value={addForm.phoneNumber} onChange={handleAddInputChange} />
+                              </Form.Group>
+                            </Col>
+                            <Col md={4}>
+                              <Form.Group controlId="addAddress">
+                                <Form.Label>Address</Form.Label>
+                                <Form.Control type="address" name="address" value={addForm.address} onChange={handleAddInputChange} />
+                              </Form.Group>
+                            </Col>
+                            <Col md={4}>
+                              <Form.Group controlId="addEmail">
+                                <Form.Label>Email</Form.Label>
+                                <Form.Control type="email" name="email" value={addForm.email} onChange={handleAddInputChange} placeholder="optional" />
+                              </Form.Group>
+                            </Col>
+                          </Row>
+                          <Row className="mb-3">
+                            <Col md={4}>
                               <Form.Group controlId="addId">
                                 <Form.Label>ID <span className="text-danger">*</span></Form.Label>
                                 <InputGroup>
@@ -790,23 +963,9 @@ function MembersPage() {
                               </Form.Group>
                             </Col>
                             <Col md={4}>
-                              <Form.Group controlId="addName">
-                                <Form.Label>Name <span className="text-danger">*</span></Form.Label>
-                                <Form.Control type="text" name="name" value={addForm.name} onChange={handleAddInputChange} required />
-                              </Form.Group>
-                            </Col>
-                            <Col md={4}>
                               <Form.Group controlId="addCar">
                                 <Form.Label>Vehicle</Form.Label>
                                 <Form.Control type="text" name="car" value={addForm.car} onChange={handleAddInputChange} />
-                              </Form.Group>
-                            </Col>
-                          </Row>
-                          <Row className="mb-3">
-                            <Col md={4}>
-                              <Form.Group controlId="addEmail">
-                                <Form.Label>Email</Form.Label>
-                                <Form.Control type="email" name="email" value={addForm.email} onChange={handleAddInputChange} placeholder="optional" />
                               </Form.Group>
                             </Col>
                             <Col md={4}>
@@ -1086,17 +1245,26 @@ function MembersPage() {
                   <Table hover size="sm" className="mb-0 w-100">
                     <thead className="table-light">
                       <tr>
-                        <th style={{ width: '8%' }}>ID</th>
+                        {/* <th style={{ width: '8%' }}>Plan ID</th>
                         <th style={{ width: '15%' }}>Member</th>
                         <th style={{ width: '12%' }}>Vehicle</th>
                         <th style={{ width: '15%' }}>Email</th>
                         <th className="text-center" style={{ width: '10%' }}>Status</th>
                         <th style={{ width: '17%' }}>Notes</th>
-                        <th className="text-end" style={{ width: '17%' }}></th>
+                        <th className="text-end" style={{ width: '17%' }}></th> */}
+                        {/* <th>ID</th> */}
+                        <th className="passId-width">Pass ID</th>
+                        <th>Name</th>
+                        <th>Contact Person</th>
+                        <th>Phone Number</th>
+                        <th>Address</th>
+                        <th>Email</th>
+                        <th>Vehicle</th>
+                        <th>Pass Notes</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {filteredMembers.map((member) => {
+                      {/* {filteredMembers.map((member) => {
                         return (
                           <tr key={member.id}>
                             <td title={member.id}>{member.id}</td>
@@ -1122,7 +1290,20 @@ function MembersPage() {
                             </td>
                           </tr>
                         );
-                      })}
+                      })} */}
+                      {filteredMemberPassRows.map(({ member, pass }) => (
+                        <tr key={pass ? `${member.id}-${pass.passId}` : `${member.id}-nopass`}>
+                          {/* <td>{member.id}</td> */}
+                          <td className="passId-width">{pass ? pass.passId : '-'}</td>
+                          <td>{member.name}</td>
+                          <td>{member.contact_person}</td>
+                          <td>{member.phone_number}</td>
+                          <td>{member.address}</td>
+                          <td className="cell-truncate">{member.email}</td>
+                          <td>{pass ? pass.vehicle : '-'}</td>
+                          <td>{pass ? pass.notes : '-'}</td>
+                        </tr>
+                      ))}
                     </tbody>
                   </Table>
                 )}

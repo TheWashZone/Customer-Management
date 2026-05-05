@@ -1,8 +1,10 @@
 /* eslint-env vitest */
-import { afterAll, describe, test, expect } from "vitest";
+import { afterAll, afterEach, describe, test, expect } from "vitest";
 import {
   getAuth,
   connectAuthEmulator,
+  deleteUser,
+  signOut,
 } from "firebase/auth";
 import { deleteApp } from "firebase/app";
 import { app } from "../api/firebaseconfig.js";
@@ -19,6 +21,14 @@ import { createUser, signIn } from "../api/firebase-auth.js";
 afterAll(async () => {
   // Delete the Firebase app to close all connections
   await deleteApp(app);
+});
+
+afterEach(async () => {
+  if (auth.currentUser) {
+    await deleteUser(auth.currentUser);
+  } else {
+    await signOut(auth).catch(() => {});
+  }
 });
 
 function uniqEmail(prefix = "user") {
