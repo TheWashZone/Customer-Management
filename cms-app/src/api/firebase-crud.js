@@ -16,11 +16,11 @@ async function createMember(id, name, contact_person, address, phone_number, ema
   try {
     const userData = {
       date: new Date().toISOString().split("T")[0],
-      name,
-      contact_person,
-      address,
-      phone_number,
-      email,
+      name: name,
+      contact_person: contact_person,
+      address: address,
+      phone_number: phone_number,
+      email: email,
     };
     await setDoc(doc(db, "users", userId), userData);
     return userId;
