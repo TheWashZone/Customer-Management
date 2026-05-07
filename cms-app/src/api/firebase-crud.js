@@ -1,4 +1,16 @@
-import { doc, setDoc, getDoc, updateDoc, deleteDoc, collection, getDocs, runTransaction } from "firebase/firestore";
+import { 
+  doc, 
+  setDoc, 
+  getDoc, 
+  updateDoc, 
+  deleteDoc, 
+  collection, 
+  getDocs, 
+  runTransaction,
+  collectionGroup,
+  query,
+  where
+} from "firebase/firestore";
 import { db } from "./firebaseconfig";
 
 /**
@@ -167,13 +179,54 @@ async function deleteMember(id) {
   }
 }
 
+/**
+ * Finds and returns the member who owns a given monthly pass ID
+ * @param {string} passId - The monthly pass ID
+ * @returns {Promise<Object|null>} Member object or null if not found
+ */
+async function getMemberByMonthlyPassId(passId) {
+  try {
+    const q = query(
+      collectionGroup(db, "monthlyPasses"),
+      where("passId", "==", passId)
+    );
+
+    const snapshot = await getDocs(q);
+
+    if (snapshot.empty) {
+      return null;
+    }
+
+    const passDoc = snapshot.docs[0];
+
+    // Get parent user document
+    const userRef = passDoc.ref.parent.parent;
+    const userSnap = await getDoc(userRef);
+
+    if (!userSnap.exists()) {
+      return null;
+    }
+
+    return {
+      id: userSnap.id,
+      ...userSnap.data()
+    };
+
+  } catch (error) {
+    console.error("❌ Error finding member by monthly pass ID:", error);
+    throw error;
+  }
+}
+
+
 export {
   createMember,
   upsertMember,
   getMember,
   getAllMembers,
   updateMember,
-  deleteMember
+  deleteMember,
+  getMemberByMonthlyPassId
 };
 
 

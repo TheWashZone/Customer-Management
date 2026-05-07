@@ -6,6 +6,7 @@ import {
   upsertMember as upsertMemberInDB,
   updateMember as updateMemberInDB,
   deleteMember as deleteMemberInDB,
+  getMemberByMonthlyPassId as getMemberByMonthlyPassIdFromDB,
 } from '../api/firebase-crud';
 import {
   getAllMonthlyPasses as fetchAllMonthlyPasses,
@@ -407,6 +408,38 @@ export const MembersProvider = ({ children, user }) => {
     }
   }, [monthlyPassesByUser]);
 
+  const getMemberByMonthlyPassId = useCallback(async (passId) => {
+    try {
+      const cachedOwnerId = Object.entries(monthlyPassesByUser).find(([, passes]) =>
+        (passes || []).some((pass) => pass.passId === passId)
+      )?.[0];
+
+      if (cachedOwnerId) {
+        const cachedMember = members.find((member) => member.id === cachedOwnerId);
+
+        if (cachedMember) {
+          return cachedMember;
+        }
+
+        return await getMember(cachedOwnerId);
+      }
+
+      const memberFromDB = await getMemberByMonthlyPassIdFromDB(passId);
+
+      if (memberFromDB) {
+        setMembers((prev) =>
+          prev.find((member) => member.id === memberFromDB.id) ? prev : [...prev, memberFromDB]
+        );
+      }
+
+      return memberFromDB;
+    } catch (err) {
+      console.error('Failed to get member by monthly pass ID:', err);
+      throw err;
+    }
+  }, [getMember, members, monthlyPassesByUser]);
+
+
   const createMonthlyPass = useCallback(async (
     userId,
     passId,
@@ -739,6 +772,7 @@ export const MembersProvider = ({ children, user }) => {
     getMonthlyPassesForUser,
     refreshMonthlyPassesForUser,
     getMonthlyPass,
+    getMemberByMonthlyPassId,
     createMonthlyPass,
     upsertMonthlyPass,
     updateMembership,
