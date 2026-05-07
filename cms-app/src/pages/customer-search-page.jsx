@@ -5,7 +5,7 @@ import HamburgerMenu from "../components/HamburgerMenu";
 import { logDailyVisit } from "../api/analytics-crud";
 
 function CustomerSearchPage() {
-  const { getMember, updateMember, getLoyaltyMember, updateLoyaltyMember, getPrepaidMember, updatePrepaidMember } = useMembers();
+  const { getMember, updateMember, getLoyaltyMember, updateLoyaltyMember, getPrepaidMember, updatePrepaidMember, getMemberByMonthlyPassId } = useMembers();
 
   const [code, setCode] = useState("");
   const [memberData, setMemberData] = useState(null);
@@ -56,7 +56,8 @@ function CustomerSearchPage() {
         member = await getPrepaidMember(code);
         if (member) setMemberType("prepaid");
       } else if (code[0] === "B" || code[0] === "D" || code[0] === "U") {
-        member = await getMember(code);
+        // member = await getMember(code);
+        member = await getMemberByMonthlyPassId(code);
         if (member) setMemberType("subscription");
       }
 
@@ -304,16 +305,24 @@ function CustomerSearchPage() {
             <>
               <div className="member-header-card">
                 <div className="header-row">
-                  <span className="header-label">ID:</span>
-                  <span className="header-value">{memberData.id}</span>
-                </div>
-                <div className="header-row">
-                  <span className="header-label">Name:&nbsp;</span>
+                  <span className="header-label">Name:</span>
                   <span className="header-value">{memberData.name}</span>
                 </div>
                 <div className="header-row">
-                  <span className="header-label">Car:&nbsp;</span>
-                  <span className="header-value">{memberData.car}</span>
+                  <span className="header-label">Pass ID:&nbsp;</span>
+                  <span className="header-value">{code}</span>
+                </div>
+                <div className="header-row">
+                  <span className="header-label">Contact Person:&nbsp;</span>
+                  <span className="header-value">{memberData.contact_person}</span>
+                </div>
+                <div className="header-row">
+                  <span className="header-label">Phone Number:&nbsp;</span>
+                  <span className="header-value">{memberData.phone_number}</span>
+                </div>
+                <div className="header-row">
+                  <span className="header-label">Address:&nbsp;</span>
+                  <span className="header-value">{memberData.address}</span>
                 </div>
                 {memberData.email && (
                   <div className="header-row">
