@@ -349,63 +349,84 @@ function MembersPage() {
     setError('');
     setIdError('');
 
-    const nextId = await getNextId();
-    const memberId = String(nextId);
-    if (nextId == null) {
-      setError('Failed to generate a new member ID.');
-      return;
-    }
-
     const fullId = addSubPrefix + addForm.id.trim();
+
     const idPattern = /^[BDU]\d{3,5}$/;
     if (!idPattern.test(fullId)) {
       setIdError("ID number must be 3–5 digits (e.g. 101).");
       return;
     }
+
     if (!addForm.name.trim()) {
       setError("Name is required to create a member.");
       return;
     }
 
+    const normalize = (value) => (value || '').trim().toLowerCase();
+
+    const matchingMember = members.find((member) =>
+      normalize(member.name) === normalize(addForm.name) &&
+      normalize(member.contact_person) === normalize(addForm.contactPerson) &&
+      normalize(member.address) === normalize(addForm.address) &&
+      normalize(member.phone_number) === normalize(addForm.phoneNumber) &&
+      normalize(member.email) === normalize(addForm.email)
+    );
+
     try {
-      const existing = await getMember(fullId);
-      if (existing) {
-        setIdError(`A member with ID "${fullId}" already exists.`);
-        return;
+      if (matchingMember) {
+        await createMonthlyPass(
+          matchingMember.id,
+          fullId,
+          addSubPrefix,
+          false,
+          addForm.car,
+          addForm.notes
+        );
+      } else {
+        const nextId = await getNextId();
+
+        if (nextId == null) {
+          setError('Failed to generate a new member ID.');
+          return;
+        }
+
+        const memberId = String(nextId);
+
+        await createMemberWithMonthlyPass(
+          memberId,
+          fullId,
+          addForm.name.trim(),
+          addForm.contactPerson.trim(),
+          addForm.address,
+          addForm.phoneNumber.trim(),
+          addForm.email.trim(),
+          addSubPrefix,
+          false,
+          addForm.car,
+          addForm.notes
+        );
       }
 
-      await createMemberWithMonthlyPass(
-        memberId,
-        fullId,
-        addForm.name.trim(),
-        addForm.contactPerson.trim(),
-        addForm.address,
-        addForm.phoneNumber.trim(),
-        addForm.email.trim(),
-        addSubPrefix,
-        addForm.status,
-        addForm.car,
-        addForm.notes
-      );
-
-      setAddForm({ 
-        name: '', 
-        contactPerson: '', 
+      setAddForm({
+        name: '',
+        contactPerson: '',
         phoneNumber: '',
-        address: '', 
-        email: '', 
+        address: '',
+        email: '',
         id: '',
         car: '',
         status: 'active',
         notes: ''
       });
+
       setAddSubPrefix('B');
       setShowAddForm(false);
     } catch (err) {
       console.error(err);
-      setError("Failed to create member. Please check the console for details.");
+      setError(err.message || "Failed to create member. Please check the console for details.");
     }
   };
+
 
   // const handleOpenEditModal = (member) => {
   //   setEditForm({
