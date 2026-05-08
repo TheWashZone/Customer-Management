@@ -29,7 +29,7 @@ import HamburgerMenu from '../components/HamburgerMenu';
 
 function MembersPage() {
   const {
-    members, isLoading, createMemberWithMonthlyPass, getMember, updateMember, deleteMember,
+    members, isLoading, createMemberWithMonthlyPass, updateMember, deleteMember,
     loyaltyMembers, isLoyaltyLoading, loyaltyError, ensureLoyaltyLoaded,
     createLoyaltyMember, getLoyaltyMember, updateLoyaltyMember, deleteLoyaltyMember,
     prepaidMembers, isPrepaidLoading, prepaidError, ensurePrepaidLoaded,
@@ -39,6 +39,10 @@ function MembersPage() {
 
   // --- TAB STATE ---
   const [activeTab, setActiveTab] = useState('subscription');
+
+  // --- SUCCESS STATE ---
+  const [successMessage, setSuccessMessage] = useState('');
+
 
   // const [filteredMembers, setFilteredMembers] = useState([]);
 
@@ -348,6 +352,8 @@ function MembersPage() {
     e.preventDefault();
     setError('');
     setIdError('');
+    setSuccessMessage('');
+
 
     const fullId = addSubPrefix + addForm.id.trim();
 
@@ -382,6 +388,8 @@ function MembersPage() {
           addForm.car,
           addForm.notes
         );
+
+        setSuccessMessage(`Monthly pass ${fullId} was added to existing member ${matchingMember.name}.`);
       } else {
         const nextId = await getNextId();
 
@@ -405,6 +413,8 @@ function MembersPage() {
           addForm.car,
           addForm.notes
         );
+
+        setSuccessMessage(`New member ${addForm.name.trim()} was created with monthly pass ${fullId}.`);
       }
 
       setAddForm({
@@ -862,6 +872,21 @@ function MembersPage() {
               </Col>
             </Row>
           )}
+
+          {successMessage && (
+            <Row className="mb-3 px-4">
+              <Col>
+                <Alert
+                  variant="success"
+                  dismissible
+                  onClose={() => setSuccessMessage('')}
+                >
+                  {successMessage}
+                </Alert>
+              </Col>
+            </Row>
+          )}
+
 
           {/* ============================================= */}
           {/*  SUBSCRIPTION TAB                             */}

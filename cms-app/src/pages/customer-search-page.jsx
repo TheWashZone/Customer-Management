@@ -5,7 +5,7 @@ import HamburgerMenu from "../components/HamburgerMenu";
 import { logDailyVisit } from "../api/analytics-crud";
 
 function CustomerSearchPage() {
-  const { getMember, updateMember, getLoyaltyMember, updateLoyaltyMember, getPrepaidMember, updatePrepaidMember, getMemberByMonthlyPassId } = useMembers();
+  const { updateMember, getLoyaltyMember, updateLoyaltyMember, getPrepaidMember, updatePrepaidMember, getMemberByMonthlyPassId } = useMembers();
 
   const [code, setCode] = useState("");
   const [memberData, setMemberData] = useState(null);
