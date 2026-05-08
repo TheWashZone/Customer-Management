@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import "../css/customer-search-page.css";
 import { useMembers } from "../context/MembersContext";
 import HamburgerMenu from "../components/HamburgerMenu";
-// import { logDailyVisit } from "../api/analytics-crud";
+import { logDailyVisit } from "../api/analytics-crud";
 import { createVisit } from "../api/visit-crud.js";
 import { getNextVisitId } from "../api/visit-counter.js"
 
