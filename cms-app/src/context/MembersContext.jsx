@@ -3,6 +3,7 @@ import {
   getAllMembers as fetchAllMembers,
   getMember as getMemberFromDB,
   createMember as createMemberInDB,
+  createMemberWithMonthlyPass as createMemberWithMonthlyPassInDB,
   upsertMember as upsertMemberInDB,
   updateMember as updateMemberInDB,
   deleteMember as deleteMemberInDB,
@@ -221,6 +222,78 @@ export const MembersProvider = ({ children, user }) => {
       throw err;
     }
   }, []);
+
+  const createMemberWithMonthlyPass = useCallback(async (
+    userId,
+    passId,
+    name,
+    contact_person,
+    address,
+    phone_number,
+    email = '',
+    plan_type,
+    update_flag,
+    vehicle,
+    notes = ''
+  ) => {
+    try {
+      await createMemberWithMonthlyPassInDB(
+        userId,
+        passId,
+        name,
+        contact_person,
+        address,
+        phone_number,
+        email,
+        plan_type,
+        update_flag,
+        vehicle,
+        notes
+      );
+
+      const today = new Date().toISOString().split('T')[0];
+
+      const newMember = {
+        id: userId,
+        date: today,
+        name,
+        contact_person,
+        address,
+        phone_number,
+        email,
+      };
+
+      const newPass = {
+        passId,
+        creation_date: today,
+        plan_type,
+        update_flag,
+        vehicle,
+        notes,
+      };
+
+      setMembers((prev) => {
+        const idx = prev.findIndex((m) => m.id === userId);
+        if (idx !== -1) {
+          const updated = [...prev];
+          updated[idx] = newMember;
+          return updated;
+        }
+        return [...prev, newMember];
+      });
+
+      setMonthlyPassesByUser((prev) => ({
+        ...prev,
+        [userId]: [...(prev[userId] || []), newPass],
+      }));
+
+      return userId;
+    } catch (err) {
+      console.error('Failed to create member with monthly pass:', err);
+      throw err;
+    }
+  }, []);
+
 
   // const upsertMember = useCallback(async (id, name, car, status) => {
   //   try {
@@ -761,6 +834,7 @@ export const MembersProvider = ({ children, user }) => {
     error,
     getMember,
     createMember,
+    createMemberWithMonthlyPass,
     upsertMember,
     updateMember,
     deleteMember,

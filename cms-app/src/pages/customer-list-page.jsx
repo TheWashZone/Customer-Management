@@ -29,7 +29,7 @@ import HamburgerMenu from '../components/HamburgerMenu';
 
 function MembersPage() {
   const {
-    members, isLoading, createMember, getMember, updateMember, deleteMember,
+    members, isLoading, createMemberWithMonthlyPass, getMember, updateMember, deleteMember,
     loyaltyMembers, isLoyaltyLoading, loyaltyError, ensureLoyaltyLoaded,
     createLoyaltyMember, getLoyaltyMember, updateLoyaltyMember, deleteLoyaltyMember,
     prepaidMembers, isPrepaidLoading, prepaidError, ensurePrepaidLoaded,
@@ -373,22 +373,21 @@ function MembersPage() {
         setIdError(`A member with ID "${fullId}" already exists.`);
         return;
       }
-      await createMember(
+
+      await createMemberWithMonthlyPass(
         memberId,
+        fullId,
         addForm.name.trim(),
         addForm.contactPerson.trim(),
         addForm.address,
         addForm.phoneNumber.trim(),
-        addForm.email.trim()
-      );
-      await createMonthlyPass(
-        memberId, 
-        fullId, 
-        "B", 
-        false, 
-        addForm.car, 
+        addForm.email.trim(),
+        addSubPrefix,
+        addForm.status,
+        addForm.car,
         addForm.notes
       );
+
       setAddForm({ 
         name: '', 
         contactPerson: '', 
