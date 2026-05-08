@@ -3,9 +3,9 @@ import { describe, test, expect, beforeEach, vi } from 'vitest';
 import { renderHook, waitFor, act } from '@testing-library/react';
 import React from 'react';
 import { VisitsProvider, useVisits } from '../context/VisitsContext';
-import * as visitsCrud from '../api/visits-crud';
+import * as visitsCrud from '../api/visit-crud';
 
-vi.mock('../api/visits-crud', () => ({
+vi.mock('../api/visit-crud', () => ({
   getAllVisits: vi.fn(),
   getVisit: vi.fn(),
   createVisit: vi.fn(),

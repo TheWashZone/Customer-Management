@@ -10,7 +10,7 @@ import {
   getVisitsByMonthlyPassId as getVisitsByMonthlyPassIdFromDB,
   updateVisit as updateVisitInDB,
   deleteVisit as deleteVisitInDB,
-} from '../api/visits-crud';
+} from '../api/visit-crud';
 
 const VisitsContext = createContext();
 
