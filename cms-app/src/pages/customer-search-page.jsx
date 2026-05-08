@@ -2,7 +2,9 @@ import React, { useState } from "react";
 import "../css/customer-search-page.css";
 import { useMembers } from "../context/MembersContext";
 import HamburgerMenu from "../components/HamburgerMenu";
-import { logDailyVisit } from "../api/analytics-crud";
+// import { logDailyVisit } from "../api/analytics-crud";
+import { createVisit } from "../api/visit-crud.js";
+import { getNextVisitId } from "../api/visit-counter.js"
 
 function CustomerSearchPage() {
   const { updateMember, getLoyaltyMember, updateLoyaltyMember, getPrepaidMember, updatePrepaidMember, getMemberByMonthlyPassId } = useMembers();
@@ -37,6 +39,8 @@ function CustomerSearchPage() {
     setCode((prev) => prev.slice(0, -1));
   };
 
+  let member = null;
+
   const handleSubmit = async () => {
     if (!/^([BDUL]\d{3,5}|[BDU]B\d{3,5})$/.test(code)) {
       setError("Code must be B/D/U/L + 3-5 digits (e.g. B123) or BB/DB/UB + 3-5 digits for prepaid (e.g. BB101)");
@@ -47,7 +51,7 @@ function CustomerSearchPage() {
     setError(null);
 
     try {
-      let member = null;
+      member = null;
 
       if (code[0] === "L") {
         member = await getLoyaltyMember(code);
@@ -183,7 +187,14 @@ function CustomerSearchPage() {
 
     try {
       if (memberType === "subscription") {
-        await logDailyVisit('subscription', code[0]);
+        // await logDailyVisit('subscription', code[0]);
+        const visitId = String(await getNextVisitId());
+        await createVisit(
+          visitId,
+          code[0],
+          'subscription',
+          code
+        );
         setLogSuccess(true);
         setTimeout(() => setLogSuccess(false), 3000);
       } else if (memberType === "loyalty") {
