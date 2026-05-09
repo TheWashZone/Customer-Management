@@ -15,6 +15,7 @@ function HamburgerMenu() {
     { path: "/customers", label: "Customer List" },
     { path: "/analytics", label: "Analytics" },
     { path: "/test", label: "Upload" },
+    { path: "/monthly-subscription", label: "Monthly Subscription" },
   ];
 
   return (
