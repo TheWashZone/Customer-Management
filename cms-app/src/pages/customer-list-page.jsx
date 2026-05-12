@@ -385,7 +385,7 @@ function MembersPage() {
         memberId, 
         fullId, 
         "B", 
-        false, 
+        addForm.status, 
         addForm.car, 
         addForm.notes
       );

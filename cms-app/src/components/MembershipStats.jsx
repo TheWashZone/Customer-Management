@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useEffect } from 'react';
 import { Card, Row, Col, Badge } from 'react-bootstrap';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
 import { useMembers } from '../context/MembersContext';
@@ -16,7 +16,19 @@ const MEMBERSHIP_NAMES = {
 };
 
 function MembershipStats() {
-  const { members, isLoading } = useMembers();
+  const { members, isLoading, monthlyPassesByUser, refreshMonthlyPassesForUser, } = useMembers();
+
+  useEffect(() => {
+    async function loadMonthlyPasses() {
+      await Promise.all(
+        members.map(member => refreshMonthlyPassesForUser(member.id))
+      );
+    }
+
+    if (members.length > 0) {
+      loadMonthlyPasses();
+    }
+  }, [members, refreshMonthlyPassesForUser]);
 
   const stats = useMemo(() => {
     if (!members || members.length === 0) {
@@ -31,7 +43,7 @@ function MembershipStats() {
     }
 
     const stats = {
-      total: members.length,
+      total: 0,
       active: 0,
       inactive: 0,
       paymentNeeded: 0,
@@ -40,26 +52,32 @@ function MembershipStats() {
     };
 
     members.forEach(member => {
-      if (member.status === 'active') {
-        stats.active++;
-      } else if (member.status === 'payment_needed') {
-        stats.paymentNeeded++;
-      } else {
-        stats.inactive++;
-      }
+      const passes = monthlyPassesByUser[member.id] || [];
 
-      // Extract membership type from ID (first character)
-      const type = member.id?.[0]?.toUpperCase();
-      if (type === 'B' || type === 'U' || type === 'D') {
-        stats.byType[type]++;
-        if (member.status === 'active') {
-          stats.byTypeActive[type]++;
+      passes.forEach(pass => {
+        stats.total++;
+
+        if (pass.status === 'active') {
+          stats.active++;
+        } else if (pass.status === 'payment_needed') {
+          stats.paymentNeeded++;
+        } else {
+          stats.inactive++;
         }
-      }
+
+        // Extract membership type from ID (first character)
+        const type = member.id?.[0]?.toUpperCase();
+        if (type === 'B' || type === 'U' || type === 'D') {
+          stats.byType[type]++;
+          if (pass.status === 'active') {
+            stats.byTypeActive[type]++;
+          }
+        }
+      });
     });
 
     return stats;
-  }, [members]);
+  }, [members, monthlyPassesByUser]);
 
   // Prepare data for pie chart
   const pieData = useMemo(() => {
@@ -87,7 +105,7 @@ function MembershipStats() {
       <h2 className="mb-4">Subscription Overview</h2>
 
       {/* Summary Cards */}
-      <Row className="mb-4 g-3">
+      {/* <Row className="mb-4 g-3">
         <Col xs={6} md={4}>
           <Card className="text-center">
             <Card.Body>
@@ -130,11 +148,11 @@ function MembershipStats() {
             </Card.Body>
           </Card>
         </Col>
-      </Row>
+      </Row> */}
 
       {/* Membership Type Breakdown */}
       <Row>
-        <Col md={6}>
+        {/* <Col md={6}>
           <Card>
             <Card.Body>
               <h5 className="mb-3">Members by Type</h5>
@@ -164,15 +182,48 @@ function MembershipStats() {
               )}
             </Card.Body>
           </Card>
+        </Col> */}
+
+        <Col md={6}>
+          <Card className="h-100">
+            <Card.Body className="d-flex flex-column">
+              <h5 className="mb-3">Active Members</h5>
+
+              <div className="d-flex flex-column gap-3 flex-grow-1">
+                <Card className="text-center flex-fill">
+                  <Card.Body>
+                    <h3 className="text-primary mb-2">{stats.total}</h3>
+                    <Card.Text className="text-muted">Total Members</Card.Text>
+                  </Card.Body>
+                </Card>
+
+                <Card className="text-center flex-fill">
+                  <Card.Body>
+                    <h3 className="text-success mb-2">{stats.active}</h3>
+                    <Card.Text className="text-muted">Active Members</Card.Text>
+                  </Card.Body>
+                </Card>
+
+                <Card className="text-center flex-fill">
+                  <Card.Body>
+                    <h3 className="text-warning mb-2">{stats.paymentNeeded}</h3>
+                    <Card.Text className="text-muted">Payment Needed</Card.Text>
+                  </Card.Body>
+                </Card>
+              </div>
+
+            </Card.Body>
+          </Card>
         </Col>
 
         <Col md={6}>
-          <Card>
-            <Card.Body>
-              <h5 className="mb-3">Detailed Breakdown</h5>
-              <div className="d-flex flex-column gap-3">
+          <Card className="h-100">
+            <Card.Body className="d-flex flex-column">
+              <h5 className="mb-3">Members by Type</h5>
+
+              <div className="d-flex flex-column gap-3 flex-grow-1">
                 {Object.entries(MEMBERSHIP_NAMES).map(([type, name]) => (
-                  <div key={type} className="d-flex justify-content-between align-items-center p-3 border rounded">
+                  <div key={type} className="d-flex justify-content-between align-items-center p-3 border rounded flex-fill">
                     <div>
                       <Badge bg="secondary" className="me-2">{type}</Badge>
                       <strong>{name}</strong>
