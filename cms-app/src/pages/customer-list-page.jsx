@@ -416,7 +416,6 @@ function MembersPage() {
 
         setSuccessMessage(`New member ${addForm.name.trim()} was created with monthly pass ${fullId}.`);
       }
-<<<<<<< HEAD
       await createMember(
         memberId,
         addForm.name.trim(),
@@ -433,15 +432,10 @@ function MembersPage() {
         addForm.car, 
         addForm.notes
       );
-      setAddForm({ 
-        name: '', 
-        contactPerson: '', 
-=======
 
       setAddForm({
         name: '',
         contactPerson: '',
->>>>>>> fixed-customer-lookup
         phoneNumber: '',
         address: '',
         email: '',
