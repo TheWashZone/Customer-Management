@@ -409,29 +409,13 @@ function MembersPage() {
           addForm.phoneNumber.trim(),
           addForm.email.trim(),
           addSubPrefix,
-          false,
+          addForm.status,
           addForm.car,
           addForm.notes
         );
 
         setSuccessMessage(`New member ${addForm.name.trim()} was created with monthly pass ${fullId}.`);
       }
-      await createMember(
-        memberId,
-        addForm.name.trim(),
-        addForm.contactPerson.trim(),
-        addForm.address,
-        addForm.phoneNumber.trim(),
-        addForm.email.trim()
-      );
-      await createMonthlyPass(
-        memberId, 
-        fullId, 
-        "B", 
-        addForm.status, 
-        addForm.car, 
-        addForm.notes
-      );
 
       setAddForm({
         name: '',

@@ -66,7 +66,7 @@ function MembershipStats() {
         }
 
         // Extract membership type from ID (first character)
-        const type = member.id?.[0]?.toUpperCase();
+        const type = pass.passId?.[0]?.toUpperCase();
         if (type === 'B' || type === 'U' || type === 'D') {
           stats.byType[type]++;
           if (pass.status === 'active') {
@@ -230,15 +230,13 @@ function MembershipStats() {
                     </div>
                     <div className="text-end">
                       <div>
-                        <span className="text-success fw-bold">{stats.byTypeActive[type]} active</span>
-                        {' / '}
-                        <span className="text-muted">{stats.byType[type]} total</span>
+                        <span className="text-success fw-bold">{stats.byType[type]} Members </span>
                       </div>
-                      {stats.byType[type] > 0 && (
+                      {/* {stats.byType[type] > 0 && (
                         <small className="text-muted">
                           ({Math.round((stats.byTypeActive[type] / stats.byType[type]) * 100)}% active)
                         </small>
-                      )}
+                      )} */}
                     </div>
                   </div>
                 ))}

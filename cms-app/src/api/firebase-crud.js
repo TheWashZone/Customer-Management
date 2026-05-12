@@ -54,7 +54,7 @@ async function createMember(id, name, contact_person, address, phone_number, ema
  * @param {string} phone_number - Phone number information
  * @param {string} email - Email address (optional)
  * @param {string} plan_type - Monthly pass plan type
- * @param {boolean} update_flag - Monthly pass update flag
+ * @param {string} status - Monthly pass status
  * @param {string} vehicle - Vehicle information for the monthly pass
  * @param {string} notes - Additional notes for the monthly pass (optional)
  * @returns {Promise<string>} The user ID of the created member
@@ -68,7 +68,7 @@ async function createMemberWithMonthlyPass(
   phone_number,
   email = '',
   plan_type,
-  update_flag,
+  status,
   vehicle,
   notes = ''
 ) {
@@ -103,7 +103,7 @@ async function createMemberWithMonthlyPass(
       passId,
       creation_date: today,
       plan_type,
-      update_flag,
+      status,
       vehicle,
       notes,
     });
