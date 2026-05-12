@@ -13,9 +13,11 @@ vi.mock('../api/firebase-crud', () => ({
   getAllMembers: vi.fn(),
   getMember: vi.fn(),
   createMember: vi.fn(),
+  createMemberWithMonthlyPass: vi.fn(),
   upsertMember: vi.fn(),
   updateMember: vi.fn(),
   deleteMember: vi.fn(),
+  getMemberByMonthlyPassId: vi.fn(),
 }));
 
 // Mock the monthly-pass-crud module
@@ -489,6 +491,77 @@ describe('MembersContext', () => {
       consoleErrorSpy.mockRestore();
     });
   });
+  
+  describe('createMemberWithMonthlyPass context', () => {
+    test('adds the member and monthly pass to context cache', async () => {
+      firebaseCrud.getAllMembers.mockResolvedValue(mockMembers);
+      firebaseCrud.createMemberWithMonthlyPass.mockResolvedValue('B999');
+
+      const wrapper = ({ children }) => (
+        <MembersProvider user={mockUser}>{children}</MembersProvider>
+      );
+
+      const { result } = renderHook(() => useMembers(), { wrapper });
+
+      await waitFor(() => {
+        expect(result.current.isLoading).toBe(false);
+      });
+
+      let memberId;
+
+      await act(async () => {
+        memberId = await result.current.createMemberWithMonthlyPass(
+          'B999',
+          'U123',
+          'New Member',
+          'Jane Contact',
+          '123 Main St',
+          '555-111-2222',
+          'new@example.com',
+          'U',
+          false,
+          'Tesla Model 3',
+          'Context-created member with pass'
+        );
+      });
+
+      expect(memberId).toBe('B999');
+
+      expect(firebaseCrud.createMemberWithMonthlyPass).toHaveBeenCalledWith(
+        'B999',
+        'U123',
+        'New Member',
+        'Jane Contact',
+        '123 Main St',
+        '555-111-2222',
+        'new@example.com',
+        'U',
+        false,
+        'Tesla Model 3',
+        'Context-created member with pass'
+      );
+
+      expect(result.current.members).toContainEqual({
+        id: 'B999',
+        date: new Date().toISOString().split('T')[0],
+        name: 'New Member',
+        contact_person: 'Jane Contact',
+        address: '123 Main St',
+        phone_number: '555-111-2222',
+        email: 'new@example.com',
+      });
+
+      expect(result.current.monthlyPassesByUser.B999).toContainEqual({
+        passId: 'U123',
+        creation_date: new Date().toISOString().split('T')[0],
+        plan_type: 'U',
+        update_flag: false,
+        vehicle: 'Tesla Model 3',
+        notes: 'Context-created member with pass',
+      });
+    });
+  });
+
 
 
   // describe('updateMember', () => {
@@ -1202,6 +1275,40 @@ describe('MembersContext', () => {
       expect(result.current.monthlyPassError).toBe('Failed to refresh monthly passes.');
 
       consoleErrorSpy.mockRestore();
+    });
+
+    test('getMemberByMonthlyPassId fetches the member from DB when not cached', async () => {
+      const fetchedMember = {
+        id: 'B999',
+        date: '2026-05-01',
+        name: 'Monthly Pass Owner',
+        contact_person: 'Owner Contact',
+        address: '999 Pass St',
+        phone_number: '555-999-9999',
+        email: 'owner@example.com',
+      };
+
+      firebaseCrud.getAllMembers.mockResolvedValue(mockMembers);
+      firebaseCrud.getMemberByMonthlyPassId.mockResolvedValue(fetchedMember);
+
+      const wrapper = ({ children }) => (
+        <MembersProvider user={mockUser}>{children}</MembersProvider>
+      );
+
+      const { result } = renderHook(() => useMembers(), { wrapper });
+
+      await waitFor(() => {
+        expect(result.current.isLoading).toBe(false);
+      });
+
+      let member;
+      await act(async () => {
+        member = await result.current.getMemberByMonthlyPassId('MP999');
+      });
+
+      expect(firebaseCrud.getMemberByMonthlyPassId).toHaveBeenCalledWith('MP999');
+      expect(member).toEqual(fetchedMember);
+      expect(result.current.members).toContainEqual(fetchedMember);
     });
   });
 

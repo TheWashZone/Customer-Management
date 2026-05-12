@@ -106,6 +106,7 @@ describe("Monthly Pass CRUD Operations (emulator)", () => {
 
       expect(passDoc.exists()).toBe(true);
       expect(passDoc.data()).toEqual({
+        passId,
         creation_date: today,
         plan_type: planType,
         status,

@@ -2,12 +2,12 @@ import { doc, runTransaction } from "firebase/firestore";
 import { db } from "./firebaseconfig";
 
 /**
- * Gets the next member ID and initializes the counter if needed.
- * @returns {Promise<number>} The next member ID
+ * Gets the next visit ID and initializes the counter if needed.
+ * @returns {Promise<number>} The next visit ID
  */
-async function getNextId() {
+async function getNextVisitId() {
   try {
-    const docRef = doc(db, "counters", "memberIds");
+    const docRef = doc(db, "counters", "visitIds");
 
     const nextId = await runTransaction(db, async (transaction) => {
       const docSnap = await transaction.get(docRef);
@@ -33,4 +33,4 @@ async function getNextId() {
   }
 }
 
-export { getNextId };
+export { getNextVisitId };
