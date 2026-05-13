@@ -245,6 +245,10 @@ function MembershipStats() {
           </Card>
         </Col>
       </Row>
+
+      <Row>
+        Chart here
+      </Row>
     </div>
   );
 }
