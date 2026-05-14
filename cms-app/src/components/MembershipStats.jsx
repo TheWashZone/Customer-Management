@@ -1,7 +1,22 @@
 import React, { useMemo, useEffect } from 'react';
 import { Card, Row, Col, Badge } from 'react-bootstrap';
-import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
+import { 
+  PieChart, 
+  Pie, 
+  Cell, 
+  ResponsiveContainer, 
+  Legend, 
+  Tooltip, 
+  BarChart, 
+  Bar, 
+  XAxis, 
+  YAxis,
+  CartesianGrid,
+  LineChart,
+  Line,
+} from 'recharts';
 import { useMembers } from '../context/MembersContext';
+import { useVisits } from '../context/VisitsContext';
 
 const COLORS = {
   B: '#0d6efd', // Blue for Basic
@@ -17,6 +32,7 @@ const MEMBERSHIP_NAMES = {
 
 function MembershipStats() {
   const { members, isLoading, monthlyPassesByUser, refreshMonthlyPassesForUser, } = useMembers();
+  const { visits, isVisitsLoading, visitsError } = useVisits();
 
   useEffect(() => {
     async function loadMonthlyPasses() {
@@ -89,6 +105,60 @@ function MembershipStats() {
         type: type,
       }));
   }, [stats]);
+
+  const chartData = useMemo(() => {
+    const dateMap = new Map();
+
+    visits.forEach((visit) => {
+      if(visit.payment_type != "subscription"){
+        return;
+      }
+      const date = visit.visit_date;
+
+      if (!date) return;
+
+      if (!dateMap.has(date)) {
+        dateMap.set(date, {
+          date, count: 0,
+        });
+      }
+
+      dateMap.get(date).count++;
+    });
+
+    return Array.from(dateMap.values()).sort((a,b) =>
+      a.date.localeCompare(b.date)
+    );
+  }, [visits]);
+
+  const renderChart = () => {
+    if (chartData.length === 0) {
+      return (
+        <div className="text-center py-5 text-muted">
+          No data available
+        </div>
+      );
+    }
+
+    return (
+      <ResponsiveContainer width="100%" height={400}>
+        <LineChart data={chartData}>
+          <CartesianGrid strokeDasharray="3 3" />
+          <XAxis dataKey="date" />
+          <YAxis />
+          <Tooltip />
+          <Legend />
+          <Line
+            type="monotone"
+            dataKey="count"
+            name="Visits"
+            stroke="#0d6edf"
+            strokeWidth={2}
+          />
+        </LineChart>
+      </ResponsiveContainer>
+    );
+  };
 
   if (isLoading) {
     return (
@@ -246,8 +316,13 @@ function MembershipStats() {
         </Col>
       </Row>
 
-      <Row>
-        Chart here
+      <Row className="p-3">
+        <Card>
+          <Card.Body>
+            <h5 className="mb-3">Memberships</h5>
+            {renderChart()}
+          </Card.Body>
+        </Card>
       </Row>
     </div>
   );
