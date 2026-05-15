@@ -1,14 +1,9 @@
 import React, { useMemo, useEffect } from 'react';
 import { Card, Row, Col, Badge } from 'react-bootstrap';
 import { 
-  PieChart, 
-  Pie, 
-  Cell, 
   ResponsiveContainer, 
   Legend, 
   Tooltip, 
-  BarChart, 
-  Bar, 
   XAxis, 
   YAxis,
   CartesianGrid,
@@ -18,12 +13,6 @@ import {
 import { useMembers } from '../context/MembersContext';
 import { useVisits } from '../context/VisitsContext';
 
-const COLORS = {
-  B: '#0d6efd', // Blue for Basic
-  U: '#198754', // Green for Unlimited
-  D: '#dc3545', // Red for Deluxe
-};
-
 const MEMBERSHIP_NAMES = {
   B: 'Basic',
   U: 'Unlimited',
@@ -32,7 +21,7 @@ const MEMBERSHIP_NAMES = {
 
 function MembershipStats() {
   const { members, isLoading, monthlyPassesByUser, refreshMonthlyPassesForUser, } = useMembers();
-  const { visits, isVisitsLoading, visitsError } = useVisits();
+  const { visits } = useVisits();
 
   useEffect(() => {
     async function loadMonthlyPasses() {
@@ -54,7 +43,6 @@ function MembershipStats() {
         inactive: 0,
         paymentNeeded: 0,
         byType: { B: 0, U: 0, D: 0 },
-        byTypeActive: { B: 0, U: 0, D: 0 },
       };
     }
 
@@ -64,7 +52,6 @@ function MembershipStats() {
       inactive: 0,
       paymentNeeded: 0,
       byType: { B: 0, U: 0, D: 0 },
-      byTypeActive: { B: 0, U: 0, D: 0 },
     };
 
     members.forEach(member => {
@@ -85,26 +72,12 @@ function MembershipStats() {
         const type = pass.passId?.[0]?.toUpperCase();
         if (type === 'B' || type === 'U' || type === 'D') {
           stats.byType[type]++;
-          if (pass.status === 'active') {
-            stats.byTypeActive[type]++;
-          }
         }
       });
     });
 
     return stats;
   }, [members, monthlyPassesByUser]);
-
-  // Prepare data for pie chart
-  const pieData = useMemo(() => {
-    return Object.entries(stats.byType)
-      .filter(([_, count]) => count > 0)
-      .map(([type, count]) => ({
-        name: MEMBERSHIP_NAMES[type],
-        value: count,
-        type: type,
-      }));
-  }, [stats]);
 
   const chartData = useMemo(() => {
     const dateMap = new Map();
@@ -174,86 +147,7 @@ function MembershipStats() {
     <div>
       <h2 className="mb-4">Subscription Overview</h2>
 
-      {/* Summary Cards */}
-      {/* <Row className="mb-4 g-3">
-        <Col xs={6} md={4}>
-          <Card className="text-center">
-            <Card.Body>
-              <h3 className="text-primary mb-2">{stats.total}</h3>
-              <Card.Text className="text-muted">Total Members</Card.Text>
-            </Card.Body>
-          </Card>
-        </Col>
-        <Col xs={6} md={4}>
-          <Card className="text-center">
-            <Card.Body>
-              <h3 className="text-success mb-2">{stats.active}</h3>
-              <Card.Text className="text-muted">Active Members</Card.Text>
-            </Card.Body>
-          </Card>
-        </Col>
-        <Col xs={6} md={4}>
-          <Card className="text-center">
-            <Card.Body>
-              <h3 className="text-secondary mb-2">{stats.inactive}</h3>
-              <Card.Text className="text-muted">Inactive Members</Card.Text>
-            </Card.Body>
-          </Card>
-        </Col>
-        <Col xs={6} md={4}>
-          <Card className="text-center">
-            <Card.Body>
-              <h3 className="text-warning mb-2">{stats.paymentNeeded}</h3>
-              <Card.Text className="text-muted">Payment Needed</Card.Text>
-            </Card.Body>
-          </Card>
-        </Col>
-        <Col xs={6} md={4}>
-          <Card className="text-center">
-            <Card.Body>
-              <h3 className="text-info mb-2">
-                {stats.total > 0 ? Math.round((stats.active / stats.total) * 100) : 0}%
-              </h3>
-              <Card.Text className="text-muted">Active Rate</Card.Text>
-            </Card.Body>
-          </Card>
-        </Col>
-      </Row> */}
-
-      {/* Membership Type Breakdown */}
       <Row>
-        {/* <Col md={6}>
-          <Card>
-            <Card.Body>
-              <h5 className="mb-3">Members by Type</h5>
-              {pieData.length > 0 ? (
-                <ResponsiveContainer width="100%" height={300}>
-                  <PieChart>
-                    <Pie
-                      data={pieData}
-                      cx="50%"
-                      cy="50%"
-                      labelLine={false}
-                      label={({ name, value }) => `${name}: ${value}`}
-                      outerRadius={80}
-                      fill="#8884d8"
-                      dataKey="value"
-                    >
-                      {pieData.map((entry) => (
-                        <Cell key={`cell-${entry.type}`} fill={COLORS[entry.type]} />
-                      ))}
-                    </Pie>
-                    <Tooltip />
-                    <Legend />
-                  </PieChart>
-                </ResponsiveContainer>
-              ) : (
-                <div className="text-center py-5 text-muted">No membership data available</div>
-              )}
-            </Card.Body>
-          </Card>
-        </Col> */}
-
         <Col md={6}>
           <Card className="h-100">
             <Card.Body className="d-flex flex-column">
@@ -302,11 +196,6 @@ function MembershipStats() {
                       <div>
                         <span className="text-success fw-bold">{stats.byType[type]} Members </span>
                       </div>
-                      {/* {stats.byType[type] > 0 && (
-                        <small className="text-muted">
-                          ({Math.round((stats.byTypeActive[type] / stats.byType[type]) * 100)}% active)
-                        </small>
-                      )} */}
                     </div>
                   </div>
                 ))}
@@ -319,7 +208,7 @@ function MembershipStats() {
       <Row className="p-3">
         <Card>
           <Card.Body>
-            <h5 className="mb-3">Memberships</h5>
+            <h5 className="mb-3">Visits By Members</h5>
             {renderChart()}
           </Card.Body>
         </Card>

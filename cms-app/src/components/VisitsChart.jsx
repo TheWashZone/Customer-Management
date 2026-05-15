@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Card, ButtonGroup, Button, Spinner, Alert, Row, Col, Modal, Form } from 'react-bootstrap';
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { getDailyVisitsInRange } from '../api/analytics-crud';
 import { getWashPrices, updateWashPrices } from '../api/settings-crud';
+import { useVisits } from '../context/VisitsContext';
+
 
 const WASH_COLORS = { B: '#0d6efd', U: '#198754', D: '#dc3545' };
 const WASH_NAMES = { B: 'Basic', U: 'Unlimited', D: 'Deluxe' };
@@ -11,15 +12,14 @@ const DEFAULT_PRICES = { B: 10.00, D: 13.50, U: 16.50 };
 function VisitsChart() {
   const [viewMode, setViewMode] = useState('weekly'); // 'weekly' or 'monthly'
   const [chartType, setChartType] = useState('line'); // 'line' or 'bar'
-  const [visitsData, setVisitsData] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState(null);
   const [selectedDayIndex, setSelectedDayIndex] = useState(null);
   const [washPrices, setWashPrices] = useState(DEFAULT_PRICES);
   const [showPriceModal, setShowPriceModal] = useState(false);
   const [priceForm, setPriceForm] = useState({});
   const [isSavingPrices, setIsSavingPrices] = useState(false);
   const [priceError, setPriceError] = useState(null);
+
+  const { visits, isVisitsLoading, visitsError } = useVisits();
 
   // Calculate date range based on view mode
   const dateRange = useMemo(() => {
@@ -39,25 +39,85 @@ function VisitsChart() {
     };
   }, [viewMode]);
 
-  // Fetch visits data
-  useEffect(() => {
-    const fetchData = async () => {
-      setIsLoading(true);
-      setError(null);
 
-      try {
-        const data = await getDailyVisitsInRange(dateRange.start, dateRange.end);
-        setVisitsData(data);
-      } catch (err) {
-        console.error('Failed to load visits data:', err);
-        setError('Failed to load visits data. Please try again.');
-      } finally {
-        setIsLoading(false);
+  const normalizeWashType = (washType) => {
+    if (washType === 'Basic') return 'B';
+    if (washType === 'Deluxe') return 'D';
+    if (washType === 'Ultimate' || washType === 'Unlimited') return 'U';
+    return washType;
+  };
+
+  // Format date for display
+  const formatDate = (dateString) => {
+    const [year, month, day] = dateString.split('-').map(Number);
+    const date = new Date(year, month - 1, day);
+
+    return date.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+    });
+  };
+
+
+  const chartData = useMemo(() => {
+    const breakdownFields = [
+      'subscription', 'loyalty', 'prepaid', 'cash',
+      'subB', 'subD', 'subU',
+      'preB', 'preD', 'preU',
+      'loyB', 'loyD', 'loyU',
+      'cashB', 'cashD', 'cashU',
+    ];
+
+    const dateMap = new Map();
+    const start = new Date(dateRange.start + 'T00:00:00Z');
+    const end = new Date(dateRange.end + 'T00:00:00Z');
+
+    for (let d = new Date(start); d <= end; d.setUTCDate(d.getUTCDate() + 1)) {
+      const dateStr = d.toISOString().split('T')[0];
+      const entry = {
+        date: dateStr,
+        count: 0,
+        displayDate: formatDate(dateStr),
+      };
+
+      breakdownFields.forEach((field) => {
+        entry[field] = 0;
+      });
+
+      dateMap.set(dateStr, entry);
+    }
+
+    visits.forEach((visit) => {
+      const date = visit.visit_date;
+
+      if (!dateMap.has(date)) return;
+
+      const entry = dateMap.get(date);
+      const paymentType = visit.payment_type;
+      const washType = normalizeWashType(visit.wash_type);
+
+      entry.count++;
+
+      if (paymentType === 'subscription') {
+        entry.subscription++;
+        if (washType) entry['sub' + washType]++;
+      } else if (paymentType === 'loyalty') {
+        entry.loyalty++;
+        if (washType) entry['loy' + washType]++;
+      } else if (paymentType === 'prepaid') {
+        entry.prepaid++;
+        if (washType) entry['pre' + washType]++;
+      } else if (paymentType === 'cash') {
+        entry.cash++;
+        if (washType) entry['cash' + washType]++;
       }
-    };
+    });
 
-    fetchData();
-  }, [dateRange]);
+    return Array.from(dateMap.values()).sort((a, b) =>
+      a.date.localeCompare(b.date)
+    );
+  }, [visits, dateRange]);
+
 
   // Fetch wash prices on mount
   useEffect(() => {
@@ -96,49 +156,6 @@ function VisitsChart() {
       setIsSavingPrices(false);
     }
   };
-
-  // Format date for display
-  const formatDate = (dateString) => {
-    const date = new Date(dateString + 'T00:00:00Z');
-    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-  };
-
-  // Process data for chart display
-  const chartData = useMemo(() => {
-    if (!visitsData || visitsData.length === 0) {
-      return [];
-    }
-
-    // Breakdown field names to carry through
-    const breakdownFields = ['subscription', 'loyalty', 'prepaid', 'cash', 'subB', 'subD', 'subU', 'preB', 'preD', 'preU', 'loyB', 'loyD', 'loyU', 'cashB', 'cashD', 'cashU'];
-
-    // Create a map of all dates in range with 0 counts
-    const dateMap = new Map();
-    const start = new Date(dateRange.start + 'T00:00:00Z');
-    const end = new Date(dateRange.end + 'T00:00:00Z');
-
-    for (let d = new Date(start); d <= end; d.setUTCDate(d.getUTCDate() + 1)) {
-      const dateStr = d.toISOString().split('T')[0];
-      const entry = { date: dateStr, count: 0, displayDate: formatDate(dateStr) };
-      breakdownFields.forEach(f => { entry[f] = 0; });
-      dateMap.set(dateStr, entry);
-    }
-
-    // Fill in actual visit counts and breakdown data
-    visitsData.forEach(visit => {
-      if (dateMap.has(visit.dateString)) {
-        const entry = {
-          date: visit.dateString,
-          count: visit.count || 0,
-          displayDate: formatDate(visit.dateString)
-        };
-        breakdownFields.forEach(f => { entry[f] = visit[f] || 0; });
-        dateMap.set(visit.dateString, entry);
-      }
-    });
-
-    return Array.from(dateMap.values()).sort((a, b) => a.date.localeCompare(b.date));
-  }, [visitsData, dateRange]);
 
   // Default selectedDayIndex to last day when chartData changes
   useEffect(() => {
@@ -279,14 +296,14 @@ function VisitsChart() {
           </div>
 
           {/* Chart or Loading/Error State */}
-          {isLoading ? (
+          {isVisitsLoading ? (
             <div className="text-center py-5">
               <Spinner animation="border" role="status">
                 <span className="visually-hidden">Loading...</span>
               </Spinner>
               <div className="mt-2">Loading visit data...</div>
             </div>
-          ) : error ? (
+          ) : visitsError ? (
             <Alert variant="danger">{error}</Alert>
           ) : (
             renderChart()
@@ -295,7 +312,7 @@ function VisitsChart() {
       </Card>
 
       {/* Daily Breakdown Navigator */}
-      {!isLoading && !error && chartData.length > 0 && selectedDayIndex !== null && selectedDayIndex < chartData.length && (
+      {!isVisitsLoading && !visitsError && chartData.length > 0 && selectedDayIndex !== null && selectedDayIndex < chartData.length && (
         <Card className="mt-4">
           <Card.Body>
             {/* Day Navigation */}
@@ -309,7 +326,7 @@ function VisitsChart() {
                 &larr; Prev
               </Button>
               <h5 className="mb-0">
-                {new Date(chartData[selectedDayIndex].date + 'T00:00:00Z').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                {formatDate(chartData[selectedDayIndex].date)}
                 <span className="ms-3 text-muted" style={{ fontSize: '0.9rem' }}>
                   Total: {chartData[selectedDayIndex].count}
                 </span>
