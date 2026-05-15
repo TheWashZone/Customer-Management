@@ -304,7 +304,7 @@ function VisitsChart() {
               <div className="mt-2">Loading visit data...</div>
             </div>
           ) : visitsError ? (
-            <Alert variant="danger">{error}</Alert>
+            <Alert variant="danger">{visitsError}</Alert>
           ) : (
             renderChart()
           )}
