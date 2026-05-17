@@ -27,7 +27,7 @@ import {
   getVisitsByMonthlyPassId,
   updateVisit,
   deleteVisit
-} from "../api/visits-crud.js";
+} from "../api/visit-crud.js";
 
 const db = getFirestore(app);
 connectFirestoreEmulator(db, "127.0.0.1", 8080);

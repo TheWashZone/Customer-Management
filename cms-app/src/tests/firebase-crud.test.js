@@ -5,6 +5,7 @@ import {
   connectFirestoreEmulator,
   doc,
   deleteDoc,
+  getDoc,
 } from "firebase/firestore";
 import {
   getAuth,
@@ -23,7 +24,11 @@ import {
   getAllMembers,
   updateMember,
   deleteMember,
+  createMemberWithMonthlyPass,
 } from "../api/firebase-crud.js";
+
+import { createMonthlyPass } from "../api/monthly-pass-crud.js";
+
 
 const db = getFirestore(app);
 connectFirestoreEmulator(db, "127.0.0.1", 8080);
@@ -75,6 +80,21 @@ async function cleanupTestDoc(userId) {
     console.error(error.message);
   }
 }
+
+async function cleanupMonthlyPass(userId, passId) {
+  try {
+    await deleteDoc(doc(db, "users", userId, "monthlyPasses", passId));
+  } catch (error) {
+    console.error(error.message);
+  }
+
+  try {
+    await deleteDoc(doc(db, "monthlyPassIds", passId));
+  } catch (error) {
+    console.error(error.message);
+  }
+}
+
 
 describe("User CRUD Operations (emulator)", () => {
   describe("createMember", () => {
@@ -307,6 +327,60 @@ describe("User CRUD Operations (emulator)", () => {
       consoleErrorSpy.mockRestore();
     });
   });
+
+test("does not create a customer when the monthly pass ID already exists", async () => {
+  const existingUserId = uniqId("USER");
+  const newUserId = uniqId("USER");
+  const passId = uniqId("PASS");
+
+  await createMember(
+    existingUserId,
+    "Existing Customer",
+    "Jordan Lee",
+    "123 Main St",
+    "555-123-4567",
+    "existing@example.com"
+  );
+
+  await createMonthlyPass(
+    existingUserId,
+    passId,
+    "Unlimited",
+    false,
+    "Toyota Camry 2020",
+    "Existing pass"
+  );
+
+  await expect(
+    createMemberWithMonthlyPass(
+      newUserId,
+      passId,
+      "New Customer",
+      "Taylor Smith",
+      "456 Oak St",
+      "555-987-6543",
+      "new@example.com",
+      "Basic",
+      false,
+      "Honda Accord 2021",
+      "Should not be created"
+    )
+  ).rejects.toThrow(`Monthly pass with ID ${passId} already exists`);
+
+  const newUserDoc = await getDoc(doc(db, "users", newUserId));
+  const newUserPassDoc = await getDoc(
+    doc(db, "users", newUserId, "monthlyPasses", passId)
+  );
+
+  expect(newUserDoc.exists()).toBe(false);
+  expect(newUserPassDoc.exists()).toBe(false);
+
+  await cleanupMonthlyPass(existingUserId, passId);
+  await cleanupMonthlyPass(newUserId, passId);
+  await cleanupTestDoc(existingUserId);
+  await cleanupTestDoc(newUserId);
+});
+
 
   describe("upsertMember", () => {
     test("creates a new member when none exists", async () => {

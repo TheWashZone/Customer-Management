@@ -13,24 +13,64 @@ import { db } from "./firebaseconfig";
  */
 async function createMonthlyPass(userId, passId, plan_type, update_flag, vehicle, notes = '') {
   const passRef = doc(db, "users", userId, "monthlyPasses", passId);
+  const passIdRef = doc(db, "monthlyPassIds", passId);
+
   try {
+    const creationDate = new Date().toISOString().split("T")[0];
+
     const memberData = {
-      creation_date: new Date().toISOString().split("T")[0],
+      passId,
+      creation_date: creationDate,
       plan_type,
       update_flag,
       vehicle,
       notes
     };
-    await setDoc(passRef, memberData);
+
+    const passIdData = {
+      userId,
+      passId,
+      creation_date: creationDate,
+    };
+
+    await runTransaction(db, async (transaction) => {
+      const existingPassId = await transaction.get(passIdRef);
+      const existingUserPass = await transaction.get(passRef);
+
+      if (existingPassId.exists() || existingUserPass.exists()) {
+        throw new Error(`Monthly pass with ID ${passId} already exists`);
+      }
+
+      transaction.set(passIdRef, passIdData);
+      transaction.set(passRef, memberData);
+    });
+
     return passId;
   } catch (error) {
     console.error("❌ Error creating document:", error);
-    console.error("Error code:", error.code);
-    console.error("Error message:", error.message);
-    console.error("Error stack:", error.stack);
     throw error;
   }
 }
+// async function createMonthlyPass(userId, passId, plan_type, update_flag, vehicle, notes = '') {
+//   const passRef = doc(db, "users", userId, "monthlyPasses", passId);
+//   try {
+//     const memberData = {
+//       creation_date: new Date().toISOString().split("T")[0],
+//       plan_type,
+//       update_flag,
+//       vehicle,
+//       notes
+//     };
+//     await setDoc(passRef, memberData);
+//     return passId;
+//   } catch (error) {
+//     console.error("❌ Error creating document:", error);
+//     console.error("Error code:", error.code);
+//     console.error("Error message:", error.message);
+//     console.error("Error stack:", error.stack);
+//     throw error;
+//   }
+// }
 
 /**
  * Upserts a monthly pass document

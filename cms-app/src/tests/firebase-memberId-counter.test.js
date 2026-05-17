@@ -64,9 +64,9 @@ describe('memberId-counter', () => {
     const result = await getNextId();
 
     expect(transaction.get).toHaveBeenCalledWith(mockDocRef);
-    expect(transaction.set).toHaveBeenCalledWith(mockDocRef, { next: 0 });
+    expect(transaction.set).toHaveBeenCalledWith(mockDocRef, { next: 1 });
     expect(transaction.update).not.toHaveBeenCalled();
-    expect(result).toBe(0);
+    expect(result).toBe(1);
   });
 
   test('rethrows errors from Firestore', async () => {

@@ -1,4 +1,16 @@
-import { doc, setDoc, getDoc, updateDoc, deleteDoc, collection, getDocs, runTransaction } from "firebase/firestore";
+import { 
+  doc, 
+  setDoc, 
+  getDoc, 
+  updateDoc, 
+  deleteDoc, 
+  collection, 
+  getDocs, 
+  runTransaction,
+  collectionGroup,
+  query,
+  where
+} from "firebase/firestore";
 import { db } from "./firebaseconfig";
 
 /**
@@ -32,6 +44,80 @@ async function createMember(id, name, contact_person, address, phone_number, ema
     throw error;
   }
 }
+
+/**This function creates a member and a monthly pass in a single transaction
+ * @param {string} userId - The user ID for the member
+ * @param {string} passId - The monthly pass ID
+ * @param {string} name - User's name
+ * @param {string} contact_person - Contact person information
+ * @param {string} address - Address information
+ * @param {string} phone_number - Phone number information
+ * @param {string} email - Email address (optional)
+ * @param {string} plan_type - Monthly pass plan type
+ * @param {boolean} update_flag - Monthly pass update flag
+ * @param {string} vehicle - Vehicle information for the monthly pass
+ * @param {string} notes - Additional notes for the monthly pass (optional)
+ * @returns {Promise<string>} The user ID of the created member
+ */
+async function createMemberWithMonthlyPass(
+  userId,
+  passId,
+  name,
+  contact_person,
+  address,
+  phone_number,
+  email = '',
+  plan_type,
+  update_flag,
+  vehicle,
+  notes = ''
+) {
+  const userRef = doc(db, "users", userId);
+  const passRef = doc(db, "users", userId, "monthlyPasses", passId);
+  const passIdRef = doc(db, "monthlyPassIds", passId);
+
+  const today = new Date().toISOString().split("T")[0];
+
+  await runTransaction(db, async (transaction) => {
+    const existingUser = await transaction.get(userRef);
+    const existingPassId = await transaction.get(passIdRef);
+
+    if (existingUser.exists()) {
+      throw new Error(`User with ID ${userId} already exists`);
+    }
+
+    if (existingPassId.exists()) {
+      throw new Error(`Monthly pass with ID ${passId} already exists`);
+    }
+
+    transaction.set(userRef, {
+      date: today,
+      name,
+      contact_person,
+      address,
+      phone_number,
+      email,
+    });
+
+    transaction.set(passRef, {
+      passId,
+      creation_date: today,
+      plan_type,
+      update_flag,
+      vehicle,
+      notes,
+    });
+
+    transaction.set(passIdRef, {
+      userId,
+      passId,
+      creation_date: today,
+    });
+  });
+
+  return userId;
+}
+
 
 /**
  * Upserts a member document
@@ -167,13 +253,55 @@ async function deleteMember(id) {
   }
 }
 
+/**
+ * Finds and returns the member who owns a given monthly pass ID
+ * @param {string} passId - The monthly pass ID
+ * @returns {Promise<Object|null>} Member object or null if not found
+ */
+async function getMemberByMonthlyPassId(passId) {
+  try {
+    const q = query(
+      collectionGroup(db, "monthlyPasses"),
+      where("passId", "==", passId)
+    );
+
+    const snapshot = await getDocs(q);
+
+    if (snapshot.empty) {
+      return null;
+    }
+
+    const passDoc = snapshot.docs[0];
+
+    // Get parent user document
+    const userRef = passDoc.ref.parent.parent;
+    const userSnap = await getDoc(userRef);
+
+    if (!userSnap.exists()) {
+      return null;
+    }
+
+    return {
+      id: userSnap.id,
+      ...userSnap.data()
+    };
+
+  } catch (error) {
+    console.error("❌ Error finding member by monthly pass ID:", error);
+    throw error;
+  }
+}
+
+
 export {
   createMember,
   upsertMember,
   getMember,
   getAllMembers,
   updateMember,
-  deleteMember
+  deleteMember,
+  getMemberByMonthlyPassId,
+  createMemberWithMonthlyPass
 };
 
 
