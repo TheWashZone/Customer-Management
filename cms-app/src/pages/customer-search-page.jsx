@@ -7,7 +7,7 @@ import { createVisit } from "../api/visit-crud.js";
 import { getNextVisitId } from "../api/visit-counter.js"
 
 function CustomerSearchPage() {
-  const { updateMember, getLoyaltyMember, updateLoyaltyMember, getMemberByMonthlyPassId } = useMembers();
+  const { updateMember, getLoyaltyMember, updateLoyaltyMember, getBookMember, updateBookMember, getMemberByMonthlyPassId } = useMembers();
 
   const [code, setCode] = useState("");
   const [memberData, setMemberData] = useState(null);
