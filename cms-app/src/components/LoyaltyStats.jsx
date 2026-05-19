@@ -5,7 +5,7 @@ import { getDailyVisitsInRange } from '../api/analytics-crud';
 import { getWashPrices, updateWashPrices } from '../api/settings-crud';
 
 const WASH_COLORS = { B: '#0d6efd', U: '#198754', D: '#dc3545' };
-const WASH_NAMES = { B: 'Basic', U: 'Unlimited', D: 'Deluxe' };
+// const WASH_NAMES = { B: 'Basic', U: 'Unlimited', D: 'Deluxe' };
 const DEFAULT_PRICES = { B: 10.00, D: 13.50, U: 16.50 };
 
 function LoyaltyStats() {
@@ -327,7 +327,7 @@ function LoyaltyStats() {
 
             {(() => {
               const day = chartData[selectedDayIndex];
-              const hasBreakdown = day.loyB > 0 || day.loyD > 0 || day.loyU > 0;
+              // const hasBreakdown = day.loyB > 0 || day.loyD > 0 || day.loyU > 0;
 
               const washType = 'U';
               return (
