@@ -8,7 +8,7 @@ const WASH_COLORS = { B: '#0d6efd', U: '#198754', D: '#dc3545' };
 const WASH_NAMES = { B: 'Basic', U: 'Unlimited', D: 'Deluxe' };
 const DEFAULT_PRICES = { B: 10.00, D: 13.50, U: 16.50 };
 
-function LoyaltyStats() {
+function CashStats() {
   const [viewMode, setViewMode] = useState('weekly'); // 'weekly' or 'monthly'
   const [chartType, setChartType] = useState('line'); // 'line' or 'bar'
   const [visitsData, setVisitsData] = useState([]);
@@ -50,7 +50,7 @@ function LoyaltyStats() {
         setVisitsData(data);
       } catch (err) {
         console.error('Failed to load visits data:', err);
-        setError('Failed to load loyalty visits data. Please try again.');
+        setError('Failed to load cash visits data. Please try again.');
       } finally {
         setIsLoading(false);
       }
@@ -103,14 +103,14 @@ function LoyaltyStats() {
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   };
 
-  // Process data for chart display - LOYALTY ONLY
+  // Process data for chart display - CASH ONLY
   const chartData = useMemo(() => {
     if (!visitsData || visitsData.length === 0) {
       return [];
     }
 
-    // Only include loyalty breakdown fields
-    const breakdownFields = ['loyB', 'loyD', 'loyU'];
+    // Only include cash breakdown fields
+    const breakdownFields = ['cashB', 'cashD', 'cashU'];
 
     // Create a map of all dates in range with 0 counts
     const dateMap = new Map();
@@ -124,17 +124,17 @@ function LoyaltyStats() {
       dateMap.set(dateStr, entry);
     }
 
-    // Fill in actual visit counts and breakdown data for loyalty only
+    // Fill in actual visit counts and breakdown data for cash only
     visitsData.forEach(visit => {
       if (dateMap.has(visit.dateString)) {
-        const loyaltyCount = (visit.loyB || 0) + (visit.loyD || 0) + (visit.loyU || 0);
+        const cashCount = (visit.cashB || 0) + (visit.cashD || 0) + (visit.cashU || 0);
         const entry = {
           date: visit.dateString,
-          count: loyaltyCount,
+          count: cashCount,
           displayDate: formatDate(visit.dateString),
-          loyB: visit.loyB || 0,
-          loyD: visit.loyD || 0,
-          loyU: visit.loyU || 0,
+          cashB: visit.cashB || 0,
+          cashD: visit.cashD || 0,
+          cashU: visit.cashU || 0,
         };
         dateMap.set(visit.dateString, entry);
       }
@@ -150,7 +150,7 @@ function LoyaltyStats() {
     }
   }, [chartData]);
 
-  // Calculate summary statistics for loyalty visits
+  // Calculate summary statistics for cash visits
   const stats = useMemo(() => {
     if (chartData.length === 0) {
       return { total: 0, average: 0, max: 0, min: 0 };
@@ -167,7 +167,7 @@ function LoyaltyStats() {
 
   const renderChart = () => {
     if (chartData.length === 0) {
-      return <div className="text-center py-5 text-muted">No loyalty visit data available for this period</div>;
+      return <div className="text-center py-5 text-muted">No cash visit data available for this period</div>;
     }
 
     const ChartComponent = chartType === 'line' ? LineChart : BarChart;
@@ -183,7 +183,7 @@ function LoyaltyStats() {
             textAnchor="end"
             height={80}
           />
-          <YAxis label={{ value: 'Loyalty Visits', angle: -90, position: 'insideLeft' }} />
+          <YAxis label={{ value: 'Cash Visits', angle: -90, position: 'insideLeft' }} />
           <Tooltip
             labelFormatter={(label) => `Date: ${label}`}
             formatter={(value) => [`${value} visits`, 'Count']}
@@ -192,9 +192,9 @@ function LoyaltyStats() {
           <DataComponent
             type="monotone"
             dataKey="count"
-            name="Loyalty Visits"
-            stroke="#ff9800"
-            fill="#ff9800"
+            name="Cash Visits"
+            stroke="#6f42c1"
+            fill="#6f42c1"
             strokeWidth={2}
           />
         </ChartComponent>
@@ -204,7 +204,7 @@ function LoyaltyStats() {
 
   return (
     <div>
-      <h2 className="mb-4">Loyalty Visits Analytics</h2>
+      <h2 className="mb-4">Cash Visits Analytics</h2>
 
       {/* Summary Cards */}
       <div className="row mb-4">
@@ -212,7 +212,7 @@ function LoyaltyStats() {
           <Card className="text-center">
             <Card.Body>
               <h3 className="text-primary mb-2">{stats.total}</h3>
-              <Card.Text className="text-muted">Total Loyalty Visits</Card.Text>
+              <Card.Text className="text-muted">Total Cash Visits</Card.Text>
             </Card.Body>
           </Card>
         </div>
@@ -247,7 +247,7 @@ function LoyaltyStats() {
         <Card.Body>
           {/* Controls */}
           <div className="d-flex justify-content-between align-items-center mb-3">
-            <h5 className="mb-0">Loyalty Visit Trends</h5>
+            <h5 className="mb-0">Cash Visit Trends</h5>
             <div className="d-flex gap-3">
               <ButtonGroup size="sm">
                 <Button
@@ -287,7 +287,7 @@ function LoyaltyStats() {
               <Spinner animation="border" role="status">
                 <span className="visually-hidden">Loading...</span>
               </Spinner>
-              <div className="mt-2">Loading loyalty visit data...</div>
+              <div className="mt-2">Loading cash visit data...</div>
             </div>
           ) : error ? (
             <Alert variant="danger">{error}</Alert>
@@ -329,7 +329,7 @@ function LoyaltyStats() {
 
             {(() => {
               const day = chartData[selectedDayIndex];
-              const hasBreakdown = day.loyB > 0 || day.loyD > 0 || day.loyU > 0;
+              const hasBreakdown = day.cashB > 0 || day.cashD > 0 || day.cashU > 0;
 
               return (
                 <>
@@ -339,21 +339,21 @@ function LoyaltyStats() {
                     </div>
                   )}
                   <Row>
-                    {/* Loyalty Card */}
+                    {/* Cash Card */}
                     <Col md={4}>
                       <Card className="text-center h-100">
                         <Card.Body>
-                          <Card.Text className="text-muted mb-1">Loyalty Visits</Card.Text>
+                          <Card.Text className="text-muted mb-1">Cash Visits</Card.Text>
                           <h3 className="mb-2">{day.count}</h3>
                           <div className="d-flex justify-content-center gap-3">
                             {['B', 'D', 'U'].map(w => (
                               <span key={w} style={{ color: WASH_COLORS[w], fontWeight: 600 }}>
-                                {WASH_NAMES[w]}: {day['loy' + w]}
+                                {WASH_NAMES[w]}: {day['cash' + w]}
                               </span>
                             ))}
                           </div>
                           <div className="mt-2 text-success fw-semibold">
-                            Expected: ${(['B', 'D', 'U'].reduce((sum, w) => sum + (day['loy' + w] || 0) * washPrices[w], 0)).toFixed(2)}
+                            Expected: ${(['B', 'D', 'U'].reduce((sum, w) => sum + (day['cash' + w] || 0) * washPrices[w], 0)).toFixed(2)}
                           </div>
                           <Button
                             variant="outline-secondary"
@@ -379,10 +379,10 @@ function LoyaltyStats() {
                                   {WASH_NAMES[w]}
                                 </Card.Text>
                                 <h3 className="mb-2" style={{ color: WASH_COLORS[w] }}>
-                                  {day['loy' + w]}
+                                  {day['cash' + w]}
                                 </h3>
                                 <div style={{ fontSize: '0.85rem' }}>
-                                  Revenue: ${(day['loy' + w] * washPrices[w]).toFixed(2)}
+                                  Revenue: ${(day['cash' + w] * washPrices[w]).toFixed(2)}
                                 </div>
                               </Card.Body>
                             </Card>
@@ -435,91 +435,4 @@ function LoyaltyStats() {
   );
 }
 
-export default LoyaltyStats;
-// import { Card, Row, Col } from 'react-bootstrap';
-// import { useMembers } from '../context/MembersContext';
-
-// function LoyaltyStats() {
-//   const { loyaltyMembers, isLoyaltyLoading, loyaltyError, ensureLoyaltyLoaded } = useMembers();
-
-//   useEffect(() => {
-//     ensureLoyaltyLoaded();
-//   }, [ensureLoyaltyLoaded]);
-
-//   const stats = useMemo(() => {
-//     if (!loyaltyMembers || loyaltyMembers.length === 0) {
-//       return { total: 0, avgVisits: 0, highestVisits: 0, nearFreeWash: 0 };
-//     }
-
-//     const total = loyaltyMembers.length;
-
-//     const visitCounts = loyaltyMembers.map((m) => m.visitCount || 0);
-//     const avgVisits = Math.round(visitCounts.reduce((sum, v) => sum + v, 0) / total);
-//     const highestVisits = Math.max(...visitCounts);
-//     const nearFreeWash = loyaltyMembers.filter((m) => (m.visitCount || 0) % 10 >= 8).length;
-
-//     return { total, avgVisits, highestVisits, nearFreeWash };
-//   }, [loyaltyMembers]);
-
-//   if (isLoyaltyLoading) {
-//     return (
-//       <Card>
-//         <Card.Body>
-//           <div className="text-center py-5">Loading loyalty data...</div>
-//         </Card.Body>
-//       </Card>
-//     );
-//   }
-
-//   if (loyaltyError) {
-//     return (
-//       <Card>
-//         <Card.Body>
-//           <div className="text-center py-5 text-danger">{loyaltyError}</div>
-//         </Card.Body>
-//       </Card>
-//     );
-//   }
-
-//   return (
-//     <div>
-//       <h2 className="mb-4">Loyalty Overview</h2>
-//       <Row className="mb-4">
-//         <Col md={3}>
-//           <Card className="text-center">
-//             <Card.Body>
-//               <h3 className="text-primary mb-2">{stats.total}</h3>
-//               <Card.Text className="text-muted">Total Members</Card.Text>
-//             </Card.Body>
-//           </Card>
-//         </Col>
-//         <Col md={3}>
-//           <Card className="text-center">
-//             <Card.Body>
-//               <h3 className="text-success mb-2">{stats.avgVisits}</h3>
-//               <Card.Text className="text-muted">Avg Visit Count</Card.Text>
-//             </Card.Body>
-//           </Card>
-//         </Col>
-//         <Col md={3}>
-//           <Card className="text-center">
-//             <Card.Body>
-//               <h3 className="text-info mb-2">{stats.highestVisits}</h3>
-//               <Card.Text className="text-muted">Highest Visits</Card.Text>
-//             </Card.Body>
-//           </Card>
-//         </Col>
-//         <Col md={3}>
-//           <Card className="text-center">
-//             <Card.Body>
-//               <h3 className="text-warning mb-2">{stats.nearFreeWash}</h3>
-//               <Card.Text className="text-muted">Near Free Wash</Card.Text>
-//             </Card.Body>
-//           </Card>
-//         </Col>
-//       </Row>
-//     </div>
-//   );
-// }
-
-// export default LoyaltyStats;
+export default CashStats;

@@ -15,7 +15,7 @@
   align-items: center;
 
   --btn-size: 60px;
-  --letter-btn-size: 50px;
+  --letter-btn-size: 60px;
   --btn-gap: 16px;
   --letter-gap: 12px;
   --display-h: 40px;
@@ -123,7 +123,7 @@
 @media (min-width: 600px) {
   .keypad-container {
     --btn-size: 80px;
-    --letter-btn-size: 66px;
+    --letter-btn-size: 80px;
     --btn-gap: 18px;
     --letter-gap: 14px;
     --display-h: 52px;
@@ -137,7 +137,7 @@
 @media (min-width: 900px) {
   .keypad-container {
     --btn-size: 100px;
-    --letter-btn-size: 82px;
+    --letter-btn-size: 100px;
     --btn-gap: 22px;
     --letter-gap: 18px;
     --display-h: 62px;
@@ -478,53 +478,53 @@
   color: #333;
 }
 
+/* ---- CUSTOMER QUICK LOG BUTTONS ---- */
 
-/* ---- CASH CUSTOMER BUTTON ---- */
+.customer-log-buttons-row {
+  display: flex;
+  justify-content: center;
+  gap: var(--letter-gap);
+  margin-bottom: 25px;
+}
 
-.cash-customer-btn {
-  margin-bottom: 20px;
-  padding: 12px 24px;
+.cash-customer-btn,
+.loyalty-customer-btn,
+.book-customer-btn {
+  width: var(--letter-btn-size);
+  height: var(--letter-btn-size);
   background-color: #6f42c1;
   color: white;
+  border-radius: 50%;
   border: none;
-  border-radius: 12px;
-  font-size: 1rem;
+  font-size: var(--letter-fs);
   font-weight: 600;
   cursor: pointer;
   transition: background-color 0.2s, transform 0.2s;
-  box-shadow: 0 2px 6px rgba(111, 66, 193, 0.3);
 }
 
-@media (min-width: 600px) {
-  .cash-customer-btn {
-    padding: 16px 32px;
-    font-size: 1.15rem;
-  }
-}
-
-@media (min-width: 900px) {
-  .cash-customer-btn {
-    padding: 18px 40px;
-    font-size: 1.25rem;
-  }
-}
-
-.cash-customer-btn:hover {
+.cash-customer-btn:hover,
+.loyalty-customer-btn:hover,
+.book-customer-btn:hover {
   background-color: #5a32a3;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(111, 66, 193, 0.4);
+  transform: scale(1.05);
 }
 
-.cash-customer-btn:active {
-  transform: translateY(0);
+.cash-customer-btn:focus,
+.loyalty-customer-btn:focus,
+.book-customer-btn:focus {
+  background-color: #5a32a3;
+  transform: scale(1.05);
+  outline: 2px solid #0066cc;
+  outline-offset: 2px;
 }
 
-.cash-customer-btn:disabled {
+.cash-customer-btn:disabled,
+.loyalty-customer-btn:disabled,
+.book-customer-btn:disabled {
   background-color: #b0b0b0;
   cursor: not-allowed;
   opacity: 0.6;
   transform: none;
-  box-shadow: none;
 }
 
 
