@@ -120,11 +120,11 @@ function MembershipStats() {
     for (let d = new Date(start); d <= end; d.setUTCDate(d.getUTCDate() + 1)) {
       const dateStr = d.toISOString().split('T')[0];
       
-      const entry = {
-        date: dateStr,
-        count: 0,
-        displayDate: formatDate(dateStr),
-      };
+      // const entry = {
+      //   date: dateStr,
+      //   count: 0,
+      //   displayDate: formatDate(dateStr),
+      // };
 
       dateMap.set(dateStr, {date: dateStr, count: 0, displayDate: formatDate(dateStr)});
     }
