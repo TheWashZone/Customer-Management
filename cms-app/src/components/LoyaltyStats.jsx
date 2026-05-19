@@ -76,12 +76,12 @@ function LoyaltyStats() {
 
   const handlePriceSave = async () => {
     const parsed = {
-      B: parseFloat(priceForm.B),
-      D: parseFloat(priceForm.D),
+      B: washPrices.B,
+      D: washPrices.D,
       U: parseFloat(priceForm.U),
     };
-    if (Object.values(parsed).some(v => isNaN(v) || v < 0)) {
-      setPriceError('All prices must be valid non-negative numbers.');
+    if (isNaN(parsed.U) || parsed.U < 0) {
+      setPriceError('Unlimited price must be a valid non-negative number.');
       return;
     }
     setIsSavingPrices(true);
@@ -109,8 +109,8 @@ function LoyaltyStats() {
       return [];
     }
 
-    // Only include loyalty breakdown fields
-    const breakdownFields = ['loyB', 'loyD', 'loyU'];
+    // Only include loyalty unlimited washes (U only)
+    const breakdownFields = ['loyU'];
 
     // Create a map of all dates in range with 0 counts
     const dateMap = new Map();
@@ -124,16 +124,14 @@ function LoyaltyStats() {
       dateMap.set(dateStr, entry);
     }
 
-    // Fill in actual visit counts and breakdown data for loyalty only
+    // Fill in actual visit counts and breakdown data for loyalty unlimited only
     visitsData.forEach(visit => {
       if (dateMap.has(visit.dateString)) {
-        const loyaltyCount = (visit.loyB || 0) + (visit.loyD || 0) + (visit.loyU || 0);
+        const loyaltyCount = visit.loyU || 0;
         const entry = {
           date: visit.dateString,
           count: loyaltyCount,
           displayDate: formatDate(visit.dateString),
-          loyB: visit.loyB || 0,
-          loyD: visit.loyD || 0,
           loyU: visit.loyU || 0,
         };
         dateMap.set(visit.dateString, entry);
@@ -331,29 +329,19 @@ function LoyaltyStats() {
               const day = chartData[selectedDayIndex];
               const hasBreakdown = day.loyB > 0 || day.loyD > 0 || day.loyU > 0;
 
+              const washType = 'U';
               return (
                 <>
-                  {!hasBreakdown && day.count > 0 && (
-                    <div className="text-center text-muted mb-3" style={{ fontSize: '0.85rem' }}>
-                      No breakdown data available for this date.
-                    </div>
-                  )}
                   <Row>
-                    {/* Loyalty Card */}
-                    <Col md={4}>
+                    <Col md={6}>
                       <Card className="text-center h-100">
                         <Card.Body>
-                          <Card.Text className="text-muted mb-1">Loyalty Visits</Card.Text>
-                          <h3 className="mb-2">{day.count}</h3>
-                          <div className="d-flex justify-content-center gap-3">
-                            {['B', 'D', 'U'].map(w => (
-                              <span key={w} style={{ color: WASH_COLORS[w], fontWeight: 600 }}>
-                                {WASH_NAMES[w]}: {day['loy' + w]}
-                              </span>
-                            ))}
-                          </div>
+                          <Card.Text className="text-muted mb-1">Unlimited Washes</Card.Text>
+                          <h3 className="mb-2" style={{ color: WASH_COLORS[washType] }}>
+                            {day.loyU}
+                          </h3>
                           <div className="mt-2 text-success fw-semibold">
-                            Expected: ${(['B', 'D', 'U'].reduce((sum, w) => sum + (day['loy' + w] || 0) * washPrices[w], 0)).toFixed(2)}
+                            Expected: ${(day.loyU * washPrices[washType]).toFixed(2)}
                           </div>
                           <Button
                             variant="outline-secondary"
@@ -361,34 +349,10 @@ function LoyaltyStats() {
                             className="mt-2"
                             onClick={handleOpenPriceModal}
                           >
-                            Edit Prices
+                            Edit Price
                           </Button>
                         </Card.Body>
                       </Card>
-                    </Col>
-
-                    {/* Wash Type Totals */}
-                    <Col md={8}>
-                      <h6 className="text-center text-muted mb-3">Totals by Wash Type</h6>
-                      <Row>
-                        {['B', 'D', 'U'].map(w => (
-                          <Col md={4} key={w}>
-                            <Card className="text-center h-100">
-                              <Card.Body>
-                                <Card.Text className="text-muted mb-1" style={{ color: WASH_COLORS[w] }}>
-                                  {WASH_NAMES[w]}
-                                </Card.Text>
-                                <h3 className="mb-2" style={{ color: WASH_COLORS[w] }}>
-                                  {day['loy' + w]}
-                                </h3>
-                                <div style={{ fontSize: '0.85rem' }}>
-                                  Revenue: ${(day['loy' + w] * washPrices[w]).toFixed(2)}
-                                </div>
-                              </Card.Body>
-                            </Card>
-                          </Col>
-                        ))}
-                      </Row>
                     </Col>
                   </Row>
                 </>
@@ -401,25 +365,23 @@ function LoyaltyStats() {
       {/* Price Edit Modal */}
       <Modal show={showPriceModal} onHide={() => setShowPriceModal(false)} centered>
         <Modal.Header closeButton>
-          <Modal.Title>Edit Wash Prices</Modal.Title>
+          <Modal.Title>Edit Unlimited Price</Modal.Title>
         </Modal.Header>
         <Modal.Body>
           {priceError && <Alert variant="danger">{priceError}</Alert>}
           <Form>
-            {['B', 'D', 'U'].map(w => (
-              <Form.Group key={w} className="mb-3">
-                <Form.Label>{WASH_NAMES[w]} Price</Form.Label>
-                <Form.Control
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  placeholder={`${WASH_NAMES[w]} price`}
-                  value={priceForm[w] || ''}
-                  onChange={(e) => handlePriceChange(w, e.target.value)}
-                  disabled={isSavingPrices}
-                />
-              </Form.Group>
-            ))}
+            <Form.Group className="mb-3">
+              <Form.Label>Unlimited Price</Form.Label>
+              <Form.Control
+                type="number"
+                step="0.01"
+                min="0"
+                placeholder="Unlimited price"
+                value={priceForm.U || ''}
+                onChange={(e) => handlePriceChange('U', e.target.value)}
+                disabled={isSavingPrices}
+              />
+            </Form.Group>
           </Form>
         </Modal.Body>
         <Modal.Footer>

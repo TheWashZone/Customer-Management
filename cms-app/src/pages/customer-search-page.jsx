@@ -936,7 +936,7 @@ function CustomerSearchPage() {
           <div className="wash-select-popup" onClick={(e) => e.stopPropagation()}>
             <h3>Log Loyalty Customer</h3>
             <div className="wash-select-buttons">
-              <button
+              {/* <button
                 className="wash-select-btn"
                 style={{ backgroundColor: '#0d6efd' }}
                 onClick={() => handleLoyaltyLog('B')}
@@ -949,7 +949,7 @@ function CustomerSearchPage() {
                 onClick={() => handleLoyaltyLog('D')}
               >
                 Deluxe (D)
-              </button>
+              </button> */}
               <button
                 className="wash-select-btn"
                 style={{ backgroundColor: '#198754' }}
