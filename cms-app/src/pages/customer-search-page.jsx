@@ -397,6 +397,12 @@ function CustomerSearchPage() {
                   <span className="header-label">Pass ID:&nbsp;</span>
                   <span className="header-value">{code}</span>
                 </div>
+                {memberData.email && (
+                  <div className="header-row">
+                    <span className="header-label">Email:&nbsp;</span>
+                    <span className="header-value">{memberData.email}</span>
+                  </div>
+                )}
                 {/* <div className="header-row">
                   <span className="header-label">Contact Person:&nbsp;</span>
                   <span className="header-value">{memberData.contact_person}</span>
@@ -409,12 +415,6 @@ function CustomerSearchPage() {
                   <span className="header-label">Address:&nbsp;</span>
                   <span className="header-value">{memberData.address}</span>
                 </div>
-                {memberData.email && (
-                  <div className="header-row">
-                    <span className="header-label">Email:&nbsp;</span>
-                    <span className="header-value">{memberData.email}</span>
-                  </div>
-                )}
               </div>
 
               <div className="status-section">
