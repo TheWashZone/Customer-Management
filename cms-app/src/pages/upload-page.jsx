@@ -5,7 +5,7 @@ import { seedDemoVisits, clearDemoVisits } from '../api/analytics-crud';
 import HamburgerMenu from '../components/HamburgerMenu';
 
 function UploadPage() {
-  const { upsertMember, deleteMember, isLoading, refreshMembers, createMemberWithMonthlyPass } = useMembers();
+  const { deleteMember, isLoading, refreshMembers, createMemberWithMonthlyPass } = useMembers();
 
   const [message, setMessage] = useState('');
   const [selectedFile, setSelectedFile] = useState(null);
