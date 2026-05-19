@@ -423,8 +423,6 @@ function MembersPage() {
         phoneNumber: '',
         address: '',
         email: '',
-        address: '',
-        email: '',
         id: '',
         car: '',
         status: 'active',
