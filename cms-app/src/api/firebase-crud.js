@@ -23,7 +23,7 @@ import { db } from "./firebaseconfig";
  * @param {string} email - Email address (optional)
  * @returns {Promise<string>} The user ID
  */
-async function createMember(id, name, contact_person, address, phone_number, email = '') {
+async function createMember(id, name, contact_person='', address='', phone_number = '', email = '') {
   const userId = id;
   try {
     const userData = {
@@ -63,13 +63,13 @@ async function createMemberWithMonthlyPass(
   userId,
   passId,
   name,
-  contact_person,
-  address,
-  phone_number,
+  contact_person = '',
+  address = '',
+  phone_number = '',
   email = '',
   plan_type,
   status,
-  vehicle,
+  vehicle = '',
   notes = ''
 ) {
   const userRef = doc(db, "users", userId);
@@ -123,7 +123,7 @@ async function createMemberWithMonthlyPass(
  * Upserts a member document
  * @returns {Promise<{id: string, existed: boolean}>}
  */
-async function upsertMember(id, name, contact_person, address, phone_number, email = '') {
+async function upsertMember(id, name, contact_person='', address='', phone_number = '', email = '') {
   try {
     const docRef = doc(db, "users", id);
 
