@@ -4,6 +4,8 @@ import { describe, test, expect, beforeEach, vi } from 'vitest';
 import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import React from 'react';
+import { VisitsProvider } from '../context/VisitsContext';
+import * as visitCrud from '../api/visit-crud';
 
 // Mock recharts entirely — we're testing price logic, not chart rendering,
 // and recharts requires ResizeObserver / layout APIs unavailable in jsdom.
@@ -20,6 +22,19 @@ vi.mock('recharts', () => ({
   Legend: () => null,
 }));
 
+vi.mock('../api/visit-crud', () => ({
+  getAllVisits: vi.fn(),
+  getVisit: vi.fn(),
+  createVisit: vi.fn(),
+  upsertVisit: vi.fn(),
+  getVisitsByDate: vi.fn(),
+  getVisitsByWashType: vi.fn(),
+  getVisitsByPaymentType: vi.fn(),
+  getVisitsByMonthlyPassId: vi.fn(),
+  updateVisit: vi.fn(),
+  deleteVisit: vi.fn(),
+}));
+
 vi.mock('../api/settings-crud', () => ({
   getWashPrices: vi.fn(),
   updateWashPrices: vi.fn(),
@@ -32,6 +47,16 @@ vi.mock('../api/analytics-crud', () => ({
 import * as settingsCrud from '../api/settings-crud';
 import * as analyticsCrud from '../api/analytics-crud';
 import VisitsChart from '../components/VisitsChart';
+
+const mockUser = { uid: 'test-user' };
+
+function renderVisitsChart() {
+  return render(
+    <VisitsProvider user={mockUser}>
+      <VisitsChart />
+    </VisitsProvider>
+  );
+}
 
 const DEFAULT_PRICES = { B: 10.00, D: 13.50, U: 16.50 };
 
@@ -60,12 +85,26 @@ describe('VisitsChart – wash price editing', () => {
     settingsCrud.getWashPrices.mockResolvedValue({ ...DEFAULT_PRICES });
     settingsCrud.updateWashPrices.mockResolvedValue();
     analyticsCrud.getDailyVisitsInRange.mockResolvedValue(mockVisitData());
+    visitCrud.getAllVisits.mockResolvedValue([
+  {
+    id: 'visit-1',
+    visit_date: new Date().toISOString().split('T')[0],
+    wash_type: 'B',
+    payment_type: 'cash',
+  },
+  {
+    id: 'visit-2',
+    visit_date: new Date().toISOString().split('T')[0],
+    wash_type: 'D',
+    payment_type: 'cash',
+  },
+]);
   });
 
   // --- Price display ---
 
   test('displays Expected cash total using fetched prices', async () => {
-    render(<VisitsChart />);
+    renderVisitsChart();
     await waitForBreakdown();
     // cashB=1 @ $10.00 + cashD=1 @ $13.50 = $23.50
     expect(screen.getByText(/Expected: \$23\.50/)).toBeInTheDocument();
@@ -73,7 +112,7 @@ describe('VisitsChart – wash price editing', () => {
 
   test('uses custom prices when Firestore returns non-default values', async () => {
     settingsCrud.getWashPrices.mockResolvedValue({ B: 12.00, D: 15.00, U: 20.00 });
-    render(<VisitsChart />);
+    renderVisitsChart();
     await waitForBreakdown();
     // cashB=1 @ $12.00 + cashD=1 @ $15.00 = $27.00
     expect(screen.getByText(/Expected: \$27\.00/)).toBeInTheDocument();
@@ -81,7 +120,7 @@ describe('VisitsChart – wash price editing', () => {
 
   test('falls back to default prices when the Firestore fetch fails', async () => {
     settingsCrud.getWashPrices.mockRejectedValue(new Error('Network error'));
-    render(<VisitsChart />);
+    renderVisitsChart();
     await waitForBreakdown();
     // Defaults still apply: $23.50
     expect(screen.getByText(/Expected: \$23\.50/)).toBeInTheDocument();
@@ -90,13 +129,13 @@ describe('VisitsChart – wash price editing', () => {
   // --- Edit Prices button ---
 
   test('"Edit Prices" button is visible on the cash card', async () => {
-    render(<VisitsChart />);
+    renderVisitsChart();
     await waitForBreakdown();
     expect(screen.getByRole('button', { name: /edit prices/i })).toBeInTheDocument();
   });
 
   test('clicking "Edit Prices" opens the modal', async () => {
-    render(<VisitsChart />);
+    renderVisitsChart();
     await waitForBreakdown();
     fireEvent.click(screen.getByRole('button', { name: /edit prices/i }));
     expect(screen.getByText('Edit Wash Prices')).toBeInTheDocument();
@@ -105,7 +144,7 @@ describe('VisitsChart – wash price editing', () => {
   // --- Modal pre-fill ---
 
   test('modal inputs are pre-filled with the current prices', async () => {
-    render(<VisitsChart />);
+    renderVisitsChart();
     await waitForBreakdown();
     fireEvent.click(screen.getByRole('button', { name: /edit prices/i }));
 
@@ -121,7 +160,7 @@ describe('VisitsChart – wash price editing', () => {
   // --- Saving ---
 
   test('saving calls updateWashPrices with parsed values, closes modal, and updates Expected', async () => {
-    render(<VisitsChart />);
+    renderVisitsChart();
     await waitForBreakdown();
     fireEvent.click(screen.getByRole('button', { name: /edit prices/i }));
 
@@ -148,7 +187,7 @@ describe('VisitsChart – wash price editing', () => {
   // --- Cancel ---
 
   test('Cancel closes the modal without calling updateWashPrices', async () => {
-    render(<VisitsChart />);
+    renderVisitsChart();
     await waitForBreakdown();
     fireEvent.click(screen.getByRole('button', { name: /edit prices/i }));
     expect(screen.getByText('Edit Wash Prices')).toBeInTheDocument();
@@ -164,7 +203,7 @@ describe('VisitsChart – wash price editing', () => {
   // --- Validation ---
 
   test('shows validation error and blocks save for a negative price', async () => {
-    render(<VisitsChart />);
+    renderVisitsChart();
     await waitForBreakdown();
     fireEvent.click(screen.getByRole('button', { name: /edit prices/i }));
 
@@ -179,7 +218,7 @@ describe('VisitsChart – wash price editing', () => {
   });
 
   test('shows validation error and blocks save for a non-numeric price', async () => {
-    render(<VisitsChart />);
+    renderVisitsChart();
     await waitForBreakdown();
     fireEvent.click(screen.getByRole('button', { name: /edit prices/i }));
 
@@ -197,7 +236,7 @@ describe('VisitsChart – wash price editing', () => {
 
   test('shows error message and keeps modal open when save fails', async () => {
     settingsCrud.updateWashPrices.mockRejectedValue(new Error('Firestore unavailable'));
-    render(<VisitsChart />);
+    renderVisitsChart();
     await waitForBreakdown();
     fireEvent.click(screen.getByRole('button', { name: /edit prices/i }));
 
