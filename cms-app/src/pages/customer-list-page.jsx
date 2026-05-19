@@ -423,19 +423,24 @@ function MembersPage() {
         phoneNumber: '',
         address: '',
         email: '',
+        address: '',
+        email: '',
         id: '',
         car: '',
         status: 'active',
         notes: ''
       });
 
+
       setAddSubPrefix('B');
       setShowAddForm(false);
     } catch (err) {
       console.error(err);
       setError(err.message || "Failed to create member. Please check the console for details.");
+      setError(err.message || "Failed to create member. Please check the console for details.");
     }
   };
+
 
 
   // const handleOpenEditModal = (member) => {

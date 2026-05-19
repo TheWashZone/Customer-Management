@@ -16,13 +16,21 @@ function CustomerSearchPage() {
   const [isLoggingVisit, setIsLoggingVisit] = useState(false);
   const [logSuccess, setLogSuccess] = useState(false);
   const [logError, setLogError] = useState(null);
-  const [memberType, setMemberType] = useState(null); // 'subscription' | 'loyalty' | 'prepaid'
+  const [memberType, setMemberType] = useState(null); // 'subscription' | 'loyalty' | 'book'
   const [freeWashEarned, setFreeWashEarned] = useState(false);
   const [showWashSelect, setShowWashSelect] = useState(false);
   const [showCashModal, setShowCashModal] = useState(false);
   const [cashLogSuccess, setCashLogSuccess] = useState(false);
   const [cashLogError, setCashLogError] = useState(null);
   const [isLoggingCash, setIsLoggingCash] = useState(false);
+  const [showLoyaltyModal, setShowLoyaltyModal] = useState(false);
+  const [loyaltyLogSuccess, setLoyaltyLogSuccess] = useState(false);
+  const [loyaltyLogError, setLoyaltyLogError] = useState(null);
+  const [isLoggingLoyalty, setIsLoggingLoyalty] = useState(false);
+  const [showBookModal, setShowBookModal] = useState(false);
+  const [bookLogSuccess, setBookLogSuccess] = useState(false);
+  const [bookLogError, setBookLogError] = useState(null);
+  const [isLoggingBook, setIsLoggingBook] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [editForm, setEditForm] = useState({});
   const [isSaving, setIsSaving] = useState(false);
@@ -43,7 +51,7 @@ function CustomerSearchPage() {
 
   const handleSubmit = async () => {
     if (!/^([BDUL]\d{3,5}|[BDU]B\d{3,5})$/.test(code)) {
-      setError("Code must be B/D/U/L + 3-5 digits (e.g. B123) or BB/DB/UB + 3-5 digits for prepaid (e.g. BB101)");
+      setError("Code must be B/D/U/L + 3-5 digits (e.g. B123) or BB/DB/UB + 3-5 digits for book (e.g. BB101)");
       return;
     }
 
@@ -57,8 +65,8 @@ function CustomerSearchPage() {
         member = await getLoyaltyMember(code);
         if (member) setMemberType("loyalty");
       } else if ((code[0] === "B" || code[0] === "D" || code[0] === "U") && code[1] === "B") {
-        member = await getPrepaidMember(code);
-        if (member) setMemberType("prepaid");
+        member = await getBookMember(code);
+        if (member) setMemberType("book");
       } else if (code[0] === "B" || code[0] === "D" || code[0] === "U") {
         // member = await getMember(code);
         member = await getMemberByMonthlyPassId(code);
@@ -128,16 +136,16 @@ function CustomerSearchPage() {
           visitCount: Number(editForm.visitCount),
         };
         await updateLoyaltyMember(memberData.id, updates);
-      } else if (memberType === 'prepaid') {
+      } else if (memberType === 'book') {
         updates = {
           name: editForm.name,
           email: editForm.email,
           notes: editForm.notes,
           issueDate: editForm.issueDate,
           lastVisitDate: editForm.lastVisitDate,
-          prepaidWashes: Number(editForm.prepaidWashes),
+          bookPages: Number(editForm.bookPages),
         };
-        await updatePrepaidMember(memberData.id, updates);
+        await updateBookMember(memberData.id, updates);
       }
       setMemberData(prev => ({ ...prev, ...updates }));
       setShowEditModal(false);
@@ -219,21 +227,21 @@ function CustomerSearchPage() {
           setShowWashSelect(true);
           return;
         }
-      } else if (memberType === "prepaid") {
-        if (memberData.prepaidWashes <= 0) {
-          setLogError("No prepaid washes remaining. Cannot log visit.");
+      } else if (memberType === "book") {
+        if (memberData.bookPages <= 0) {
+          setLogError("No book pages remaining. Cannot log visit.");
           return;
         }
         const today = new Date().toISOString().split("T")[0];
-        const newPrepaidWashes = memberData.prepaidWashes - 1;
-        await updatePrepaidMember(memberData.id, {
+        const newBookPages = memberData.bookPages - 1;
+        await updateBookMember(memberData.id, {
           lastVisitDate: today,
-          prepaidWashes: newPrepaidWashes,
+          bookPages: newBookPages,
         });
         setMemberData((prev) => ({
           ...prev,
           lastVisitDate: today,
-          prepaidWashes: newPrepaidWashes,
+          bookPages: newBookPages,
         }));
         await logDailyVisit('prepaid', code[0]);
         setLogSuccess(true);
@@ -263,8 +271,42 @@ function CustomerSearchPage() {
     }
   };
 
+  const handleLoyaltyLog = async (washType) => {
+    setShowLoyaltyModal(false);
+    setIsLoggingLoyalty(true);
+    setLoyaltyLogSuccess(false);
+    setLoyaltyLogError(null);
+
+    try {
+      await logDailyVisit('loyalty', washType);
+      setLoyaltyLogSuccess(true);
+      setTimeout(() => setLoyaltyLogSuccess(false), 3000);
+    } catch (err) {
+      setLoyaltyLogError(`Failed to log loyalty customer: ${err.message}`);
+    } finally {
+      setIsLoggingLoyalty(false);
+    }
+  };
+
+  const handleBookLog = async (washType) => {
+    setShowBookModal(false);
+    setIsLoggingBook(true);
+    setBookLogSuccess(false);
+    setBookLogError(null);
+
+    try {
+      await logDailyVisit('prepaid', washType);
+      setBookLogSuccess(true);
+      setTimeout(() => setBookLogSuccess(false), 3000);
+    } catch (err) {
+      setBookLogError(`Failed to log book customer: ${err.message}`);
+    } finally {
+      setIsLoggingBook(false);
+    }
+  };
+
   const buttons = [
-    ["B", "D", "U", "L"],
+    ["B", "D", "U"],
     ["1", "2", "3"],
     ["4", "5", "6"],
     ["7", "8", "9"],
@@ -284,9 +326,9 @@ function CustomerSearchPage() {
       return 'Active';
     };
 
-    const getPrepaidWashesClass = () => {
-      if (memberData.prepaidWashes === 0) return "no-washes-card";
-      if (memberData.prepaidWashes <= 2) return "warning-card";
+    const getBookPagesClass = () => {
+      if (memberData.bookPages === 0) return "no-washes-card";
+      if (memberData.bookPages <= 2) return "warning-card";
       return "ok-card";
     };
 
@@ -386,8 +428,8 @@ function CustomerSearchPage() {
             </>
           )}
 
-          {/* PREPAID (P) DISPLAY */}
-          {memberType === "prepaid" && (
+          {/* BOOK DISPLAY */}
+          {memberType === "book" && (
             <>
               <div className="member-header-card">
                 <div className="header-row">
@@ -415,9 +457,9 @@ function CustomerSearchPage() {
               </div>
 
               <div className="status-section">
-                <div className={`status-card ${getPrepaidWashesClass()}`}>
-                  <span className="status-label">Prepaid Washes:</span>
-                  <span className="status-value">{memberData.prepaidWashes}</span>
+                <div className={`status-card ${getBookPagesClass()}`}>
+                  <span className="status-label">Book Pages:</span>
+                  <span className="status-value">{memberData.bookPages}</span>
                 </div>
               </div>
             </>
@@ -443,7 +485,7 @@ function CustomerSearchPage() {
             <button
               onClick={handleLogVisit}
               className="log-visit-btn"
-              disabled={isLoggingVisit || (memberType === "prepaid" && memberData.prepaidWashes <= 0)}
+              disabled={isLoggingVisit || (memberType === "book" && memberData.bookPages <= 0)}
               aria-label="Add one to today's total customer count"
             >
               {isLoggingVisit ? "Logging..." : isNextWashFree ? "Log Free Wash" : "Log Customer"}
@@ -628,8 +670,8 @@ function CustomerSearchPage() {
                     </>
                   )}
 
-                  {/* Prepaid only */}
-                  {memberType === 'prepaid' && (
+                  {/* Book only */}
+                  {memberType === 'book' && (
                     <>
                       <div className="edit-field">
                         <label className="edit-label" htmlFor="edit-issueDate">Issue Date</label>
@@ -654,14 +696,14 @@ function CustomerSearchPage() {
                         />
                       </div>
                       <div className="edit-field">
-                        <label className="edit-label" htmlFor="edit-prepaidWashes">Prepaid Washes</label>
+                        <label className="edit-label" htmlFor="edit-bookPages">Book Pages</label>
                         <input
-                          id="edit-prepaidWashes"
+                          id="edit-bookPages"
                           className="edit-input"
                           type="number"
-                          name="prepaidWashes"
+                          name="bookPages"
                           min="0"
-                          value={editForm.prepaidWashes ?? ''}
+                          value={editForm.bookPages ?? ''}
                           onChange={handleEditChange}
                         />
                       </div>
@@ -703,15 +745,41 @@ function CustomerSearchPage() {
       <HamburgerMenu />
       <div className="keypad-container">
 
-        {/* Cash Customer Button */}
-        <button
-          className="cash-customer-btn"
-          onClick={() => { setCashLogSuccess(false); setCashLogError(null); setShowCashModal(true); }}
-          disabled={isLoggingCash}
-          aria-label="Log cash customer"
-        >
-          {isLoggingCash ? "Logging..." : "Log Cash Customer"}
-        </button>
+        {/* Customer Quick Log Buttons Row */}
+        <div className="customer-log-buttons-row">
+          {/* Cash Customer Button */}
+          <button
+            className="cash-customer-btn"
+            onClick={() => { setCashLogSuccess(false); setCashLogError(null); setShowCashModal(true); }}
+            disabled={isLoggingCash}
+            aria-label="Log cash customer"
+            title="Log Cash Customer"
+          >
+            Cash
+          </button>
+
+          {/* Loyalty Customer Button */}
+          <button
+            className="loyalty-customer-btn"
+            onClick={() => { setLoyaltyLogSuccess(false); setLoyaltyLogError(null); setShowLoyaltyModal(true); }}
+            disabled={isLoggingLoyalty}
+            aria-label="Log loyalty customer"
+            title="Log Loyalty Customer"
+          >
+            Loyalty
+          </button>
+
+          {/* Book Customer Button */}
+          <button
+            className="book-customer-btn"
+            onClick={() => { setBookLogSuccess(false); setBookLogError(null); setShowBookModal(true); }}
+            disabled={isLoggingBook}
+            aria-label="Log book customer"
+            title="Log Book Customer"
+          >
+            Book
+          </button>
+        </div>
 
         {cashLogSuccess && (
           <div className="log-success-message" role="status" style={{ marginBottom: '8px' }}>
@@ -721,6 +789,28 @@ function CustomerSearchPage() {
         {cashLogError && (
           <div className="log-error-message" role="alert" style={{ marginBottom: '8px' }}>
             {cashLogError}
+          </div>
+        )}
+
+        {loyaltyLogSuccess && (
+          <div className="log-success-message" role="status" style={{ marginBottom: '8px' }}>
+            ✓ Loyalty customer logged
+          </div>
+        )}
+        {loyaltyLogError && (
+          <div className="log-error-message" role="alert" style={{ marginBottom: '8px' }}>
+            {loyaltyLogError}
+          </div>
+        )}
+
+        {bookLogSuccess && (
+          <div className="log-success-message" role="status" style={{ marginBottom: '8px' }}>
+            ✓ Book customer logged
+          </div>
+        )}
+        {bookLogError && (
+          <div className="log-error-message" role="alert" style={{ marginBottom: '8px' }}>
+            {bookLogError}
           </div>
         )}
 
@@ -833,6 +923,82 @@ function CustomerSearchPage() {
             <button
               className="wash-select-cancel"
               onClick={() => setShowCashModal(false)}
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Loyalty Customer Modal */}
+      {showLoyaltyModal && (
+        <div className="wash-select-overlay" onClick={() => setShowLoyaltyModal(false)}>
+          <div className="wash-select-popup" onClick={(e) => e.stopPropagation()}>
+            <h3>Log Loyalty Customer</h3>
+            <div className="wash-select-buttons">
+              {/* <button
+                className="wash-select-btn"
+                style={{ backgroundColor: '#0d6efd' }}
+                onClick={() => handleLoyaltyLog('B')}
+              >
+                Basic (B)
+              </button>
+              <button
+                className="wash-select-btn"
+                style={{ backgroundColor: '#dc3545' }}
+                onClick={() => handleLoyaltyLog('D')}
+              >
+                Deluxe (D)
+              </button> */}
+              <button
+                className="wash-select-btn"
+                style={{ backgroundColor: '#198754' }}
+                onClick={() => handleLoyaltyLog('U')}
+              >
+                Unlimited (U)
+              </button>
+            </div>
+            <button
+              className="wash-select-cancel"
+              onClick={() => setShowLoyaltyModal(false)}
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Book Customer Modal */}
+      {showBookModal && (
+        <div className="wash-select-overlay" onClick={() => setShowBookModal(false)}>
+          <div className="wash-select-popup" onClick={(e) => e.stopPropagation()}>
+            <h3>Log Book Customer</h3>
+            <div className="wash-select-buttons">
+              <button
+                className="wash-select-btn"
+                style={{ backgroundColor: '#0d6efd' }}
+                onClick={() => handleBookLog('B')}
+              >
+                Basic (B)
+              </button>
+              <button
+                className="wash-select-btn"
+                style={{ backgroundColor: '#dc3545' }}
+                onClick={() => handleBookLog('D')}
+              >
+                Deluxe (D)
+              </button>
+              <button
+                className="wash-select-btn"
+                style={{ backgroundColor: '#198754' }}
+                onClick={() => handleBookLog('U')}
+              >
+                Unlimited (U)
+              </button>
+            </div>
+            <button
+              className="wash-select-cancel"
+              onClick={() => setShowBookModal(false)}
             >
               Cancel
             </button>

@@ -4,6 +4,7 @@ import Stack from 'react-bootstrap/Stack';
 import '../css/analytics-page.css';
 import HamburgerMenu from '../components/HamburgerMenu';
 import MembershipStats from '../components/MembershipStats';
+import CashStats from '../components/CashStats';
 import LoyaltyStats from '../components/LoyaltyStats';
 import PrepaidStats from '../components/PrepaidStats';
 import VisitsChart from '../components/VisitsChart';
@@ -17,6 +18,7 @@ function AnalyticsPage() {
   const renderTab = () => {
     switch (activeView) {
       case 'subscriptions': return <MembershipStats />;
+      case 'cash': return <CashStats />;
       case 'loyalty': return <LoyaltyStats />;
       case 'prepaid': return <PrepaidStats />;
       case 'visits': return <VisitsChart />;
@@ -35,11 +37,14 @@ function AnalyticsPage() {
           <Button variant={activeView === 'subscriptions' ? 'primary' : 'outline-primary'} onClick={() => setActiveView('subscriptions')}>
             Subscriptions
           </Button>
+          <Button variant={activeView === 'cash' ? 'primary' : 'outline-primary'} onClick={() => setActiveView('cash')}>
+            Cash
+          </Button>
           <Button variant={activeView === 'loyalty' ? 'primary' : 'outline-primary'} onClick={() => setActiveView('loyalty')}>
             Loyalty
           </Button>
           <Button variant={activeView === 'prepaid' ? 'primary' : 'outline-primary'} onClick={() => setActiveView('prepaid')}>
-            Prepaid
+            Book
           </Button>
           <Button variant={activeView === 'visits' ? 'primary' : 'outline-primary'} onClick={() => setActiveView('visits')}>
             Visits
