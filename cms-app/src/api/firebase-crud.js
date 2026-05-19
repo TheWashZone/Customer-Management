@@ -198,6 +198,7 @@ async function getAllMembers() {
 /**
  * Updates specific fields of an existing user document
  * @param {string} id - The user ID to update
+ * @param {string} passId - The monthly pass ID associated with the member (for validation)
  * @param {Object} updates - Object containing fields to update
  * @returns {Promise<string>} The user ID
  */

@@ -7,7 +7,15 @@ import { createVisit } from "../api/visit-crud.js";
 import { getNextVisitId } from "../api/visit-counter.js"
 
 function CustomerSearchPage() {
-  const { updateMember, getLoyaltyMember, updateLoyaltyMember, getBookMember, updateBookMember, getMemberByMonthlyPassId } = useMembers();
+  const { 
+    updateMember, 
+    getLoyaltyMember, 
+    updateLoyaltyMember, 
+    getBookMember, 
+    updateBookMember, 
+    getMemberByMonthlyPassId,
+    updateMembership
+   } = useMembers();
 
   const [code, setCode] = useState("");
   const [memberData, setMemberData] = useState(null);
@@ -117,15 +125,39 @@ function CustomerSearchPage() {
     setEditError(null);
     try {
       let updates = {};
+
       if (memberType === 'subscription') {
+        const memberUpdates = {};
+        if (editForm.name?.trim()) {
+          memberUpdates.name = editForm.name.trim();
+        }
+        if (editForm.email?.trim()) {
+          memberUpdates.email = editForm.email.trim();
+        }
+        if (Object.keys(memberUpdates).length > 0) {
+          await updateMember(memberData.id, memberUpdates);
+        }
+
+        const monthlyPassUpdates = {};
+        if (editForm.notes?.trim()) {
+          monthlyPassUpdates.notes = editForm.notes.trim();
+        }
+        if (editForm.car?.trim()) {
+          monthlyPassUpdates.vehicle = editForm.car.trim();
+        }
+        if (editForm.status?.trim()) {
+          monthlyPassUpdates.status = editForm.status;
+        }
+        if (Object.keys(monthlyPassUpdates).length > 0) {
+          await updateMembership(memberData.id, code, monthlyPassUpdates);
+        }
+
         updates = {
-          name: editForm.name,
-          email: editForm.email,
-          notes: editForm.notes,
-          car: editForm.car,
-          status: editForm.status,
+          ...memberUpdates,
+          notes: monthlyPassUpdates.notes ?? memberData.notes,
+          car: monthlyPassUpdates.vehicle ?? memberData.car,
+          status: monthlyPassUpdates.status ?? memberData.status,
         };
-        await updateMember(memberData.id, updates);
       } else if (memberType === 'loyalty') {
         updates = {
           name: editForm.name,
@@ -365,10 +397,10 @@ function CustomerSearchPage() {
                   <span className="header-label">Pass ID:&nbsp;</span>
                   <span className="header-value">{code}</span>
                 </div>
-                <div className="header-row">
+                {/* <div className="header-row">
                   <span className="header-label">Contact Person:&nbsp;</span>
                   <span className="header-value">{memberData.contact_person}</span>
-                </div>
+                </div> */}
                 <div className="header-row">
                   <span className="header-label">Phone Number:&nbsp;</span>
                   <span className="header-value">{memberData.phone_number}</span>
