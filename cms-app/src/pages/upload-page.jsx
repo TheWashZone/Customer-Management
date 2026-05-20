@@ -5,7 +5,15 @@ import { seedDemoVisits, clearDemoVisits } from '../api/analytics-crud';
 import HamburgerMenu from '../components/HamburgerMenu';
 
 function UploadPage() {
-  const { deleteMember, isLoading, refreshMembers, createMemberWithMonthlyPass } = useMembers();
+  const { 
+    deleteMember, 
+    isLoading, 
+    refreshMembers, 
+    createMemberWithMonthlyPass,
+    getMemberByMonthlyPassId,
+    updateMember,
+    updateMembership
+  } = useMembers();
 
   const [message, setMessage] = useState('');
   const [selectedFile, setSelectedFile] = useState(null);
@@ -74,6 +82,9 @@ function UploadPage() {
       const existingMemberIds = freshMembers.map((m) => m.id);
       const results = await uploadCustomerRecordsFromFile(selectedFile, {
         createMemberWithMonthlyPass,
+        getMemberByMonthlyPassId,
+        updateMember,
+        updateMembership,
         deleteMember,
         existingMemberIds,
       });
@@ -223,6 +234,20 @@ function UploadPage() {
           <p style={{ color: 'red' }}><strong>Failed:</strong> {uploadResults.failed}</p>
           {uploadResults.pruned > 0 && (
             <p style={{ color: '#FF9800' }}><strong>Stale members removed:</strong> {uploadResults.pruned}</p>
+          )}
+
+          {uploadResults.warnings?.length > 0 && (
+            <div style={{ marginTop: '15px' }}>
+              <h4>Warnings:</h4>
+              <div>The first monthly pass with this id in the spreadsheet was added</div>
+              <ul style={{ fontSize: '14px', color: '#b26a00' }}>
+                {uploadResults.warnings.map((warning, index) => (
+                  <li key={index}>
+                    Row {warning.row}: {warning.warning}
+                  </li>
+                ))}
+              </ul>
+            </div>
           )}
 
           {uploadResults.errors.length > 0 && (

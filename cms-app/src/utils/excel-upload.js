@@ -73,13 +73,39 @@ function rowHasColor(row, colorType) {
  * @param {string[]} options.existingMemberIds - IDs currently in the database
  * @returns {Promise<Object>} - Results with success / error / pruned counts
  */
-export async function uploadCustomerRecordsFromFile(file, { createMemberWithMonthlyPass, deleteMember, existingMemberIds = [] }) {
+export async function uploadCustomerRecordsFromFile(file, { 
+  createMemberWithMonthlyPass, 
+  getMemberByMonthlyPassId,
+  updateMember,
+  updateMembership,
+  deleteMember, 
+  existingMemberIds = [],
+ }) {
+  if (!getMemberByMonthlyPassId || typeof getMemberByMonthlyPassId !== 'function') {
+    throw new Error('getMemberByMonthlyPassId must be a function');
+  }
+
+  if (!updateMember || typeof updateMember !== 'function') {
+    throw new Error('updateMember must be a function');
+  }
+
+  if (!updateMembership || typeof updateMembership !== 'function') {
+    throw new Error('updateMembership must be a function');
+  }
+
   if (!createMemberWithMonthlyPass || typeof createMemberWithMonthlyPass !== 'function') {
     throw new Error('createMemberWithMonthlyPass must be a function');
   }
 
   const workbook = new ExcelJS.Workbook();
-  const results = { total: 0, successful: 0, failed: 0, pruned: 0, errors: [] };
+  const results = { 
+    total: 0, 
+    successful: 0, 
+    failed: 0, 
+    pruned: 0, 
+    errors: [],
+    warnings: [],
+  };
 
   try {
     const arrayBuffer = await file.arrayBuffer();
@@ -104,13 +130,14 @@ export async function uploadCustomerRecordsFromFile(file, { createMemberWithMont
         const idPart2Raw = row.getCell(3).value;
         const car = row.getCell(4).value?.toString().trim() || '';
 
-        const idPart2Num = Number(idPart2Raw);
-        if (!idPart2Raw || !Number.isFinite(idPart2Num)) continue;
+        const idPart2 = idPart2Raw?.toString().trim() || '';
 
-        results.total++;
+        if (!idPart1 || !idPart2) {
+          continue;
+        }
 
-        const idPart2 = idPart2Raw.toString().trim();
         const id = `${idPart1}${idPart2}`;
+        results.total++;
 
         const status = rowHasColor(row, 'gray')
           ? 'inactive'
@@ -124,27 +151,64 @@ export async function uploadCustomerRecordsFromFile(file, { createMemberWithMont
           continue;
         }
 
+        if (uploadedIds.has(id)) {
+          results.warnings.push({
+            row: rowNumber,
+            warning: `Duplicate pass ID ${id}; skipped because it was already processed earlier in this file.`,
+          });
+          continue;
+        }
+
         uploadedIds.add(id);
-        const userId = (await getNextId()).toString();
-        await createMemberWithMonthlyPass(userId, id, name, '', '', '', '', idPart1, status, car, '');
-        results.successful++;
+
+    const existingMember = await getMemberByMonthlyPassId(id);
+
+    if (existingMember) {
+      await updateMember(existingMember.id, {
+        name,
+      });
+
+      await updateMembership(existingMember.id, id, {
+        plan_type: idPart1,
+        status,
+        vehicle: car,
+      });
+    } else {
+      const userId = (await getNextId()).toString();
+
+      await createMemberWithMonthlyPass(
+        userId,
+        id,
+        name,
+        '',
+        '',
+        '',
+        '',
+        idPart1,
+        status,
+        car,
+        ''
+      );
+    }
+
+    results.successful++;
       } catch (error) {
         results.failed++;
         results.errors.push({ row: rowNumber, error: error.message });
       }
     }
 
-    if (deleteMember && existingMemberIds.length > 0 && results.failed === 0) {
-      const staleIds = existingMemberIds.filter((id) => !uploadedIds.has(id));
-      await Promise.all(staleIds.map(async (id) => {
-        try {
-          await deleteMember(id);
-          results.pruned++;
-        } catch (error) {
-          results.errors.push({ row: id, id, error: `Failed to prune member ${id}: ${error.message}` });
-        }
-      }));
-    }
+    // if (deleteMember && existingMemberIds.length > 0 && results.failed === 0) {
+    //   const staleIds = existingMemberIds.filter((id) => !uploadedIds.has(id));
+    //   await Promise.all(staleIds.map(async (id) => {
+    //     try {
+    //       await deleteMember(id);
+    //       results.pruned++;
+    //     } catch (error) {
+    //       results.errors.push({ row: id, id, error: `Failed to prune member ${id}: ${error.message}` });
+    //     }
+    //   }));
+    // }
   } catch (error) {
     console.error('Error reading Excel file:', error);
     throw error;

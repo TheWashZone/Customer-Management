@@ -240,6 +240,7 @@ async function deleteMember(id) {
     const monthlyPassesSnapshot = await getDocs(monthlyPassesRef);
 
     for (const passDoc of monthlyPassesSnapshot.docs) {
+      await deleteDoc(doc(db, "monthlyPassIds", passDoc.id));
       await deleteDoc(doc(db, "users", id, "monthlyPasses", passDoc.id));
     }
 
@@ -261,32 +262,34 @@ async function deleteMember(id) {
  */
 async function getMemberByMonthlyPassId(passId) {
   try {
-    const q = query(
-      collectionGroup(db, "monthlyPasses"),
-      where("passId", "==", passId)
-    );
+    const passIdRef = doc(db, "monthlyPassIds", passId);
+    const passIdSnap = await getDoc(passIdRef);
 
-    const snapshot = await getDocs(q);
-
-    if (snapshot.empty) {
+    if (!passIdSnap.exists()) {
       return null;
     }
 
-    const passDoc = snapshot.docs[0];
+    const { userId } = passIdSnap.data();
 
-    // Get parent user document
-    const userRef = passDoc.ref.parent.parent;
+    if (!userId) {
+      return null;
+    }
+
+    const userRef = doc(db, "users", userId);
     const userSnap = await getDoc(userRef);
 
     if (!userSnap.exists()) {
       return null;
     }
 
+    const passRef = doc(db, "users", userId, "monthlyPasses", passId);
+    const passSnap = await getDoc(passRef);
+
     return {
       id: userSnap.id,
-      ...userSnap.data()
+      ...userSnap.data(),
+      ...(passSnap.exists() ? passSnap.data() : {}),
     };
-
   } catch (error) {
     console.error("❌ Error finding member by monthly pass ID:", error);
     throw error;
