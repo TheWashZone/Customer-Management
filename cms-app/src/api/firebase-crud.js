@@ -104,6 +104,7 @@ async function createMemberWithMonthlyPass(
       creation_date: today,
       plan_type,
       status,
+      status,
       vehicle,
       notes,
     });
