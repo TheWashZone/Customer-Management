@@ -7,9 +7,6 @@ import {
   collection, 
   getDocs, 
   runTransaction,
-  collectionGroup,
-  query,
-  where
 } from "firebase/firestore";
 import { db } from "./firebaseconfig";
 
@@ -103,7 +100,6 @@ async function createMemberWithMonthlyPass(
       passId,
       creation_date: today,
       plan_type,
-      status,
       status,
       vehicle,
       notes,
