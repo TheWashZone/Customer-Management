@@ -7,7 +7,15 @@ import { createVisit } from "../api/visit-crud.js";
 import { getNextVisitId } from "../api/visit-counter.js"
 
 function CustomerSearchPage() {
-  const { updateMember, getLoyaltyMember, updateLoyaltyMember, getBookMember, updateBookMember, getMemberByMonthlyPassId } = useMembers();
+  const { 
+    updateMember, 
+    getLoyaltyMember, 
+    updateLoyaltyMember, 
+    getBookMember, 
+    updateBookMember, 
+    getMemberByMonthlyPassId,
+    updateMembership 
+  } = useMembers();
 
   const [code, setCode] = useState("");
   const [memberData, setMemberData] = useState(null);
@@ -102,7 +110,12 @@ function CustomerSearchPage() {
   };
 
   const handleOpenEdit = () => {
-    setEditForm({ ...memberData });
+    setEditForm({
+       ...memberData,
+       car: memberData.vehicle || memberData.car || '',
+       notes: memberData.notes || '',
+       status: memberData.status || 'active',
+      });
     setEditError(null);
     setShowEditModal(true);
   };
@@ -117,15 +130,35 @@ function CustomerSearchPage() {
     setEditError(null);
     try {
       let updates = {};
+      // if (memberType === 'subscription') {
+      //   updates = {
+      //     name: editForm.name || '',
+      //     email: editForm.email || '',
+      //     notes: editForm.notes || '',
+      //     car: editForm.car || '',
+      //     status: editForm.status || 'active',
+      //   };
+      //   await updateMember(memberData.id, updates);
       if (memberType === 'subscription') {
-        updates = {
-          name: editForm.name,
-          email: editForm.email,
-          notes: editForm.notes,
-          car: editForm.car,
-          status: editForm.status,
+        const userUpdates = {
+          name: editForm.name || '',
+          email: editForm.email || '',
         };
-        await updateMember(memberData.id, updates);
+
+        const passUpdates = {
+          vehicle: editForm.car || '',
+          notes: editForm.notes || '',
+          status: editForm.status || 'active',
+        };
+
+        await updateMember(memberData.id, userUpdates);
+        await updateMembership(memberData.id, memberData.passId || code, passUpdates);
+
+        updates = {
+          ...userUpdates,
+          ...passUpdates,
+          car: passUpdates.vehicle,
+        };
       } else if (memberType === 'loyalty') {
         updates = {
           name: editForm.name,

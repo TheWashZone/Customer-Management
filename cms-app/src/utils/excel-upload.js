@@ -73,7 +73,14 @@ function rowHasColor(row, colorType) {
  * @param {string[]} options.existingMemberIds - IDs currently in the database
  * @returns {Promise<Object>} - Results with success / error / pruned counts
  */
-export async function uploadCustomerRecordsFromFile(file, { createMemberWithMonthlyPass, deleteMember, existingMemberIds = [] }) {
+export async function uploadCustomerRecordsFromFile(file, { 
+  createMemberWithMonthlyPass, 
+  updateMember,
+  updateMembership,
+  getMemberByMonthlyPassId,
+  deleteMember, 
+  existingMemberIds = [] 
+}) {
   if (!createMemberWithMonthlyPass || typeof createMemberWithMonthlyPass !== 'function') {
     throw new Error('createMemberWithMonthlyPass must be a function');
   }
@@ -124,10 +131,46 @@ export async function uploadCustomerRecordsFromFile(file, { createMemberWithMont
           continue;
         }
 
-        uploadedIds.add(id);
-        const userId = (await getNextId()).toString();
-        await createMemberWithMonthlyPass(userId, id, name, '', '', '', '', idPart1, status, car, '');
+        const existingMember = await getMemberByMonthlyPassId(id);
+
+        if (existingMember) {
+          await updateMember(existingMember.id, {
+            name,
+          });
+
+          await updateMembership(existingMember.id, id, {
+            plan_type: idPart1,
+            status,
+            vehicle: car,
+            notes: existingMember.notes || '',
+          });
+
+          uploadedIds.add(existingMember.id);
+        } else {
+          const userId = (await getNextId()).toString();
+
+          await createMemberWithMonthlyPass(
+            userId,
+            id,
+            name,
+            '',
+            '',
+            '',
+            '',
+            idPart1,
+            status,
+            car,
+            ''
+          );
+
+          uploadedIds.add(userId);
+        }
+
         results.successful++;
+        // uploadedIds.add(id);
+        // const userId = (await getNextId()).toString();
+        // await createMemberWithMonthlyPass(userId, id, name, '', '', '', '', idPart1, status, car, '');
+        // results.successful++;
       } catch (error) {
         results.failed++;
         results.errors.push({ row: rowNumber, error: error.message });

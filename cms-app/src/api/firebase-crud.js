@@ -261,37 +261,80 @@ async function deleteMember(id) {
  */
 async function getMemberByMonthlyPassId(passId) {
   try {
-    const q = query(
-      collectionGroup(db, "monthlyPasses"),
-      where("passId", "==", passId)
-    );
+    const passIdRef = doc(db, "monthlyPassIds", passId);
+    const passIdSnap = await getDoc(passIdRef);
 
-    const snapshot = await getDocs(q);
-
-    if (snapshot.empty) {
+    if (!passIdSnap.exists()) {
       return null;
     }
 
-    const passDoc = snapshot.docs[0];
+    const { userId } = passIdSnap.data();
 
-    // Get parent user document
-    const userRef = passDoc.ref.parent.parent;
+    const userRef = doc(db, "users", userId);
+    const passRef = doc(db, "users", userId, "monthlyPasses", passId);
+
     const userSnap = await getDoc(userRef);
+    const passSnap = await getDoc(passRef);
 
-    if (!userSnap.exists()) {
+    if (!userSnap.exists() || !passSnap.exists()) {
       return null;
     }
 
     return {
       id: userSnap.id,
-      ...userSnap.data()
+      ...userSnap.data(),
+      passId,
+      ...passSnap.data(),
     };
-
   } catch (error) {
     console.error("❌ Error finding member by monthly pass ID:", error);
     throw error;
   }
 }
+// async function getMemberByMonthlyPassId(passId) {
+//   try {
+//     const q = query(
+//       collectionGroup(db, "monthlyPasses"),
+//       where("passId", "==", passId)
+//     );
+
+//     const snapshot = await getDocs(q);
+
+//     if (snapshot.empty) {
+//       return null;
+//     }
+
+//     const passDoc = snapshot.docs[0];
+
+//     // Get parent user document
+//     const userRef = passDoc.ref.parent.parent;
+//     const userSnap = await getDoc(userRef);
+
+//     if (!userSnap.exists()) {
+//       return null;
+//     }
+
+//     // return {
+//     //   id: userSnap.id,
+//     //   ...userSnap.data(),
+//     //   ...passDoc.data(),
+//     // };
+//     const passData = passDoc.data();
+
+//     return {
+//       id: userSnap.id,
+//       ...userSnap.data(),
+//       passId: passDoc.id,
+//       vehicle: passData.vehicle || '',
+//       status: passData.status || 'active',
+//       notes: passData.notes || '',
+//     };
+
+//   } catch (error) {
+//     console.error("❌ Error finding member by monthly pass ID:", error);
+//     throw error;
+//   }
+// }
 
 
 export {

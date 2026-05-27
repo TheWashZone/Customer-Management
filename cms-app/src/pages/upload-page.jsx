@@ -5,7 +5,15 @@ import { seedDemoVisits, clearDemoVisits } from '../api/analytics-crud';
 import HamburgerMenu from '../components/HamburgerMenu';
 
 function UploadPage() {
-  const { deleteMember, isLoading, refreshMembers, createMemberWithMonthlyPass } = useMembers();
+  const { 
+    deleteMember,
+     isLoading, 
+     refreshMembers, 
+     createMemberWithMonthlyPass,
+     updateMember,
+     updateMembership,
+     getMemberByMonthlyPassId
+    } = useMembers();
 
   const [message, setMessage] = useState('');
   const [selectedFile, setSelectedFile] = useState(null);
@@ -74,6 +82,9 @@ function UploadPage() {
       const existingMemberIds = freshMembers.map((m) => m.id);
       const results = await uploadCustomerRecordsFromFile(selectedFile, {
         createMemberWithMonthlyPass,
+        updateMember,
+        updateMembership,
+        getMemberByMonthlyPassId,
         deleteMember,
         existingMemberIds,
       });
