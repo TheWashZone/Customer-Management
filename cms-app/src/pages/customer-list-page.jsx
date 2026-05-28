@@ -1302,9 +1302,10 @@ function MembersPage() {
                         <th className="text-end" style={{ width: '17%' }}></th> */}
                         {/* <th>ID</th> */}
                         <th className="passId-width">Pass ID</th>
+                        <th>Status</th>
                         <th>Name</th>
-                        <th>Contact Person</th>
-                        <th>Phone Number</th>
+                        <th>Contact</th>
+                        <th>Phone</th>
                         <th>Address</th>
                         <th>Email</th>
                         <th>Vehicle</th>
@@ -1343,6 +1344,13 @@ function MembersPage() {
                         <tr key={pass ? `${member.id}-${pass.passId}` : `${member.id}-nopass`}>
                           {/* <td>{member.id}</td> */}
                           <td className="passId-width">{pass ? pass.passId : '-'}</td>
+                          <td>
+                            {pass?.status === 'payment_needed'
+                              ? 'Payment Needed'
+                              : pass?.status === 'inactive'
+                                ? 'Inactive'
+                                : 'Active'}
+                          </td>
                           <td>{member.name}</td>
                           <td>{member.contact_person}</td>
                           <td>{member.phone_number}</td>
