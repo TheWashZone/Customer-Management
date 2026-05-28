@@ -111,11 +111,16 @@ function CustomerSearchPage() {
 
   const handleOpenEdit = () => {
     setEditForm({
-       ...memberData,
-       car: memberData.vehicle || memberData.car || '',
-       notes: memberData.notes || '',
-       status: memberData.status || 'active',
-      });
+      ...memberData,
+      name: memberData.name || '',
+      email: memberData.email || '',
+      address: memberData.address || '',
+      phone_number: memberData.phone_number || '',
+      car: memberData.vehicle || memberData.car || '',
+      notes: memberData.notes || '',
+      status: memberData.status || 'active',
+    });
+
     setEditError(null);
     setShowEditModal(true);
   };
