@@ -149,7 +149,8 @@ function CustomerSearchPage() {
           name: editForm.name || '',
           email: editForm.email || '',
           address: editForm.address || '',
-          phone_number: editForm.phone_number || ''
+          phone_number: editForm.phone_number || '',
+          contact_person: editForm.contact_person || ''
         };
 
         const passUpdates = {
@@ -642,6 +643,19 @@ function CustomerSearchPage() {
                       className="edit-input"
                       name="phone_number"
                       value={editForm.phone_number || ''}
+                      onChange={handleEditChange}
+                    />
+                  </div>
+
+                  {/* All types: Contact */}
+                  <div className="edit-field">
+                    <label className="edit-label" htmlFor="edit-contact-person">Contact Person</label>
+                    <input
+                      id="edit-contact-person"
+                      className="edit-input"
+                      type="text"
+                      name="contact_person"
+                      value={editForm.contact_person || ''}
                       onChange={handleEditChange}
                     />
                   </div>
