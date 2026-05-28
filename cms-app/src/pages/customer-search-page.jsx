@@ -178,6 +178,9 @@ function CustomerSearchPage() {
         visitCount: newVisitCount,
       }));
       await logDailyVisit('loyalty', washType);
+      // Also log to visits collection
+      const visitId = String(await getNextVisitId());
+      await createVisit(visitId, washType, 'loyalty');
       setLogSuccess(true);
       setTimeout(() => setLogSuccess(false), 3000);
     } catch (err) {
@@ -187,72 +190,73 @@ function CustomerSearchPage() {
     }
   };
 
-  const handleLogVisit = async () => {
-    setIsLoggingVisit(true);
-    setLogSuccess(false);
-    setLogError(null);
-    setFreeWashEarned(false);
+const handleLogVisit = async () => {
+  setIsLoggingVisit(true);
+  setLogSuccess(false);
+  setLogError(null);
+  setFreeWashEarned(false);
 
-    try {
-      if (memberType === "subscription") {
-        // await logDailyVisit('subscription', code[0]);
-        const visitId = String(await getNextVisitId());
-        await createVisit(
-          visitId,
-          code[0],
-          'subscription',
-          code
-        );
-        setLogSuccess(true);
-        setTimeout(() => setLogSuccess(false), 3000);
-      } else if (memberType === "loyalty") {
-        if (isNextWashFree) {
-          const today = new Date().toISOString().split("T")[0];
-          const newVisitCount = (memberData.visitCount || 0) + 1;
-          await updateLoyaltyMember(memberData.id, {
-            lastVisitDate: today,
-            visitCount: newVisitCount,
-          });
-          setMemberData((prev) => ({
-            ...prev,
-            lastVisitDate: today,
-            visitCount: newVisitCount,
-          }));
-          await logDailyVisit('loyalty', 'U');
-          setFreeWashEarned(true);
-          setLogSuccess(true);
-          setTimeout(() => setLogSuccess(false), 3000);
-        } else {
-          setIsLoggingVisit(false);
-          setShowWashSelect(true);
-          return;
-        }
-      } else if (memberType === "book") {
-        if (memberData.bookPages <= 0) {
-          setLogError("No book pages remaining. Cannot log visit.");
-          return;
-        }
+  try {
+    if (memberType === "subscription") {
+      const washType = code[0];
+      const visitId = String(await getNextVisitId());
+      await createVisit(visitId, washType, 'subscription', code);
+      await logDailyVisit('subscription', washType);
+      setLogSuccess(true);
+      setTimeout(() => setLogSuccess(false), 3000);
+    } else if (memberType === "loyalty") {
+      if (isNextWashFree) {
         const today = new Date().toISOString().split("T")[0];
-        const newBookPages = memberData.bookPages - 1;
-        await updateBookMember(memberData.id, {
+        const newVisitCount = (memberData.visitCount || 0) + 1;
+        await updateLoyaltyMember(memberData.id, {
           lastVisitDate: today,
-          bookPages: newBookPages,
+          visitCount: newVisitCount,
         });
         setMemberData((prev) => ({
           ...prev,
           lastVisitDate: today,
-          bookPages: newBookPages,
+          visitCount: newVisitCount,
         }));
-        await logDailyVisit('prepaid', code[0]);
+        await logDailyVisit('loyalty', 'U');
+        const visitId = String(await getNextVisitId());
+        await createVisit(visitId, 'U', 'loyalty');
+        setFreeWashEarned(true);
         setLogSuccess(true);
         setTimeout(() => setLogSuccess(false), 3000);
+      } else {
+        setIsLoggingVisit(false);
+        setShowWashSelect(true);
+        return;
       }
-    } catch (err) {
-      setLogError(`Failed to log visit: ${err.message}`);
-    } finally {
-      setIsLoggingVisit(false);
+    } else if (memberType === "book") {
+      if (memberData.bookPages <= 0) {
+        setLogError("No book pages remaining. Cannot log visit.");
+        return;                                        // ← removed dead code after this
+      }
+      const washType = code[0];
+      const today = new Date().toISOString().split("T")[0];
+      const newBookPages = memberData.bookPages - 1;
+      await updateBookMember(memberData.id, {
+        lastVisitDate: today,
+        bookPages: newBookPages,
+      });
+      setMemberData((prev) => ({
+        ...prev,
+        lastVisitDate: today,
+        bookPages: newBookPages,
+      }));
+      await logDailyVisit('prepaid', washType);
+      const visitId = String(await getNextVisitId());
+      await createVisit(visitId, washType, 'prepaid');
+      setLogSuccess(true);
+      setTimeout(() => setLogSuccess(false), 3000);
     }
-  };
+  } catch (err) {
+    setLogError(`Failed to log visit: ${err.message}`);
+  } finally {
+    setIsLoggingVisit(false);
+  }
+};
 
   const handleCashLog = async (washType) => {
     setShowCashModal(false);
@@ -262,6 +266,9 @@ function CustomerSearchPage() {
 
     try {
       await logDailyVisit('cash', washType);
+      // Also log to visits collection
+      const visitId = String(await getNextVisitId());
+      await createVisit(visitId, washType, 'cash');
       setCashLogSuccess(true);
       setTimeout(() => setCashLogSuccess(false), 3000);
     } catch (err) {
@@ -279,6 +286,9 @@ function CustomerSearchPage() {
 
     try {
       await logDailyVisit('loyalty', washType);
+      // Also log to visits collection
+      const visitId = String(await getNextVisitId());
+      await createVisit(visitId, washType, 'loyalty');
       setLoyaltyLogSuccess(true);
       setTimeout(() => setLoyaltyLogSuccess(false), 3000);
     } catch (err) {
@@ -296,6 +306,9 @@ function CustomerSearchPage() {
 
     try {
       await logDailyVisit('prepaid', washType);
+      // Also log to visits collection
+      const visitId = String(await getNextVisitId());
+      await createVisit(visitId, washType, 'prepaid');
       setBookLogSuccess(true);
       setTimeout(() => setBookLogSuccess(false), 3000);
     } catch (err) {
@@ -1010,5 +1023,3 @@ function CustomerSearchPage() {
 }
 
 export default CustomerSearchPage;
-
-// adding a comment so I can push this branch to github
