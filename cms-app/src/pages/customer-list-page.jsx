@@ -242,7 +242,13 @@ function MembersPage() {
             (pass.vehicle || '').toLowerCase().includes(term) ||
             (pass.notes || '').toLowerCase().includes(term);
 
-          return baseMatchesSearch || passMatchesSearch;
+          const matchesLevel =
+            filterSubscription === 'all' || pass.plan_type === filterSubscription;
+
+          const matchesStatus =
+            filterStatus === 'all' || pass.status === filterStatus;
+
+          return (baseMatchesSearch || passMatchesSearch) && matchesLevel && matchesStatus;
         })
         .map((pass) => ({
           member,
@@ -251,7 +257,7 @@ function MembersPage() {
     });
 
     setFilteredMemberPassRows(rows);
-  }, [searchTerm, members, monthlyPassesByUser, getMonthlyPassesForUser]);
+  }, [searchTerm, members, monthlyPassesByUser, getMonthlyPassesForUser, filterSubscription, filterStatus]);
 
   useEffect(() => {
     const loadMonthlyPasses = async () => {
