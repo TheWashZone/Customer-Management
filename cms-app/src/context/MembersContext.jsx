@@ -232,7 +232,7 @@ export const MembersProvider = ({ children, user }) => {
     phone_number,
     email = '',
     plan_type,
-    update_flag,
+    status,
     vehicle,
     notes = ''
   ) => {
@@ -246,7 +246,7 @@ export const MembersProvider = ({ children, user }) => {
         phone_number,
         email,
         plan_type,
-        update_flag,
+        status,
         vehicle,
         notes
       );
@@ -267,7 +267,7 @@ export const MembersProvider = ({ children, user }) => {
         passId,
         creation_date: today,
         plan_type,
-        update_flag,
+        status,
         vehicle,
         notes,
       };
@@ -489,12 +489,27 @@ export const MembersProvider = ({ children, user }) => {
 
       if (cachedOwnerId) {
         const cachedMember = members.find((member) => member.id === cachedOwnerId);
+        const cachedPass = monthlyPassesByUser[cachedOwnerId]?.find(
+          (pass) => pass.passId === passId
+        );
 
         if (cachedMember) {
-          return cachedMember;
+          return {
+            ...cachedMember,
+            passId,
+            ...cachedPass,
+          };
         }
 
-        return await getMember(cachedOwnerId);
+        const memberFromDB = await getMember(cachedOwnerId);
+
+        return memberFromDB
+          ? {
+              ...memberFromDB,
+              passId,
+              ...cachedPass,
+            }
+          : null;
       }
 
       const memberFromDB = await getMemberByMonthlyPassIdFromDB(passId);
