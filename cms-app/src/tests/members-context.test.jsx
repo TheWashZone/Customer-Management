@@ -555,7 +555,7 @@ describe('MembersContext', () => {
         passId: 'U123',
         creation_date: new Date().toISOString().split('T')[0],
         plan_type: 'U',
-        update_flag: false,
+        status: false,
         vehicle: 'Tesla Model 3',
         notes: 'Context-created member with pass',
       });

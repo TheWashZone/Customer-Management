@@ -73,7 +73,7 @@ function MembershipStats() {
 
         // Extract membership type from ID (first character)
         const type = pass.passId?.[0]?.toUpperCase();
-        if (type === 'B' || type === 'U' || type === 'D') {
+        if ((pass.status === 'active') && (type === 'B' || type === 'U' || type === 'D')) {
           stats.byType[type]++;
         }
       });
@@ -246,12 +246,12 @@ function MembershipStats() {
                 {Object.entries(MEMBERSHIP_NAMES).map(([type, name]) => (
                   <div key={type} className="d-flex justify-content-between align-items-center p-3 border rounded flex-fill">
                     <div>
-                      <Badge bg="secondary" className="me-2">{type}</Badge>
-                      <strong>{name}</strong>
+                      <Badge bg="secondary" className="me-2 fs-5">{type}</Badge>
+                      <strong className="fw-bold fs-5">{name}</strong>
                     </div>
                     <div className="text-end">
                       <div>
-                        <span className="text-success fw-bold">{stats.byType[type]} Members </span>
+                        <span className="text-success fw-bold fs-4">{stats.byType[type]} Members </span>
                       </div>
                     </div>
                   </div>

@@ -399,10 +399,6 @@ function CustomerSearchPage() {
                   <span className="header-value">{code}</span>
                 </div>
                 <div className="header-row">
-                  <span className="header-label">Contact Person:&nbsp;</span>
-                  <span className="header-value">{memberData.contact_person}</span>
-                </div>
-                <div className="header-row">
                   <span className="header-label">Phone Number:&nbsp;</span>
                   <span className="header-value">{memberData.phone_number}</span>
                 </div>
