@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Card, ButtonGroup, Button, Spinner, Alert, Row, Col, Modal, Form } from 'react-bootstrap';
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { getDailyVisitsInRange } from '../api/analytics-crud';
+import { getAllVisits } from '../api/visit-crud';
 import { getWashPrices, updateWashPrices } from '../api/settings-crud';
 
 const WASH_COLORS = { B: '#0d6efd', U: '#198754', D: '#dc3545' };
@@ -39,15 +39,39 @@ function PrepaidStats() {
     };
   }, [viewMode]);
 
-  // Fetch visits data
+  // Fetch visits data from 'visits' collection and aggregate for book (prepaid)
   useEffect(() => {
     const fetchData = async () => {
       setIsLoading(true);
       setError(null);
-
       try {
-        const data = await getDailyVisitsInRange(dateRange.start, dateRange.end);
-        setVisitsData(data);
+        const allVisits = await getAllVisits();
+        // Filter by date range
+        const start = new Date(dateRange.start + 'T00:00:00Z');
+        const end = new Date(dateRange.end + 'T23:59:59Z');
+        const filtered = allVisits.filter(v => {
+          const d = new Date(v.visit_date + 'T00:00:00Z');
+          return d >= start && d <= end && v.payment_type === 'prepaid';
+        });
+        // Aggregate by date and wash type
+        const dateMap = new Map();
+        for (let d = new Date(start); d <= end; d.setUTCDate(d.getUTCDate() + 1)) {
+          const dateStr = d.toISOString().split('T')[0];
+          dateMap.set(dateStr, { date: dateStr, count: 0, displayDate: formatDate(dateStr), preB: 0, preD: 0, preU: 0 });
+        }
+        filtered.forEach(v => {
+          const dateStr = v.visit_date;
+          const wash = v.wash_type;
+          if (dateMap.has(dateStr)) {
+            const entry = dateMap.get(dateStr);
+            if (wash === 'B') entry.preB += 1;
+            if (wash === 'D') entry.preD += 1;
+            if (wash === 'U') entry.preU += 1;
+            entry.count += 1;
+            dateMap.set(dateStr, entry);
+          }
+        });
+        setVisitsData(Array.from(dateMap.values()).sort((a, b) => a.date.localeCompare(b.date)));
       } catch (err) {
         console.error('Failed to load visits data:', err);
         setError('Failed to load book visits data. Please try again.');
@@ -55,13 +79,12 @@ function PrepaidStats() {
         setIsLoading(false);
       }
     };
-
     fetchData();
   }, [dateRange]);
 
   // Fetch wash prices on mount
   useEffect(() => {
-    getWashPrices().then(setWashPrices).catch(() => {/* silently use defaults */});
+    getWashPrices().then(setWashPrices).catch(() => {/* silently use defaults */ });
   }, []);
 
   const handleOpenPriceModal = () => {
@@ -126,20 +149,19 @@ function PrepaidStats() {
 
     // Fill in actual visit counts and breakdown data for book only
     visitsData.forEach(visit => {
-      if (dateMap.has(visit.dateString)) {
+      if (dateMap.has(visit.date)) {
         const bookCount = (visit.preB || 0) + (visit.preD || 0) + (visit.preU || 0);
         const entry = {
-          date: visit.dateString,
+          date: visit.date,
           count: bookCount,
-          displayDate: formatDate(visit.dateString),
+          displayDate: formatDate(visit.date),
           preB: visit.preB || 0,
           preD: visit.preD || 0,
           preU: visit.preU || 0,
         };
-        dateMap.set(visit.dateString, entry);
+        dateMap.set(visit.date, entry);
       }
     });
-
     return Array.from(dateMap.values()).sort((a, b) => a.date.localeCompare(b.date));
   }, [visitsData, dateRange]);
 
