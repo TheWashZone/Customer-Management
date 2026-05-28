@@ -111,11 +111,16 @@ function CustomerSearchPage() {
 
   const handleOpenEdit = () => {
     setEditForm({
-       ...memberData,
-       car: memberData.vehicle || memberData.car || '',
-       notes: memberData.notes || '',
-       status: memberData.status || 'active',
-      });
+      ...memberData,
+      name: memberData.name || '',
+      email: memberData.email || '',
+      address: memberData.address || '',
+      phone_number: memberData.phone_number || '',
+      car: memberData.vehicle || memberData.car || '',
+      notes: memberData.notes || '',
+      status: memberData.status || 'active',
+    });
+
     setEditError(null);
     setShowEditModal(true);
   };
@@ -143,6 +148,9 @@ function CustomerSearchPage() {
         const userUpdates = {
           name: editForm.name || '',
           email: editForm.email || '',
+          address: editForm.address || '',
+          phone_number: editForm.phone_number || '',
+          contact_person: editForm.contact_person || ''
         };
 
         const passUpdates = {
@@ -399,10 +407,6 @@ function CustomerSearchPage() {
                   <span className="header-value">{code}</span>
                 </div>
                 <div className="header-row">
-                  <span className="header-label">Contact Person:&nbsp;</span>
-                  <span className="header-value">{memberData.contact_person}</span>
-                </div>
-                <div className="header-row">
                   <span className="header-label">Phone Number:&nbsp;</span>
                   <span className="header-value">{memberData.phone_number}</span>
                 </div>
@@ -615,6 +619,43 @@ function CustomerSearchPage() {
                       className="edit-textarea"
                       name="notes"
                       value={editForm.notes || ''}
+                      onChange={handleEditChange}
+                    />
+                  </div>
+
+                  {/* All types: Address */}
+                  <div className="edit-field">
+                    <label className="edit-label" htmlFor="edit-address">Address</label>
+                    <input
+                      id="edit-address"
+                      className="edit-input"
+                      name="address"
+                      value={editForm.address || ''}
+                      onChange={handleEditChange}
+                    />
+                  </div>
+
+                  {/* All types: Phone */}
+                  <div className="edit-field">
+                    <label className="edit-label" htmlFor="edit-phone-number">Phone Number</label>
+                    <input
+                      id="edit-phone-number"
+                      className="edit-input"
+                      name="phone_number"
+                      value={editForm.phone_number || ''}
+                      onChange={handleEditChange}
+                    />
+                  </div>
+
+                  {/* All types: Contact */}
+                  <div className="edit-field">
+                    <label className="edit-label" htmlFor="edit-contact-person">Contact Person</label>
+                    <input
+                      id="edit-contact-person"
+                      className="edit-input"
+                      type="text"
+                      name="contact_person"
+                      value={editForm.contact_person || ''}
                       onChange={handleEditChange}
                     />
                   </div>
