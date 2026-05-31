@@ -855,16 +855,19 @@ const handleLogVisit = async () => {
         <div className="keypad-grid">
           {/* Letter row (5 buttons) */}
           <div className="letter-row">
-            {buttons[0].map((btn) => (
-              <button
-                key={btn}
-                onClick={() => handleInput(btn)}
-                className="keypad-btn"
-                disabled={loading}
-              >
-                {btn}
-              </button>
-            ))}
+            {buttons[0].map((btn) => {
+              const colorClass = btn === 'B' ? 'keypad-btn-basic' : btn === 'D' ? 'keypad-btn-deluxe' : btn === 'U' ? 'keypad-btn-unlimited' : '';
+              return (
+                <button
+                  key={btn}
+                  onClick={() => handleInput(btn)}
+                  className={`keypad-btn ${colorClass}`}
+                  disabled={loading}
+                >
+                  {btn}
+                </button>
+              );
+            })}
           </div>
 
           {/* Number rows (3 buttons each) */}

@@ -85,6 +85,38 @@
   outline-offset: 2px;
 }
 
+/* ---- B / D / U letter button colors ---- */
+
+.keypad-btn-basic {
+  background-color: #0d6efd;
+  color: white;
+}
+
+.keypad-btn-basic:hover,
+.keypad-btn-basic:focus {
+  background-color: #0b5ed7;
+}
+
+.keypad-btn-deluxe {
+  background-color: #dc3545;
+  color: white;
+}
+
+.keypad-btn-deluxe:hover,
+.keypad-btn-deluxe:focus {
+  background-color: #bb2d3b;
+}
+
+.keypad-btn-unlimited {
+  background-color: #198754;
+  color: white;
+}
+
+.keypad-btn-unlimited:hover,
+.keypad-btn-unlimited:focus {
+  background-color: #157347;
+}
+
 /* Submit button */
 .submit-btn {
   width: var(--btn-size);
