@@ -82,10 +82,10 @@ function PrepaidStats() {
     fetchData();
   }, [dateRange]);
 
-  // Fetch wash prices on mount
-  useEffect(() => {
-    getWashPrices().then(setWashPrices).catch(() => {/* silently use defaults */ });
-  }, []);
+  // // Fetch wash prices on mount
+  // useEffect(() => {
+  //   getWashPrices().then(setWashPrices).catch(() => {/* silently use defaults */ });
+  // }, []);
 
   // const handleOpenPriceModal = () => {
   //   setPriceForm({ ...washPrices });
@@ -109,15 +109,15 @@ function PrepaidStats() {
     }
     setIsSavingPrices(true);
     setPriceError(null);
-    try {
-      await updateWashPrices(parsed);
-      setWashPrices(parsed);
-      setShowPriceModal(false);
-    } catch (err) {
-      setPriceError(`Failed to save: ${err.message}`);
-    } finally {
-      setIsSavingPrices(false);
-    }
+    // try {
+    //   await updateWashPrices(parsed);
+    //   setWashPrices(parsed);
+    //   setShowPriceModal(false);
+    // } catch (err) {
+    //   setPriceError(`Failed to save: ${err.message}`);
+    // } finally {
+    //   setIsSavingPrices(false);
+    // }
   };
 
   // Format date for display

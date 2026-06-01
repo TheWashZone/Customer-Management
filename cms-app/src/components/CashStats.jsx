@@ -83,9 +83,9 @@ function CashStats() {
     }, [dateRange]);
 
     // Fetch wash prices on mount
-    useEffect(() => {
-        getWashPrices().then(setWashPrices).catch(() => {/* silently use defaults */ });
-    }, []);
+    // useEffect(() => {
+    //     getWashPrices().then(setWashPrices).catch(() => {/* silently use defaults */ });
+    // }, []);
 
     // const handleOpenPriceModal = () => {
     //     setPriceForm({ ...washPrices });
@@ -109,15 +109,15 @@ function CashStats() {
         }
         setIsSavingPrices(true);
         setPriceError(null);
-        try {
-            await updateWashPrices(parsed);
-            setWashPrices(parsed);
-            setShowPriceModal(false);
-        } catch (err) {
-            setPriceError(`Failed to save: ${err.message}`);
-        } finally {
-            setIsSavingPrices(false);
-        }
+        // try {
+        //     await updateWashPrices(parsed);
+        //     setWashPrices(parsed);
+        //     setShowPriceModal(false);
+        // } catch (err) {
+        //     setPriceError(`Failed to save: ${err.message}`);
+        // } finally {
+        //     setIsSavingPrices(false);
+        // }
     };
 
     // Format date for display
