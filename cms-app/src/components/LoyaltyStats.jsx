@@ -84,11 +84,11 @@ function LoyaltyStats() {
     getWashPrices().then(setWashPrices).catch(() => {/* silently use defaults */ });
   }, []);
 
-  const handleOpenPriceModal = () => {
-    setPriceForm({ ...washPrices });
-    setPriceError(null);
-    setShowPriceModal(true);
-  };
+  // const handleOpenPriceModal = () => {
+  //   setPriceForm({ ...washPrices });
+  //   setPriceError(null);
+  //   setShowPriceModal(true);
+  // };
 
   const handlePriceChange = (washType, value) => {
     setPriceForm(prev => ({ ...prev, [washType]: value }));
