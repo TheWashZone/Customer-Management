@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { Card, ButtonGroup, Button, Spinner, Alert, Row, Col, Modal, Form } from 'react-bootstrap';
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { getAllVisits } from '../api/visit-crud';
-import { getWashPrices, updateWashPrices } from '../api/settings-crud';
+// import { getWashPrices, updateWashPrices } from '../api/settings-crud';
 
 const WASH_COLORS = { B: '#0d6efd', U: '#198754', D: '#dc3545' };
 const WASH_NAMES = { B: 'Basic', U: 'Unlimited', D: 'Deluxe' };
@@ -15,7 +15,7 @@ function CashStats() {
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
     const [selectedDayIndex, setSelectedDayIndex] = useState(null);
-    const [washPrices, setWashPrices] = useState(DEFAULT_PRICES);
+    // const [washPrices, setWashPrices] = useState(DEFAULT_PRICES);
     const [showPriceModal, setShowPriceModal] = useState(false);
     const [priceForm, setPriceForm] = useState({});
     const [isSavingPrices, setIsSavingPrices] = useState(false);
