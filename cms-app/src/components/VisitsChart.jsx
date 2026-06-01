@@ -400,7 +400,7 @@ function VisitsChart() {
                               </span>
                             ))}
                           </div>
-                          <div className="mt-2 text-success fw-semibold">
+                          {/* <div className="mt-2 text-success fw-semibold">
                             Expected: ${(['B', 'D', 'U'].reduce((sum, w) => sum + (day['cash' + w] || 0) * washPrices[w], 0)).toFixed(2)}
                           </div>
                           <Button
@@ -410,7 +410,7 @@ function VisitsChart() {
                             onClick={handleOpenPriceModal}
                           >
                             Edit Prices
-                          </Button>
+                          </Button> */}
                         </Card.Body>
                       </Card>
                     </Col>

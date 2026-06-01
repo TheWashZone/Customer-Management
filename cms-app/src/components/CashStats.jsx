@@ -375,16 +375,16 @@ function CashStats() {
                                                         ))}
                                                     </div>
                                                     <div className="mt-2 text-success fw-semibold">
-                                                        Expected: ${(['B', 'D', 'U'].reduce((sum, w) => sum + (day['cash' + w] || 0) * washPrices[w], 0)).toFixed(2)}
+                                                        {/* Expected: ${(['B', 'D', 'U'].reduce((sum, w) => sum + (day['cash' + w] || 0) * washPrices[w], 0)).toFixed(2)} */}
                                                     </div>
-                                                    <Button
+                                                    {/* <Button
                                                         variant="outline-secondary"
                                                         size="sm"
                                                         className="mt-2"
                                                         onClick={handleOpenPriceModal}
                                                     >
                                                         Edit Prices
-                                                    </Button>
+                                                    </Button> */}
                                                 </Card.Body>
                                             </Card>
                                         </Col>
@@ -403,9 +403,9 @@ function CashStats() {
                                                                 <h3 className="mb-2" style={{ color: WASH_COLORS[w] }}>
                                                                     {day['cash' + w]}
                                                                 </h3>
-                                                                <div style={{ fontSize: '0.85rem' }}>
+                                                                {/* <div style={{ fontSize: '0.85rem' }}>
                                                                     Revenue: ${(day['cash' + w] * washPrices[w]).toFixed(2)}
-                                                                </div>
+                                                                </div> */}
                                                             </Card.Body>
                                                         </Card>
                                                     </Col>

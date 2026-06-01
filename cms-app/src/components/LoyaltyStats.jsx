@@ -359,17 +359,17 @@ function LoyaltyStats() {
                           <h3 className="mb-2" style={{ color: WASH_COLORS[washType] }}>
                             {day.loyU}
                           </h3>
-                          <div className="mt-2 text-success fw-semibold">
+                          {/* <div className="mt-2 text-success fw-semibold">
                             Expected: ${(day.loyU * washPrices[washType]).toFixed(2)}
-                          </div>
-                          <Button
+                          </div> */}
+                          {/* <Button
                             variant="outline-secondary"
                             size="sm"
                             className="mt-2"
                             onClick={handleOpenPriceModal}
                           >
                             Edit Price
-                          </Button>
+                          </Button> */}
                         </Card.Body>
                       </Card>
                     </Col>

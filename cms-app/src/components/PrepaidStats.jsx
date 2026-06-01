@@ -374,7 +374,7 @@ function PrepaidStats() {
                               </span>
                             ))}
                           </div>
-                          <div className="mt-2 text-success fw-semibold">
+                          {/* <div className="mt-2 text-success fw-semibold">
                             Expected: ${(['B', 'D', 'U'].reduce((sum, w) => sum + (day['pre' + w] || 0) * washPrices[w], 0)).toFixed(2)}
                           </div>
                           <Button
@@ -384,7 +384,7 @@ function PrepaidStats() {
                             onClick={handleOpenPriceModal}
                           >
                             Edit Prices
-                          </Button>
+                          </Button> */}
                         </Card.Body>
                       </Card>
                     </Col>
@@ -403,9 +403,9 @@ function PrepaidStats() {
                                 <h3 className="mb-2" style={{ color: WASH_COLORS[w] }}>
                                   {day['pre' + w]}
                                 </h3>
-                                <div style={{ fontSize: '0.85rem' }}>
+                                {/* <div style={{ fontSize: '0.85rem' }}>
                                   Revenue: ${(day['pre' + w] * washPrices[w]).toFixed(2)}
-                                </div>
+                                </div> */}
                               </Card.Body>
                             </Card>
                           </Col>
