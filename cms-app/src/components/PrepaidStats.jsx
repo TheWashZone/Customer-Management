@@ -6,7 +6,7 @@ import { getAllVisits } from '../api/visit-crud';
 
 const WASH_COLORS = { B: '#0d6efd', U: '#198754', D: '#dc3545' };
 const WASH_NAMES = { B: 'Basic', U: 'Unlimited', D: 'Deluxe' };
-const DEFAULT_PRICES = { B: 10.00, D: 13.50, U: 16.50 };
+// const DEFAULT_PRICES = { B: 10.00, D: 13.50, U: 16.50 };
 
 function PrepaidStats() {
   const [viewMode, setViewMode] = useState('weekly'); // 'weekly' or 'monthly'
