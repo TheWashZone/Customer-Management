@@ -87,7 +87,7 @@ describe('MembersContext', () => {
       passId: 'MP001',
       creation_date: '2026-04-01',
       plan_type: 'Unlimited',
-      update_flag: false,
+      status: 'active',
       vehicle: 'Honda Civic',
       notes: 'Primary vehicle',
     },
@@ -95,7 +95,7 @@ describe('MembersContext', () => {
       passId: 'MP002',
       creation_date: '2026-04-10',
       plan_type: 'Basic',
-      update_flag: true,
+      status: 'payment_needed',
       vehicle: 'Toyota Camry',
       notes: 'Second vehicle',
     },
@@ -1077,7 +1077,7 @@ describe('MembersContext', () => {
         passId: 'MP999',
         creation_date: '2026-04-20',
         plan_type: 'Premium',
-        update_flag: false,
+        status: 'inactive',
         vehicle: 'Ford Explorer',
         notes: 'Fetched from DB',
       };
@@ -1125,7 +1125,7 @@ describe('MembersContext', () => {
           'B001',
           'MP123',
           'Unlimited',
-          false,
+          'active',
           'Tesla Model 3',
           'Context-created pass'
         );
@@ -1136,7 +1136,7 @@ describe('MembersContext', () => {
         'B001',
         'MP123',
         'Unlimited',
-        false,
+        'active',
         'Tesla Model 3',
         'Context-created pass'
       );
@@ -1145,7 +1145,7 @@ describe('MembersContext', () => {
         passId: 'MP123',
         creation_date: new Date().toISOString().split('T')[0],
         plan_type: 'Unlimited',
-        update_flag: false,
+        status: 'active',
         vehicle: 'Tesla Model 3',
         notes: 'Context-created pass',
       });
@@ -1173,18 +1173,18 @@ describe('MembersContext', () => {
       await act(async () => {
         await result.current.updateMembership('B001', 'MP001', {
           notes: 'Updated note',
-          update_flag: true,
+          status: 'inactive',
         });
       });
 
       expect(monthlyPassCrud.updateMembership).toHaveBeenCalledWith('B001', 'MP001', {
         notes: 'Updated note',
-        update_flag: true,
+        status: 'inactive',
       });
 
       const updatedPass = result.current.monthlyPassesByUser.B001.find(p => p.passId === 'MP001');
       expect(updatedPass.notes).toBe('Updated note');
-      expect(updatedPass.update_flag).toBe(true);
+      expect(updatedPass.status).toBe('inactive');
       expect(updatedPass.vehicle).toBe('Honda Civic');
     });
 

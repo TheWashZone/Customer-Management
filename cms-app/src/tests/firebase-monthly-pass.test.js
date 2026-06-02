@@ -82,7 +82,7 @@ describe("Monthly Pass CRUD Operations (emulator)", () => {
       const userId = uniqId("USER");
       const passId = uniqId("PASS");
       const planType = "Unlimited";
-      const updateFlag = false;
+      const status = "active";
       const vehicle = "Toyota Camry 2020";
       const notes = "First monthly pass";
       const today = new Date().toISOString().split("T")[0];
@@ -93,7 +93,7 @@ describe("Monthly Pass CRUD Operations (emulator)", () => {
         userId,
         passId,
         planType,
-        updateFlag,
+        status,
         vehicle,
         notes
       );
@@ -109,7 +109,7 @@ describe("Monthly Pass CRUD Operations (emulator)", () => {
         passId,
         creation_date: today,
         plan_type: planType,
-        update_flag: updateFlag,
+        status,
         vehicle,
         notes,
       });
@@ -130,7 +130,7 @@ describe("Monthly Pass CRUD Operations (emulator)", () => {
         userId,
         passId,
         "Unlimited",
-        false,
+        "active",
         "Toyota Camry 2020",
         "New pass"
       );
@@ -144,7 +144,7 @@ describe("Monthly Pass CRUD Operations (emulator)", () => {
       expect(passDoc.exists()).toBe(true);
       expect(passDoc.data()).toEqual({
         plan_type: "Unlimited",
-        update_flag: false,
+        status: "active",
         vehicle: "Toyota Camry 2020",
         notes: "New pass",
       });
@@ -166,7 +166,7 @@ describe("Monthly Pass CRUD Operations (emulator)", () => {
         userId,
         passId,
         "Unlimited",
-        false,
+        "active",
         "Toyota Camry 2020",
         "First monthly pass"
       );
@@ -177,7 +177,7 @@ describe("Monthly Pass CRUD Operations (emulator)", () => {
         passId,
         creation_date: today,
         plan_type: "Unlimited",
-        update_flag: false,
+        status: "active",
         vehicle: "Toyota Camry 2020",
         notes: "First monthly pass",
       });
@@ -213,7 +213,7 @@ describe("Monthly Pass CRUD Operations (emulator)", () => {
         userId,
         passId1,
         "Unlimited",
-        false,
+        "active",
         "Toyota Camry 2020",
         "First pass"
       );
@@ -222,7 +222,7 @@ describe("Monthly Pass CRUD Operations (emulator)", () => {
         userId,
         passId2,
         "Basic",
-        true,
+        "payment_needed",
         "Honda Accord 2021",
         "Second pass"
       );
@@ -231,7 +231,7 @@ describe("Monthly Pass CRUD Operations (emulator)", () => {
         userId,
         passId3,
         "Premium",
-        false,
+        "inactive",
         "Ford Explorer 2022",
         "Third pass"
       );
@@ -244,21 +244,21 @@ describe("Monthly Pass CRUD Operations (emulator)", () => {
           expect.objectContaining({
             passId: passId1,
             plan_type: "Unlimited",
-            update_flag: false,
+            status: "active",
             vehicle: "Toyota Camry 2020",
             notes: "First pass",
           }),
           expect.objectContaining({
             passId: passId2,
             plan_type: "Basic",
-            update_flag: true,
+            status: "payment_needed",
             vehicle: "Honda Accord 2021",
             notes: "Second pass",
           }),
           expect.objectContaining({
             passId: passId3,
             plan_type: "Premium",
-            update_flag: false,
+            status: "inactive",
             vehicle: "Ford Explorer 2022",
             notes: "Third pass",
           }),
@@ -295,21 +295,21 @@ describe("Monthly Pass CRUD Operations (emulator)", () => {
         userId,
         passId,
         "Basic",
-        false,
+        "active",
         "Toyota Camry 2020",
         "Original note"
       );
 
       await updateMembership(userId, passId, {
         plan_type: "Premium",
-        update_flag: true,
+        status: "payment_needed",
         notes: "Updated note",
       });
 
       const monthlyPass = await getMonthlyPass(userId, passId);
 
       expect(monthlyPass.plan_type).toBe("Premium");
-      expect(monthlyPass.update_flag).toBe(true);
+      expect(monthlyPass.status).toBe("payment_needed");
       expect(monthlyPass.vehicle).toBe("Toyota Camry 2020");
       expect(monthlyPass.notes).toBe("Updated note");
 
@@ -327,7 +327,7 @@ describe("Monthly Pass CRUD Operations (emulator)", () => {
         userId,
         passId,
         "Unlimited",
-        false,
+        "active",
         "Honda Accord 2021",
         "Original note"
       );
@@ -339,7 +339,7 @@ describe("Monthly Pass CRUD Operations (emulator)", () => {
       const monthlyPass = await getMonthlyPass(userId, passId);
 
       expect(monthlyPass.plan_type).toBe("Unlimited");
-      expect(monthlyPass.update_flag).toBe(false);
+      expect(monthlyPass.status).toBe("active");
       expect(monthlyPass.vehicle).toBe("Honda Accord 2021");
       expect(monthlyPass.notes).toBe("Only note changed");
 
@@ -373,7 +373,7 @@ describe("Monthly Pass CRUD Operations (emulator)", () => {
         userId,
         passId,
         "Unlimited",
-        false,
+        "active",
         "Toyota Camry 2020",
         "First monthly pass"
       );
@@ -388,7 +388,7 @@ describe("Monthly Pass CRUD Operations (emulator)", () => {
         passId,
         creation_date: today,
         plan_type: "Unlimited",
-        update_flag: false,
+        status: "active",
         vehicle: "Toyota Camry 2020",
         notes: "First monthly pass",
         cancelled_date: today,

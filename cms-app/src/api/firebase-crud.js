@@ -7,9 +7,6 @@ import {
   collection, 
   getDocs, 
   runTransaction,
-  collectionGroup,
-  query,
-  where
 } from "firebase/firestore";
 import { db } from "./firebaseconfig";
 
@@ -23,7 +20,7 @@ import { db } from "./firebaseconfig";
  * @param {string} email - Email address (optional)
  * @returns {Promise<string>} The user ID
  */
-async function createMember(id, name, contact_person, address, phone_number, email = '') {
+async function createMember(id, name, contact_person='', address='', phone_number = '', email = '') {
   const userId = id;
   try {
     const userData = {
@@ -54,7 +51,7 @@ async function createMember(id, name, contact_person, address, phone_number, ema
  * @param {string} phone_number - Phone number information
  * @param {string} email - Email address (optional)
  * @param {string} plan_type - Monthly pass plan type
- * @param {boolean} update_flag - Monthly pass update flag
+ * @param {string} status - Monthly pass status
  * @param {string} vehicle - Vehicle information for the monthly pass
  * @param {string} notes - Additional notes for the monthly pass (optional)
  * @returns {Promise<string>} The user ID of the created member
@@ -63,13 +60,13 @@ async function createMemberWithMonthlyPass(
   userId,
   passId,
   name,
-  contact_person,
-  address,
-  phone_number,
+  contact_person = '',
+  address = '',
+  phone_number = '',
   email = '',
   plan_type,
-  update_flag,
-  vehicle,
+  status,
+  vehicle = '',
   notes = ''
 ) {
   const userRef = doc(db, "users", userId);
@@ -103,7 +100,7 @@ async function createMemberWithMonthlyPass(
       passId,
       creation_date: today,
       plan_type,
-      update_flag,
+      status,
       vehicle,
       notes,
     });
@@ -123,7 +120,7 @@ async function createMemberWithMonthlyPass(
  * Upserts a member document
  * @returns {Promise<{id: string, existed: boolean}>}
  */
-async function upsertMember(id, name, contact_person, address, phone_number, email = '') {
+async function upsertMember(id, name, contact_person='', address='', phone_number = '', email = '') {
   try {
     const docRef = doc(db, "users", id);
 
@@ -260,37 +257,80 @@ async function deleteMember(id) {
  */
 async function getMemberByMonthlyPassId(passId) {
   try {
-    const q = query(
-      collectionGroup(db, "monthlyPasses"),
-      where("passId", "==", passId)
-    );
+    const passIdRef = doc(db, "monthlyPassIds", passId);
+    const passIdSnap = await getDoc(passIdRef);
 
-    const snapshot = await getDocs(q);
-
-    if (snapshot.empty) {
+    if (!passIdSnap.exists()) {
       return null;
     }
 
-    const passDoc = snapshot.docs[0];
+    const { userId } = passIdSnap.data();
 
-    // Get parent user document
-    const userRef = passDoc.ref.parent.parent;
+    const userRef = doc(db, "users", userId);
+    const passRef = doc(db, "users", userId, "monthlyPasses", passId);
+
     const userSnap = await getDoc(userRef);
+    const passSnap = await getDoc(passRef);
 
-    if (!userSnap.exists()) {
+    if (!userSnap.exists() || !passSnap.exists()) {
       return null;
     }
 
     return {
       id: userSnap.id,
-      ...userSnap.data()
+      ...userSnap.data(),
+      passId,
+      ...passSnap.data(),
     };
-
   } catch (error) {
     console.error("❌ Error finding member by monthly pass ID:", error);
     throw error;
   }
 }
+// async function getMemberByMonthlyPassId(passId) {
+//   try {
+//     const q = query(
+//       collectionGroup(db, "monthlyPasses"),
+//       where("passId", "==", passId)
+//     );
+
+//     const snapshot = await getDocs(q);
+
+//     if (snapshot.empty) {
+//       return null;
+//     }
+
+//     const passDoc = snapshot.docs[0];
+
+//     // Get parent user document
+//     const userRef = passDoc.ref.parent.parent;
+//     const userSnap = await getDoc(userRef);
+
+//     if (!userSnap.exists()) {
+//       return null;
+//     }
+
+//     // return {
+//     //   id: userSnap.id,
+//     //   ...userSnap.data(),
+//     //   ...passDoc.data(),
+//     // };
+//     const passData = passDoc.data();
+
+//     return {
+//       id: userSnap.id,
+//       ...userSnap.data(),
+//       passId: passDoc.id,
+//       vehicle: passData.vehicle || '',
+//       status: passData.status || 'active',
+//       notes: passData.notes || '',
+//     };
+
+//   } catch (error) {
+//     console.error("❌ Error finding member by monthly pass ID:", error);
+//     throw error;
+//   }
+// }
 
 
 export {

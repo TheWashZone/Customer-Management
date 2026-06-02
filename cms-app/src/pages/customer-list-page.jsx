@@ -409,7 +409,7 @@ function MembersPage() {
           addForm.phoneNumber.trim(),
           addForm.email.trim(),
           addSubPrefix,
-          false,
+          addForm.status,
           addForm.car,
           addForm.notes
         );
@@ -429,13 +429,16 @@ function MembersPage() {
         notes: ''
       });
 
+
       setAddSubPrefix('B');
       setShowAddForm(false);
     } catch (err) {
       console.error(err);
       setError(err.message || "Failed to create member. Please check the console for details.");
+      setError(err.message || "Failed to create member. Please check the console for details.");
     }
   };
+
 
 
   // const handleOpenEditModal = (member) => {

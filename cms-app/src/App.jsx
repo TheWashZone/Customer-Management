@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router';
 import { onAuthStateChanged } from 'firebase/auth';
 import { auth } from './api/firebaseconfig';
 import { MembersProvider } from './context/MembersContext';
+import { VisitsProvider } from './context/VisitsContext';
 import { cleanupOldVisitData } from './api/analytics-crud';
 import AnalyticsPage from './pages/analytics-page';
 import CustomerListPage from './pages/customer-list-page';
@@ -55,28 +56,30 @@ function App() {
   return (
     <BrowserRouter>
       <MembersProvider user={user}>
-        <Routes>
-          <Route
-            path="/login"
-            element={user ? <Navigate to="/" replace /> : <LoginPage />}
-          />
-          <Route
-            path="/analytics"
-            element={user ? <AnalyticsPage /> : <Navigate to="/login" replace />}
-          />
-          <Route
-            path="/customers"
-            element={user ? <CustomerListPage /> : <Navigate to="/login" replace />}
-          />
-          <Route
-            path="/"
-            element={user ? <CustomerSearchPage /> : <Navigate to="/login" replace />}
-          />
-          <Route
-            path="/test"
-            element={user ? <UploadPage/> : <Navigate to="/login" replace />}
-          />
-        </Routes>
+        <VisitsProvider user={user}>
+          <Routes>
+            <Route
+              path="/login"
+              element={user ? <Navigate to="/" replace /> : <LoginPage />}
+            />
+            <Route
+              path="/analytics"
+              element={user ? <AnalyticsPage /> : <Navigate to="/login" replace />}
+            />
+            <Route
+              path="/customers"
+              element={user ? <CustomerListPage /> : <Navigate to="/login" replace />}
+            />
+            <Route
+              path="/"
+              element={user ? <CustomerSearchPage /> : <Navigate to="/login" replace />}
+            />
+            <Route
+              path="/test"
+              element={user ? <UploadPage/> : <Navigate to="/login" replace />}
+            />
+          </Routes>
+        </VisitsProvider>
       </MembersProvider>
     </BrowserRouter>
   );

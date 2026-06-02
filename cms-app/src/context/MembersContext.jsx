@@ -517,18 +517,18 @@ export const MembersProvider = ({ children, user }) => {
     userId,
     passId,
     plan_type,
-    update_flag,
+    status,
     vehicle,
     notes = ''
   ) => {
     try {
-      await createMonthlyPassInDB(userId, passId, plan_type, update_flag, vehicle, notes);
+      await createMonthlyPassInDB(userId, passId, plan_type, status, vehicle, notes);
 
       const newPass = {
         passId,
         creation_date: new Date().toISOString().split('T')[0],
         plan_type,
-        update_flag,
+        status,
         vehicle,
         notes,
       };
@@ -549,7 +549,7 @@ export const MembersProvider = ({ children, user }) => {
     userId,
     passId,
     plan_type,
-    update_flag,
+    status,
     vehicle,
     notes = ''
   ) => {
@@ -558,7 +558,7 @@ export const MembersProvider = ({ children, user }) => {
         userId,
         passId,
         plan_type,
-        update_flag,
+        status,
         vehicle,
         notes
       );
@@ -566,7 +566,7 @@ export const MembersProvider = ({ children, user }) => {
       const passFields = {
         passId,
         plan_type,
-        update_flag,
+        status,
         vehicle,
         notes,
       };

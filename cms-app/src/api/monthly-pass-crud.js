@@ -6,12 +6,12 @@ import { db } from "./firebaseconfig";
  * @param {string} userId - The user ID
  * @param {string} passId - The monthly pass ID
  * @param {string} plan_type - The plan type
- * @param {string|boolean} update_flag - The update flag
+ * @param {string|boolean} status - The monthly pass status
  * @param {string} vehicle - The vehicle information
  * @param {string} notes - The notes (optional)
  * @returns {Promise<string>} The pass ID
  */
-async function createMonthlyPass(userId, passId, plan_type, update_flag, vehicle, notes = '') {
+async function createMonthlyPass(userId, passId, plan_type, status, vehicle, notes = '') {
   const passRef = doc(db, "users", userId, "monthlyPasses", passId);
   const passIdRef = doc(db, "monthlyPassIds", passId);
 
@@ -22,7 +22,7 @@ async function createMonthlyPass(userId, passId, plan_type, update_flag, vehicle
       passId,
       creation_date: creationDate,
       plan_type,
-      update_flag,
+      status,
       vehicle,
       notes
     };
@@ -77,22 +77,22 @@ async function createMonthlyPass(userId, passId, plan_type, update_flag, vehicle
  * @param {string} userId - The user ID
  * @param {string} passId - The monthly pass ID
  * @param {string} plan_type - The plan type
- * @param {string|boolean} update_flag - The update flag
+ * @param {string|boolean} status - The monthly pass status
  * @param {string} vehicle - The vehicle information
  * @param {string} notes - The notes (optional)
  * @returns {Promise<{id: string, existed: boolean}>}
  */
-async function upsertMonthlyPass(userId, passId, plan_type, update_flag, vehicle, notes = '') {
+async function upsertMonthlyPass(userId, passId, plan_type, status, vehicle, notes = '') {
   try {
     const docRef = doc(db, "users", userId, "monthlyPasses", passId);
 
     const existed = await runTransaction(db, async (transaction) => {
       const docSnap = await transaction.get(docRef);
       if (docSnap.exists()) {
-        transaction.update(docRef, { plan_type, update_flag, vehicle, notes });
+        transaction.update(docRef, { plan_type, status, vehicle, notes });
         return true;
       }
-      transaction.set(docRef, { plan_type, update_flag, vehicle, notes });
+      transaction.set(docRef, { plan_type, status, vehicle, notes });
       return false;
     });
 
