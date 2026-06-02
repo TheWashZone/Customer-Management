@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Card, ButtonGroup, Button, Spinner, Alert, Row, Col, Modal, Form } from 'react-bootstrap';
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { getAllVisits } from '../api/visit-crud';
+import { aggregateVisitsByDateRange } from '../api/visit-crud';
 // import { getWashPrices, updateWashPrices } from '../api/settings-crud';
 
 const WASH_COLORS = { B: '#0d6efd', U: '#198754', D: '#dc3545' };
@@ -45,33 +45,12 @@ function CashStats() {
             setIsLoading(true);
             setError(null);
             try {
-                const allVisits = await getAllVisits();
-                // Filter by date range
-                const start = new Date(dateRange.start + 'T00:00:00Z');
-                const end = new Date(dateRange.end + 'T23:59:59Z');
-                const filtered = allVisits.filter(v => {
-                    const d = new Date(v.visit_date + 'T00:00:00Z');
-                    return d >= start && d <= end && v.payment_type === 'cash';
-                });
-                // Aggregate by date and wash type
-                const dateMap = new Map();
-                for (let d = new Date(start); d <= end; d.setUTCDate(d.getUTCDate() + 1)) {
-                    const dateStr = d.toISOString().split('T')[0];
-                    dateMap.set(dateStr, { date: dateStr, count: 0, displayDate: formatDate(dateStr), cashB: 0, cashD: 0, cashU: 0 });
-                }
-                filtered.forEach(v => {
-                    const dateStr = v.visit_date;
-                    const wash = v.wash_type;
-                    if (dateMap.has(dateStr)) {
-                        const entry = dateMap.get(dateStr);
-                        if (wash === 'B') entry.cashB += 1;
-                        if (wash === 'D') entry.cashD += 1;
-                        if (wash === 'U') entry.cashU += 1;
-                        entry.count += 1;
-                        dateMap.set(dateStr, entry);
-                    }
-                });
-                setVisitsData(Array.from(dateMap.values()).sort((a, b) => a.date.localeCompare(b.date)));
+                const aggregated = await aggregateVisitsByDateRange(
+                    dateRange.start,
+                    dateRange.end,
+                    'cash' // Filter by cash payment type only
+                );
+                setVisitsData(aggregated);
             } catch (err) {
                 console.error('Failed to load visits data:', err);
                 setError('Failed to load cash visits data. Please try again.');

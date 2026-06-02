@@ -280,6 +280,91 @@ async function deleteVisit(visitId) {
   }
 }
 
+/**
+ * Aggregates visits by date and payment type within a date range.
+ * Eliminates the need for a separate dailyVisits collection by aggregating on-the-fly.
+ * @param {string} startDate - Start date in YYYY-MM-DD format
+ * @param {string} endDate - End date in YYYY-MM-DD format
+ * @param {string|null} paymentType - Optional filter: 'cash', 'loyalty', 'prepaid', 'subscription' or null for all
+ * @returns {Promise<Array>} Array of daily aggregated records with breakdowns
+ */
+async function aggregateVisitsByDateRange(startDate, endDate, paymentType = null) {
+  try {
+    // Fetch all visits
+    const allVisits = await getAllVisits();
+    
+    // Filter by date range
+    const start = new Date(startDate + 'T00:00:00Z');
+    const end = new Date(endDate + 'T23:59:59Z');
+    
+    let filtered = allVisits.filter(v => {
+      const d = new Date(v.visit_date + 'T00:00:00Z');
+      return d >= start && d <= end;
+    });
+    
+    // Apply payment type filter if specified
+    if (paymentType) {
+      filtered = filtered.filter(v => v.payment_type === paymentType);
+    }
+    
+    // Create date map with all dates in range initialized to zero
+    const dateMap = new Map();
+    for (let d = new Date(start); d <= end; d.setUTCDate(d.getUTCDate() + 1)) {
+      const dateStr = d.toISOString().split('T')[0];
+      dateMap.set(dateStr, {
+        date: dateStr,
+        count: 0,
+        displayDate: new Date(dateStr + 'T00:00:00Z').toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+        // Payment type counters
+        subscription: 0,
+        loyalty: 0,
+        prepaid: 0,
+        cash: 0,
+        // Subscription wash types
+        subB: 0, subD: 0, subU: 0,
+        // Loyalty wash types
+        loyB: 0, loyD: 0, loyU: 0,
+        // Prepaid wash types
+        preB: 0, preD: 0, preU: 0,
+        // Cash wash types
+        cashB: 0, cashD: 0, cashU: 0,
+      });
+    }
+    
+    // Aggregate data
+    filtered.forEach(v => {
+      const dateStr = v.visit_date;
+      if (dateMap.has(dateStr)) {
+        const entry = dateMap.get(dateStr);
+        entry.count += 1;
+        
+        // Increment payment type counter
+        if (v.payment_type === 'subscription') {
+          entry.subscription += 1;
+          if (v.wash_type) entry['sub' + v.wash_type] += 1;
+        } else if (v.payment_type === 'loyalty') {
+          entry.loyalty += 1;
+          if (v.wash_type) entry['loy' + v.wash_type] += 1;
+        } else if (v.payment_type === 'prepaid') {
+          entry.prepaid += 1;
+          if (v.wash_type) entry['pre' + v.wash_type] += 1;
+        } else if (v.payment_type === 'cash') {
+          entry.cash += 1;
+          if (v.wash_type) entry['cash' + v.wash_type] += 1;
+        }
+        
+        dateMap.set(dateStr, entry);
+      }
+    });
+    
+    // Return as sorted array
+    return Array.from(dateMap.values()).sort((a, b) => a.date.localeCompare(b.date));
+  } catch (error) {
+    console.error('Error aggregating visits:', error);
+    throw error;
+  }
+}
+
 export { 
     createVisit, 
     upsertVisit, 
@@ -290,5 +375,6 @@ export {
     getVisitsByPaymentType, 
     getVisitsByMonthlyPassId,
     updateVisit,
-    deleteVisit 
+    deleteVisit,
+    aggregateVisitsByDateRange
 };
