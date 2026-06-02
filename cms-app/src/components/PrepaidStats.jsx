@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Card, ButtonGroup, Button, Spinner, Alert, Row, Col, Modal, Form } from 'react-bootstrap';
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { getDailyVisitsInRange } from '../api/analytics-crud';
-import { getWashPrices, updateWashPrices } from '../api/settings-crud';
+import { aggregateVisitsByDateRange } from '../api/visit-crud';
+// import { getWashPrices, updateWashPrices } from '../api/settings-crud';
 
 const WASH_COLORS = { B: '#0d6efd', U: '#198754', D: '#dc3545' };
 const WASH_NAMES = { B: 'Basic', U: 'Unlimited', D: 'Deluxe' };
-const DEFAULT_PRICES = { B: 10.00, D: 13.50, U: 16.50 };
+// const DEFAULT_PRICES = { B: 10.00, D: 13.50, U: 16.50 };
 
 function PrepaidStats() {
   const [viewMode, setViewMode] = useState('weekly'); // 'weekly' or 'monthly'
@@ -15,7 +15,7 @@ function PrepaidStats() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [selectedDayIndex, setSelectedDayIndex] = useState(null);
-  const [washPrices, setWashPrices] = useState(DEFAULT_PRICES);
+  // const [washPrices, setWashPrices] = useState(DEFAULT_PRICES);
   const [showPriceModal, setShowPriceModal] = useState(false);
   const [priceForm, setPriceForm] = useState({});
   const [isSavingPrices, setIsSavingPrices] = useState(false);
@@ -39,15 +39,18 @@ function PrepaidStats() {
     };
   }, [viewMode]);
 
-  // Fetch visits data
+  // Fetch visits data from 'visits' collection and aggregate for book (prepaid)
   useEffect(() => {
     const fetchData = async () => {
       setIsLoading(true);
       setError(null);
-
       try {
-        const data = await getDailyVisitsInRange(dateRange.start, dateRange.end);
-        setVisitsData(data);
+        const aggregated = await aggregateVisitsByDateRange(
+          dateRange.start,
+          dateRange.end,
+          'prepaid' // Filter by prepaid payment type only
+        );
+        setVisitsData(aggregated);
       } catch (err) {
         console.error('Failed to load visits data:', err);
         setError('Failed to load book visits data. Please try again.');
@@ -55,20 +58,19 @@ function PrepaidStats() {
         setIsLoading(false);
       }
     };
-
     fetchData();
   }, [dateRange]);
 
-  // Fetch wash prices on mount
-  useEffect(() => {
-    getWashPrices().then(setWashPrices).catch(() => {/* silently use defaults */});
-  }, []);
+  // // Fetch wash prices on mount
+  // useEffect(() => {
+  //   getWashPrices().then(setWashPrices).catch(() => {/* silently use defaults */ });
+  // }, []);
 
-  const handleOpenPriceModal = () => {
-    setPriceForm({ ...washPrices });
-    setPriceError(null);
-    setShowPriceModal(true);
-  };
+  // const handleOpenPriceModal = () => {
+  //   setPriceForm({ ...washPrices });
+  //   setPriceError(null);
+  //   setShowPriceModal(true);
+  // };
 
   const handlePriceChange = (washType, value) => {
     setPriceForm(prev => ({ ...prev, [washType]: value }));
@@ -86,15 +88,15 @@ function PrepaidStats() {
     }
     setIsSavingPrices(true);
     setPriceError(null);
-    try {
-      await updateWashPrices(parsed);
-      setWashPrices(parsed);
-      setShowPriceModal(false);
-    } catch (err) {
-      setPriceError(`Failed to save: ${err.message}`);
-    } finally {
-      setIsSavingPrices(false);
-    }
+    // try {
+    //   await updateWashPrices(parsed);
+    //   setWashPrices(parsed);
+    //   setShowPriceModal(false);
+    // } catch (err) {
+    //   setPriceError(`Failed to save: ${err.message}`);
+    // } finally {
+    //   setIsSavingPrices(false);
+    // }
   };
 
   // Format date for display
@@ -126,20 +128,19 @@ function PrepaidStats() {
 
     // Fill in actual visit counts and breakdown data for book only
     visitsData.forEach(visit => {
-      if (dateMap.has(visit.dateString)) {
+      if (dateMap.has(visit.date)) {
         const bookCount = (visit.preB || 0) + (visit.preD || 0) + (visit.preU || 0);
         const entry = {
-          date: visit.dateString,
+          date: visit.date,
           count: bookCount,
-          displayDate: formatDate(visit.dateString),
+          displayDate: formatDate(visit.date),
           preB: visit.preB || 0,
           preD: visit.preD || 0,
           preU: visit.preU || 0,
         };
-        dateMap.set(visit.dateString, entry);
+        dateMap.set(visit.date, entry);
       }
     });
-
     return Array.from(dateMap.values()).sort((a, b) => a.date.localeCompare(b.date));
   }, [visitsData, dateRange]);
 
@@ -352,7 +353,7 @@ function PrepaidStats() {
                               </span>
                             ))}
                           </div>
-                          <div className="mt-2 text-success fw-semibold">
+                          {/* <div className="mt-2 text-success fw-semibold">
                             Expected: ${(['B', 'D', 'U'].reduce((sum, w) => sum + (day['pre' + w] || 0) * washPrices[w], 0)).toFixed(2)}
                           </div>
                           <Button
@@ -362,7 +363,7 @@ function PrepaidStats() {
                             onClick={handleOpenPriceModal}
                           >
                             Edit Prices
-                          </Button>
+                          </Button> */}
                         </Card.Body>
                       </Card>
                     </Col>
@@ -381,9 +382,9 @@ function PrepaidStats() {
                                 <h3 className="mb-2" style={{ color: WASH_COLORS[w] }}>
                                   {day['pre' + w]}
                                 </h3>
-                                <div style={{ fontSize: '0.85rem' }}>
+                                {/* <div style={{ fontSize: '0.85rem' }}>
                                   Revenue: ${(day['pre' + w] * washPrices[w]).toFixed(2)}
-                                </div>
+                                </div> */}
                               </Card.Body>
                             </Card>
                           </Col>
