@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Card, ButtonGroup, Button, Spinner, Alert, Row, Col, Modal, Form } from 'react-bootstrap';
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { getDailyVisitsInRange } from '../api/analytics-crud';
+import { aggregateVisitsByDateRange } from '../api/visit-crud';
 import { getWashPrices, updateWashPrices } from '../api/settings-crud';
 
 const WASH_COLORS = { B: '#0d6efd', U: '#198754', D: '#dc3545' };
@@ -39,15 +39,18 @@ function LoyaltyStats() {
     };
   }, [viewMode]);
 
-  // Fetch visits data
+  // Fetch visits data from 'visits' collection and aggregate for loyalty unlimited
   useEffect(() => {
     const fetchData = async () => {
       setIsLoading(true);
       setError(null);
-
       try {
-        const data = await getDailyVisitsInRange(dateRange.start, dateRange.end);
-        setVisitsData(data);
+        const aggregated = await aggregateVisitsByDateRange(
+          dateRange.start,
+          dateRange.end,
+          'loyalty' // Filter by loyalty payment type
+        );
+        setVisitsData(aggregated);
       } catch (err) {
         console.error('Failed to load visits data:', err);
         setError('Failed to load loyalty visits data. Please try again.');
@@ -55,20 +58,19 @@ function LoyaltyStats() {
         setIsLoading(false);
       }
     };
-
     fetchData();
   }, [dateRange]);
 
   // Fetch wash prices on mount
   useEffect(() => {
-    getWashPrices().then(setWashPrices).catch(() => {/* silently use defaults */});
+    getWashPrices().then(setWashPrices).catch(() => {/* silently use defaults */ });
   }, []);
 
-  const handleOpenPriceModal = () => {
-    setPriceForm({ ...washPrices });
-    setPriceError(null);
-    setShowPriceModal(true);
-  };
+  // const handleOpenPriceModal = () => {
+  //   setPriceForm({ ...washPrices });
+  //   setPriceError(null);
+  //   setShowPriceModal(true);
+  // };
 
   const handlePriceChange = (washType, value) => {
     setPriceForm(prev => ({ ...prev, [washType]: value }));
@@ -126,18 +128,17 @@ function LoyaltyStats() {
 
     // Fill in actual visit counts and breakdown data for loyalty unlimited only
     visitsData.forEach(visit => {
-      if (dateMap.has(visit.dateString)) {
+      if (dateMap.has(visit.date)) {
         const loyaltyCount = visit.loyU || 0;
         const entry = {
-          date: visit.dateString,
+          date: visit.date,
           count: loyaltyCount,
-          displayDate: formatDate(visit.dateString),
+          displayDate: formatDate(visit.date),
           loyU: visit.loyU || 0,
         };
-        dateMap.set(visit.dateString, entry);
+        dateMap.set(visit.date, entry);
       }
     });
-
     return Array.from(dateMap.values()).sort((a, b) => a.date.localeCompare(b.date));
   }, [visitsData, dateRange]);
 
@@ -340,17 +341,17 @@ function LoyaltyStats() {
                           <h3 className="mb-2" style={{ color: WASH_COLORS[washType] }}>
                             {day.loyU}
                           </h3>
-                          <div className="mt-2 text-success fw-semibold">
+                          {/* <div className="mt-2 text-success fw-semibold">
                             Expected: ${(day.loyU * washPrices[washType]).toFixed(2)}
-                          </div>
-                          <Button
+                          </div> */}
+                          {/* <Button
                             variant="outline-secondary"
                             size="sm"
                             className="mt-2"
                             onClick={handleOpenPriceModal}
                           >
                             Edit Price
-                          </Button>
+                          </Button> */}
                         </Card.Body>
                       </Card>
                     </Col>
