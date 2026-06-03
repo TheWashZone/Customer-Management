@@ -101,7 +101,7 @@ function LoyaltyStats() {
 
   // Format date for display
   const formatDate = (dateString) => {
-    const date = new Date(dateString + 'T00:00:00Z');
+    const date = new Date(dateString + 'T00:00:00');
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   };
 
@@ -116,8 +116,8 @@ function LoyaltyStats() {
 
     // Create a map of all dates in range with 0 counts
     const dateMap = new Map();
-    const start = new Date(dateRange.start + 'T00:00:00Z');
-    const end = new Date(dateRange.end + 'T00:00:00Z');
+    const start = new Date(dateRange.start + 'T00:00:00');
+    const end = new Date(dateRange.end + 'T00:00:00');
 
     for (let d = new Date(start); d <= end; d.setUTCDate(d.getUTCDate() + 1)) {
       const dateStr = d.toISOString().split('T')[0];
@@ -311,7 +311,7 @@ function LoyaltyStats() {
                 &larr; Prev
               </Button>
               <h5 className="mb-0">
-                {new Date(chartData[selectedDayIndex].date + 'T00:00:00Z').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                {new Date(chartData[selectedDayIndex].date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                 <span className="ms-3 text-muted" style={{ fontSize: '0.9rem' }}>
                   Total: {chartData[selectedDayIndex].count}
                 </span>
