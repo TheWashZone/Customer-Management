@@ -11,7 +11,7 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 import { fetchDailyForecast, weatherCodeToDescription } from '../api/open-meteo';
-import { getDailyVisitsInRange } from '../api/analytics-crud';
+import { aggregateVisitsByDateRange } from '../api/visit-crud';
 
 const getBarColor = (weatherCode) => {
   const code = Number(weatherCode);
@@ -56,7 +56,7 @@ function WeatherAnalytics() {
         const startDate = new Date(today);
         startDate.setDate(today.getDate() - 30);
 
-        const visits = await getDailyVisitsInRange(
+        const visits = await aggregateVisitsByDateRange(
           startDate.toISOString().split('T')[0],
           endDate
         );
@@ -93,7 +93,7 @@ function WeatherAnalytics() {
     // Create a map of visits by date
     const visitsMap = new Map();
     visitsData.forEach(visit => {
-      visitsMap.set(visit.dateString, visit.count || 0);
+      visitsMap.set(visit.date, visit.count || 0);
     });
 
     // Get today's date to separate historical from forecast

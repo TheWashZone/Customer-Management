@@ -2,6 +2,18 @@ import { doc, setDoc, getDoc, updateDoc, deleteDoc, collection, getDocs, query, 
 import { db } from "./firebaseconfig";
 
 /**
+ * 
+ * @param {Date} date 
+ * @returns {string} Formatted date string in YYYY-MM-DD format for local timezone
+ */
+function getLocalDateString(date = new Date()) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+/**
  * Creates or overwrites a visit document in the database
  * @param {string} id - The visit ID
  * @param {string} washType - Type of wash
@@ -12,7 +24,8 @@ import { db } from "./firebaseconfig";
 async function createVisit(visitId, washType, paymentType, monthlyPassId = '') {
   try {
     const visitData = {
-      visit_date: new Date().toISOString().split("T")[0],
+      // visit_date: new Date().toISOString().split("T")[0],
+      visit_date: getLocalDateString(),
       wash_type: washType,
       payment_type: paymentType,
       monthly_pass_id: monthlyPassId
@@ -41,7 +54,8 @@ async function createVisit(visitId, washType, paymentType, monthlyPassId = '') {
 async function upsertVisit(id, washType, paymentType, monthlyPassId = '') {
   try {
     const docRef = doc(db, "visits", id);
-    const today = new Date().toISOString().split("T")[0];
+    // const today = new Date().toISOString().split("T")[0];
+    const today = getLocalDateString();
 
     const existed = await runTransaction(db, async (transaction) => {
       const docSnap = await transaction.get(docRef);
