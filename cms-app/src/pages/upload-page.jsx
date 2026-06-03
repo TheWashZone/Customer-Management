@@ -100,7 +100,7 @@ function UploadPage() {
   return (
     <div style={{ padding: '20px', maxWidth: '1000px', margin: '0 auto' }}>
       <HamburgerMenu />
-      <h1>Test Page</h1>
+      <h1>Upload Page</h1>
 
       <div style={{ 
         marginBottom: '30px', 
