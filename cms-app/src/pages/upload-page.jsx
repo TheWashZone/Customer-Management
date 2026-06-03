@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useMembers } from '../context/MembersContext';
 import { uploadCustomerRecordsFromFile } from '../utils/excel-upload';
-import { seedDemoVisits, clearDemoVisits } from '../api/analytics-crud';
+// import { seedDemoVisits, clearDemoVisits } from '../api/analytics-crud';
 import HamburgerMenu from '../components/HamburgerMenu';
 
 function UploadPage() {
@@ -18,38 +18,38 @@ function UploadPage() {
   const [message, setMessage] = useState('');
   const [selectedFile, setSelectedFile] = useState(null);
   const [uploadResults, setUploadResults] = useState(null);
-  const [demoMessage, setDemoMessage] = useState('');
-  const [demoLoading, setDemoLoading] = useState(false);
+  // const [demoMessage, setDemoMessage] = useState('');
+  // const [demoLoading, setDemoLoading] = useState(false);
 
-  const handleSeedDemoData = async () => {
-    if (!window.confirm('This will overwrite the past 7 days of visit data with demo logs. Continue?')) return;
-    setDemoLoading(true);
-    setDemoMessage('Seeding demo data...');
-    try {
-      const days = await seedDemoVisits(7, 30);
-      setDemoMessage(`Done! Seeded ~210 visits across the past ${days} days.`);
-    } catch (error) {
-      setDemoMessage(`Error: ${error.message}`);
-      console.error('Error seeding demo data:', error);
-    } finally {
-      setDemoLoading(false);
-    }
-  };
+  // const handleSeedDemoData = async () => {
+  //   if (!window.confirm('This will overwrite the past 7 days of visit data with demo logs. Continue?')) return;
+  //   setDemoLoading(true);
+  //   setDemoMessage('Seeding demo data...');
+  //   try {
+  //     const days = await seedDemoVisits(7, 30);
+  //     setDemoMessage(`Done! Seeded ~210 visits across the past ${days} days.`);
+  //   } catch (error) {
+  //     setDemoMessage(`Error: ${error.message}`);
+  //     console.error('Error seeding demo data:', error);
+  //   } finally {
+  //     setDemoLoading(false);
+  //   }
+  // };
 
-  const handleClearDemoData = async () => {
-    if (!window.confirm('This will delete visit data for the past 7 days. Continue?')) return;
-    setDemoLoading(true);
-    setDemoMessage('Clearing demo data...');
-    try {
-      const days = await clearDemoVisits(7);
-      setDemoMessage(`Cleared visit data for the past ${days} days.`);
-    } catch (error) {
-      setDemoMessage(`Error: ${error.message}`);
-      console.error('Error clearing demo data:', error);
-    } finally {
-      setDemoLoading(false);
-    }
-  };
+  // const handleClearDemoData = async () => {
+  //   if (!window.confirm('This will delete visit data for the past 7 days. Continue?')) return;
+  //   setDemoLoading(true);
+  //   setDemoMessage('Clearing demo data...');
+  //   try {
+  //     const days = await clearDemoVisits(7);
+  //     setDemoMessage(`Cleared visit data for the past ${days} days.`);
+  //   } catch (error) {
+  //     setDemoMessage(`Error: ${error.message}`);
+  //     console.error('Error clearing demo data:', error);
+  //   } finally {
+  //     setDemoLoading(false);
+  //   }
+  // };
 
   const handleFileSelect = (event) => {
     const file = event.target.files[0];
@@ -159,6 +159,7 @@ function UploadPage() {
         </button>
       </div>
 
+      {/*
       {import.meta.env.DEV && (
         <div style={{
           marginBottom: '30px',
@@ -213,6 +214,7 @@ function UploadPage() {
           )}
         </div>
       )}
+      */}
 
       {message && (
         <p style={{ marginTop: '20px', fontSize: '14px', fontWeight: 'bold' }}>
