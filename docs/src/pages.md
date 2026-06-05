@@ -37,15 +37,13 @@ The primary operational screen — what staff use at the counter throughout the 
 
 **ID format rules (enforced by regex):**
 - Subscription: `B`, `D`, or `U` + 3–5 digits (e.g., `B123`)
-- Loyalty: `L` + 3–5 digits (e.g., `L202`)
-- Prepaid: `BB`, `DB`, or `UB` + 3–5 digits (e.g., `BB101`)
 
 **Key behaviors:**
 - Determines member type from the ID prefix and calls the appropriate `get*Member` from context.
 - **Log Customer** button calls `logDailyVisit()` and, for loyalty/prepaid, also updates the member record (visit count or remaining washes).
-- Loyalty members get a **wash type selector popup** before logging (unless it's a free wash on a 10th visit).
-- Prepaid members: the button is disabled if `prepaidWashes === 0`.
 - A **Log Cash Customer** button opens a wash type modal and logs a cash visit without any member lookup.
+- A **Log Loyalty Customer** button opens a wash type modal with only ultimate as an option and logs a loyalty visit without any member lookup.
+- A **Log Prepaid Customer** button opens a wash type modal and logs a prepaid visit without any member lookup.
 - An **Edit Member** popup allows staff to update name, email, notes, status (subscription), visit count (loyalty), or prepaid washes.
 
 ---

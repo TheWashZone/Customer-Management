@@ -13,9 +13,14 @@ All Firebase API modules live in `cms-app/src/api/`. Each module talks to a spec
 | `firebase-crud.js` | CRUD for subscription members (`users` collection) |
 | `loyalty-crud.js` | CRUD for loyalty members (`loyaltyMembers` collection) |
 | `prepaid-crud.js` | CRUD for prepaid members (`prepaidMembers` collection) |
-| `analytics-crud.js` | Daily visit tracking (`dailyVisits` collection) |
+| `monthly-pass-crud.js` | CRUD for monthly passes (`monthlyPasses` subcollection in the `users` collection) |
+| `visit-crud.js` | CRUD for visits (`visits` collection) |
+| `analytics-crud.js` | Daily visit tracking (`visits` collection) |
 | `settings-crud.js` | Wash price settings (`settings/washPrices` document) |
 | `open-meteo.js` | External weather API (free, no auth required) |
+| `memberId-counter.js` | Gets the next available member ID |
+| `visit-counter.js` | Gets the next available visit ID |
+
 
 ---
 
@@ -44,21 +49,21 @@ Subscription member documents. Document ID is the member ID (e.g., `B101`).
 
 **Document shape:**
 ```js
-{ name, car, status, notes, email }
-// status: 'active' | 'inactive' | 'payment_needed'
+{ date, name, contact_person, address, phone_number, email }
 ```
 
 | Function | Description |
 |---|---|
-| `createMember(id, name, car, status, notes, email?)` | Creates or overwrites a member document |
-| `upsertMember(id, name, car, status)` | Transactionally updates if exists, creates if not. Preserves `notes` and `email` on update. |
+| `createMember(id, name, contact_person, address, phone_number, email?)` | Creates or overwrites a member document |
+| `createMemberWithMonthlyPass(userId, passId, name, contact_person, address, phone_number, email?, plan_type, status, vehicle?, notes?)` | Creates a member and monthly pass together in a transaction |
+| `upsertMember(id, name, contact_person, address, phone_number, email?)` | Transactionally updates if exists, creates if not. |
 | `getMember(id)` | Returns one member or `null` |
 | `getAllMembers()` | Returns all members |
-| `getMembersByStatus(status)` | Filters by status |
+| `getMemberByMonthlyPassId(passId)` | Finds a member by monthly pass ID |
 | `updateMember(id, updates)` | Partial field update. Throws if member does not exist. |
-| `deleteMember(id)` | Deletes a member. Throws if not found. |
+| `deleteMember(id)` | Deletes a member and its monthly passes. Throws if not found. |
 
-> `upsertMember` is the function used during Excel uploads. It intentionally only writes name/car/status to avoid overwriting notes or emails that staff entered manually.
+> The current implementation stores member contact info in `contact_person`, `address`, and `phone_number`, and creates a `date` field at creation time.
 
 ---
 
@@ -95,6 +100,31 @@ Subscription member documents. Document ID is the member ID (e.g., `B101`).
 | `getAllPrepaidMembers()` | Returns all prepaid members |
 | `updatePrepaidMember(id, updates)` | Partial update. Throws if not found. |
 | `deletePrepaidMember(id)` | Deletes. Throws if not found. |
+
+---
+
+## visit-crud.js — `visits` collection
+
+Visit documents are stored in the `visits` collection.
+
+**Document shape:**
+```js
+{ visit_date, wash_type, payment_type, monthly_pass_id }
+```
+
+| Function | Description |
+|---|---|
+| `createVisit(visitId, washType, paymentType, monthlyPassId?)` | Creates or overwrites a visit document |
+| `upsertVisit(id, washType, paymentType, monthlyPassId?)` | Creates or updates a visit document in a transaction |
+| `getVisit(visitId)` | Returns one visit or `null` |
+| `getAllVisits()` | Returns all visits |
+| `getVisitsByDate(visitDate)` | Returns visits for a specific date |
+| `getVisitsByWashType(washType)` | Returns visits filtered by wash type |
+| `getVisitsByPaymentType(paymentType)` | Returns visits filtered by payment type |
+| `getVisitsByMonthlyPassId(monthlyPassId)` | Returns visits tied to a monthly pass |
+| `updateVisit(visitId, updates)` | Partial visit update. Throws if visit does not exist. |
+| `deleteVisit(visitId)` | Deletes a visit. Throws if not found. |
+| `aggregateVisitsByDateRange(startDate, endDate, paymentType?)` | Returns aggregated daily visit breakdowns over a date range |
 
 ---
 

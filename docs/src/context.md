@@ -2,9 +2,11 @@
 
 `cms-app/src/context/MembersContext.jsx` provides a single global store for all three member types. It wraps the raw Firestore API calls with an in-memory cache so that most interactions don't require repeat database reads.
 
+`cms-app/src/context/VisitsContext.jsx` provides a single global store for visits. It wraps the raw Firestore API calls with an in-memory cache so that most interactions don't require repeat database reads.
+
 ---
 
-## How to use it
+## How to use members context
 
 ```js
 import { useMembers } from '../context/MembersContext';
@@ -16,25 +18,48 @@ const { members, updateMember, loyaltyMembers, ensureLoyaltyLoaded } = useMember
 
 ---
 
+## How to use visits context
+
+```js
+import { useVisits } from '../context/VisitsContext';
+
+const { visits, updateVisit } = useVisits();
+```
+
+`useVisits()` throws if called outside of `VisitsProvider`. The provider is mounted in `App.jsx` and wraps all routes.
+
+---
+
 ## Provider setup
 
 `MembersProvider` takes a `user` prop (the Firebase Auth user object from `App.jsx`). When `user` is `null` (logged out), all cached state is cleared.
+`VisitsProvider` also takes a `user` prop (the Firebase Auth user object from `App.jsx`). When `user` is `null` (logged out), all cached state is cleared.
 
 ```jsx
 <MembersProvider user={user}>
-  {children}
+  <VisitsProvider user={user}>
+    {children}
+  </VisitsProvider>
 </MembersProvider>
 ```
 
 ---
 
-## Loading behavior
+## Members Loading behavior
 
 | Collection | When it loads |
 |---|---|
 | Subscription (`users`) | Automatically on mount when `user` is set |
 | Loyalty (`loyaltyMembers`) | Lazy — call `ensureLoyaltyLoaded()` to trigger |
 | Prepaid (`prepaidMembers`) | Lazy — call `ensurePrepaidLoaded()` to trigger |
+
+### Visits loading behavior
+
+| Collection | When it loads |
+|---|---|
+| Visits (`visits`) | Automatically on mount when `user` is set |
+
+Visits are fetched once when the `VisitsProvider` initializes for an authenticated user. `isVisitsLoading` is true while the initial visit fetch is in progress, and there is no separate lazy-load hook for visits.
 
 Lazy loading avoids fetching loyalty and prepaid data until a page actually needs them (e.g., when the Loyalty or Prepaid tab in `AnalyticsPage` is opened, or when `CustomerListPage` switches to those tabs).
 
@@ -75,6 +100,26 @@ Lazy loading avoids fetching loyalty and prepaid data until a page actually need
 Same pattern as loyalty:
 
 `prepaidMembers`, `isPrepaidLoading`, `prepaidError`, `ensurePrepaidLoaded`, `getPrepaidMember`, `createPrepaidMember`, `updatePrepaidMember`, `deletePrepaidMember`, `refreshPrepaidMembers`
+
+---
+
+## What's exposed via `useVisits()`
+
+| Value | Type | Description |
+|---|---|---|
+| `visits` | `Array` | Cached visit records |
+| `isVisitsLoading` | `boolean` | True while initial load or refresh is in progress |
+| `visitsError` | `string\|null` | Error message from visit loading or refresh failures |
+| `getVisit(id)` | `Function` | Cache-first visit lookup, falls back to Firestore |
+| `createVisit(id, washType, paymentType, monthlyPassId)` | `Function` | Creates a new visit and updates cache |
+| `upsertVisit(id, washType, paymentType, monthlyPassId)` | `Function` | Creates or updates a visit and syncs cache |
+| `updateVisit(id, updates)` | `Function` | Partially updates a visit and cache |
+| `deleteVisit(id)` | `Function` | Deletes a visit and removes it from cache |
+| `refreshVisits()` | `Function` | Reloads all visits from Firestore |
+| `getVisitsByDate(visitDate)` | `Function` | Returns visits for a specific date |
+| `getVisitsByWashType(washType)` | `Function` | Returns visits filtered by wash type |
+| `getVisitsByPaymentType(paymentType)` | `Function` | Returns visits filtered by payment type |
+| `getVisitsByMonthlyPassId(monthlyPassId)` | `Function` | Returns visits tied to a monthly pass |
 
 ---
 
