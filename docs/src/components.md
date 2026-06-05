@@ -12,6 +12,7 @@ Reusable components live in `cms-app/src/components/`. Most are analytics displa
 | `MembershipStats.jsx` | `MembershipStats` | `AnalyticsPage` (Subscriptions tab) |
 | `LoyaltyStats.jsx` | `LoyaltyStats` | `AnalyticsPage` (Loyalty tab) |
 | `PrepaidStats.jsx` | `PrepaidStats` | `AnalyticsPage` (Prepaid tab) |
+| `CashStats.jsx` | `CashStats` | `AnalyticsPage` (Cash tab) |
 | `VisitsChart.jsx` | `VisitsChart` | `AnalyticsPage` (Visits tab) |
 | `WeatherAnalytics.jsx` | `WeatherAnalytics` | `AnalyticsPage` (Weather tab) |
 | `WeatherCards.jsx` | `WeatherCards` | Not currently used in any page (available) |
@@ -54,6 +55,15 @@ Displays prepaid member analytics. Calls `ensurePrepaidLoaded()` on mount.
 
 **Shows:**
 - Stat cards: Total Members, Avg Washes Remaining, No Washes Left (count = 0), Low Washes (1–2 remaining)
+
+---
+
+## CashStats
+
+Displays cash customer analytics. 
+
+**Shows:**
+- Stat cards: Total Cash Visits, Average/Day, Peak Day, Lowest Day
 
 ---
 
