@@ -427,6 +427,10 @@ const handleLogVisit = async () => {
                   <span className="header-label">Address:&nbsp;</span>
                   <span className="header-value">{memberData.address}</span>
                 </div>
+                <div className="header-row">
+                  <span className="header-label">Car:&nbsp;</span>
+                  <span className="header-value">{memberData.vehicle}</span>
+                </div>
                 {memberData.email && (
                   <div className="header-row">
                     <span className="header-label">Email:&nbsp;</span>
