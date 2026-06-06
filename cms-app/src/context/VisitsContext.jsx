@@ -12,6 +12,13 @@ import {
   deleteVisit as deleteVisitInDB,
 } from '../api/visit-crud';
 
+const getLocalDateString = (date = new Date()) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
 const VisitsContext = createContext();
 
 export const useVisits = () => {
@@ -91,7 +98,7 @@ export const VisitsProvider = ({ children, user }) => {
 
       const newVisit = {
         id,
-        visit_date: new Date().toISOString().split('T')[0],
+        visit_date: getLocalDateString(),
         wash_type: washType,
         payment_type: paymentType,
         monthly_pass_id: monthlyPassId,
@@ -120,7 +127,7 @@ export const VisitsProvider = ({ children, user }) => {
 
       const visitFields = {
         id,
-        visit_date: new Date().toISOString().split('T')[0],
+        visit_date: getLocalDateString(),
         wash_type: washType,
         payment_type: paymentType,
         monthly_pass_id: monthlyPassId,
