@@ -45,6 +45,13 @@ describe('VisitsContext', () => {
     },
   ];
 
+  const getLocalDateString = (date = new Date()) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
   beforeEach(() => {
     vi.clearAllMocks();
   });
@@ -248,7 +255,7 @@ describe('VisitsContext', () => {
       expect(result.current.visits).toHaveLength(initialLength + 1);
       expect(result.current.visits).toContainEqual({
         id: 'V123',
-        visit_date: new Date().toISOString().split('T')[0],
+        visit_date: getLocalDateString(),
         wash_type: 'Deluxe',
         payment_type: 'card',
         monthly_pass_id: 'MP123',
@@ -305,7 +312,7 @@ describe('VisitsContext', () => {
       expect(updatedVisit.wash_type).toBe('Premium');
       expect(updatedVisit.payment_type).toBe('card');
       expect(updatedVisit.monthly_pass_id).toBe('MP999');
-      expect(updatedVisit.visit_date).toBe(new Date().toISOString().split('T')[0]);
+      expect(updatedVisit.visit_date).toBe(getLocalDateString());
     });
 
     test('adds new visit to cache when it does not exist', async () => {
@@ -333,7 +340,7 @@ describe('VisitsContext', () => {
       expect(result.current.visits).toHaveLength(initialLength + 1);
       expect(result.current.visits).toContainEqual({
         id: 'V999',
-        visit_date: new Date().toISOString().split('T')[0],
+        visit_date: getLocalDateString(),
         wash_type: 'Basic',
         payment_type: 'cash',
         monthly_pass_id: '',

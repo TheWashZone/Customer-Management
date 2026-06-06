@@ -71,7 +71,14 @@ describe("Visit CRUD Operations (emulator)", () => {
       const washType = "Deluxe";
       const paymentType = "monthly_pass";
       const monthlyPassId = "PASS_001";
-      const today = new Date().toISOString().split("T")[0];
+      function getLocalDateString(date = new Date()) {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, "0");
+        const day = String(date.getDate()).padStart(2, "0");
+        return `${year}-${month}-${day}`;
+      }
+
+      const today = getLocalDateString();
 
       const returnedId = await createVisit(
         id,
@@ -99,7 +106,14 @@ describe("Visit CRUD Operations (emulator)", () => {
       const id = uniqId("VISIT");
       const washType = "Basic";
       const paymentType = "cash";
-      const today = new Date().toISOString().split("T")[0];
+      function getLocalDateString(date = new Date()) {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, "0");
+        const day = String(date.getDate()).padStart(2, "0");
+        return `${year}-${month}-${day}`;
+      }
+
+      const today = getLocalDateString();
 
       const returnedId = await createVisit(id, washType, paymentType);
 
@@ -126,7 +140,14 @@ describe("upsertVisit", () => {
     const washType = "Deluxe";
     const paymentType = "monthly_pass";
     const monthlyPassId = "PASS_001";
-    const today = new Date().toISOString().split("T")[0];
+    function getLocalDateString(date = new Date()) {
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, "0");
+      const day = String(date.getDate()).padStart(2, "0");
+      return `${year}-${month}-${day}`;
+    }
+
+    const today = getLocalDateString();
 
     const result = await upsertVisit(
       id,
@@ -152,7 +173,14 @@ describe("upsertVisit", () => {
 
   test("updates an existing visit and reports that it already existed", async () => {
     const id = uniqId("VISIT");
-    const today = new Date().toISOString().split("T")[0];
+    function getLocalDateString(date = new Date()) {
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, "0");
+      const day = String(date.getDate()).padStart(2, "0");
+      return `${year}-${month}-${day}`;
+    }
+
+    const today = getLocalDateString();
 
     await createVisit(id, "Basic", "cash", "");
 
@@ -185,7 +213,14 @@ describe("getVisit", () => {
     const washType = "Deluxe";
     const paymentType = "monthly_pass";
     const monthlyPassId = "PASS_001";
-    const today = new Date().toISOString().split("T")[0];
+    function getLocalDateString(date = new Date()) {
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, "0");
+      const day = String(date.getDate()).padStart(2, "0");
+      return `${year}-${month}-${day}`;
+    }
+
+    const today = getLocalDateString();
 
     await createVisit(id, washType, paymentType, monthlyPassId);
 
@@ -251,7 +286,14 @@ describe("getVisitsByDate", () => {
     const id1 = uniqId("VISIT1");
     const id2 = uniqId("VISIT2");
     const id3 = uniqId("VISIT3");
-    const today = new Date().toISOString().split("T")[0];
+    function getLocalDateString(date = new Date()) {
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, "0");
+      const day = String(date.getDate()).padStart(2, "0");
+      return `${year}-${month}-${day}`;
+    }
+
+    const today = getLocalDateString();
 
     await createVisit(id1, "Basic", "cash", "");
     await createVisit(id2, "Deluxe", "monthly_pass", "PASS_001");
