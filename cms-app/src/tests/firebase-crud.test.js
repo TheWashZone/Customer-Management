@@ -316,6 +316,39 @@ describe("User CRUD Operations (emulator)", () => {
       expect(user).toBeNull();
     });
 
+    test("removes monthly pass refs when deleting a user", async () => {
+      const userId = uniqId("delete-pass");
+      const passId = uniqId("PASS");
+
+      await createMember(
+        userId,
+        "Delete User",
+        "Delete Contact",
+        "Delete Address",
+        "555-444-4444"
+      );
+
+      await createMonthlyPass(
+        userId,
+        passId,
+        "Ultimate",
+        false,
+        "Honda Civic",
+        "Temp pass"
+      );
+
+      const deletedId = await deleteMember(userId);
+      expect(deletedId).toBe(userId);
+
+      const userDoc = await getDoc(doc(db, "users", userId));
+      const passDoc = await getDoc(doc(db, "users", userId, "monthlyPasses", passId));
+      const passIdDoc = await getDoc(doc(db, "monthlyPassIds", passId));
+
+      expect(userDoc.exists()).toBe(false);
+      expect(passDoc.exists()).toBe(false);
+      expect(passIdDoc.exists()).toBe(false);
+    });
+
     test("throws when deleting a non-existent user", async () => {
       const userId = uniqId("nothere");
       const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});

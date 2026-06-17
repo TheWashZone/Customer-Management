@@ -235,9 +235,13 @@ async function deleteMember(id) {
     const monthlyPassesRef = collection(db, "users", id, "monthlyPasses");
     const monthlyPassesSnapshot = await getDocs(monthlyPassesRef);
 
-    for (const passDoc of monthlyPassesSnapshot.docs) {
-      await deleteDoc(doc(db, "users", id, "monthlyPasses", passDoc.id));
-    }
+    await Promise.all(monthlyPassesSnapshot.docs.map(async (passDoc) => {
+      const passId = passDoc.id;
+      await Promise.all([
+        deleteDoc(doc(db, "users", id, "monthlyPasses", passId)),
+        deleteDoc(doc(db, "monthlyPassIds", passId)),
+      ]);
+    }));
 
     await deleteDoc(docRef);
     return id;
