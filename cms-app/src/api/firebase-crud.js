@@ -5,8 +5,9 @@ import {
   updateDoc, 
   deleteDoc, 
   collection, 
-  getDocs, 
+  getDocs,
   runTransaction,
+  writeBatch,
 } from "firebase/firestore";
 import { db } from "./firebaseconfig";
 
@@ -235,15 +236,16 @@ async function deleteMember(id) {
     const monthlyPassesRef = collection(db, "users", id, "monthlyPasses");
     const monthlyPassesSnapshot = await getDocs(monthlyPassesRef);
 
-    await Promise.all(monthlyPassesSnapshot.docs.map(async (passDoc) => {
-      const passId = passDoc.id;
-      await Promise.all([
-        deleteDoc(doc(db, "users", id, "monthlyPasses", passId)),
-        deleteDoc(doc(db, "monthlyPassIds", passId)),
-      ]);
-    }));
+    // Delete the user, their passes, and the pass ID index entries in one
+    // atomic batch so a partial failure can't leave orphaned index docs.
+    const batch = writeBatch(db);
+    monthlyPassesSnapshot.docs.forEach((passDoc) => {
+      batch.delete(doc(db, "users", id, "monthlyPasses", passDoc.id));
+      batch.delete(doc(db, "monthlyPassIds", passDoc.id));
+    });
+    batch.delete(docRef);
+    await batch.commit();
 
-    await deleteDoc(docRef);
     return id;
   } catch (error) {
     console.error("❌ Error deleting document:", error);
@@ -277,6 +279,9 @@ async function getMemberByMonthlyPassId(passId) {
     const passSnap = await getDoc(passRef);
 
     if (!userSnap.exists() || !passSnap.exists()) {
+      // Orphaned index entry: the member data was deleted without cleaning up
+      // monthlyPassIds. Remove it so creating this pass ID isn't blocked.
+      await deleteDoc(passIdRef);
       return null;
     }
 

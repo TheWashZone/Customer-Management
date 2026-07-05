@@ -6,6 +6,7 @@ import {
   doc,
   deleteDoc,
   getDoc,
+  setDoc,
 } from "firebase/firestore";
 import {
   getAuth,
@@ -25,6 +26,7 @@ import {
   updateMember,
   deleteMember,
   createMemberWithMonthlyPass,
+  getMemberByMonthlyPassId,
 } from "../api/firebase-crud.js";
 
 import { createMonthlyPass } from "../api/monthly-pass-crud.js";
@@ -414,6 +416,55 @@ test("does not create a customer when the monthly pass ID already exists", async
   await cleanupTestDoc(newUserId);
 });
 
+  describe("getMemberByMonthlyPassId", () => {
+    test("removes an orphaned pass ID index entry and returns null", async () => {
+      const passId = uniqId("PASS");
+
+      // Fabricate an orphan: index entry exists but the member data doesn't
+      // (the state left behind by pruning before the index cleanup fix).
+      await setDoc(doc(db, "monthlyPassIds", passId), {
+        userId: uniqId("ghost"),
+        passId,
+        creation_date: "2026-01-01",
+      });
+
+      const member = await getMemberByMonthlyPassId(passId);
+      expect(member).toBeNull();
+
+      const passIdDoc = await getDoc(doc(db, "monthlyPassIds", passId));
+      expect(passIdDoc.exists()).toBe(false);
+    });
+
+    test("allows re-creating a member after its pass ID index was orphaned", async () => {
+      const oldUserId = uniqId("orphan");
+      const newUserId = uniqId("recreate");
+      const passId = uniqId("PASS");
+
+      await createMemberWithMonthlyPass(
+        oldUserId, passId, "Old Member", "", "", "", "", "Basic", "active", "Honda Civic", ""
+      );
+
+      // Simulate the pre-fix prune: delete the user and pass docs directly,
+      // leaving the monthlyPassIds index entry behind.
+      await deleteDoc(doc(db, "users", oldUserId, "monthlyPasses", passId));
+      await deleteDoc(doc(db, "users", oldUserId));
+
+      // Lookup self-heals the orphan, so the upload's create path succeeds.
+      expect(await getMemberByMonthlyPassId(passId)).toBeNull();
+      await expect(
+        createMemberWithMonthlyPass(
+          newUserId, passId, "New Member", "", "", "", "", "Basic", "active", "Honda Civic", ""
+        )
+      ).resolves.toBe(newUserId);
+
+      const member = await getMemberByMonthlyPassId(passId);
+      expect(member).not.toBeNull();
+      expect(member.id).toBe(newUserId);
+
+      await cleanupMonthlyPass(newUserId, passId);
+      await cleanupTestDoc(newUserId);
+    });
+  });
 
   describe("upsertMember", () => {
     test("creates a new member when none exists", async () => {

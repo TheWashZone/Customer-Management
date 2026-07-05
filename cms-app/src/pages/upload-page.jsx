@@ -237,6 +237,22 @@ function UploadPage() {
           {uploadResults.pruned > 0 && (
             <p style={{ color: '#FF9800' }}><strong>Stale members removed:</strong> {uploadResults.pruned}</p>
           )}
+          {uploadResults.duplicates > 0 && (
+            <p style={{ color: '#FF9800' }}><strong>Rows sharing a pass ID with an earlier row:</strong> {uploadResults.duplicates}</p>
+          )}
+
+          {uploadResults.warnings?.length > 0 && (
+            <div style={{ marginTop: '15px' }}>
+              <h4>Warnings:</h4>
+              <ul style={{ fontSize: '14px', color: '#FF9800' }}>
+                {uploadResults.warnings.map((warn, index) => (
+                  <li key={index}>
+                    Row {warn.row}: {warn.warning}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
 
           {uploadResults.errors.length > 0 && (
             <div style={{ marginTop: '15px' }}>
