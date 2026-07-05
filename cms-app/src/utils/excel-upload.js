@@ -66,7 +66,7 @@ export async function uploadCustomerRecordsFromFile(file, {
   }
 
   const workbook = new ExcelJS.Workbook();
-  const results = { total: 0, successful: 0, failed: 0, pruned: 0, errors: [] };
+  const results = { total: 0, successful: 0, failed: 0, pruned: 0, duplicates: 0, errors: [], warnings: [] };
 
   const arrayBuffer = await file.arrayBuffer();
   await workbook.xlsx.load(arrayBuffer);
@@ -80,28 +80,43 @@ export async function uploadCustomerRecordsFromFile(file, {
     rows.push({ row, rowNumber });
   });
 
-  // Filter to only data rows up front so results.total is accurate
-  const dataRows = rows.filter(({ row }) => {
+  // Group data rows by pass ID. A pass ID can legitimately appear on more
+  // than one row (e.g. a pass reassigned to a new member while the old row is
+  // kept in the sheet), and the later row's data should win — the behavior
+  // the old sequential upload had. Rows sharing an ID must not run in
+  // parallel: both would miss the existence lookup, both would try to create,
+  // and the loser would fail with "already exists". So rows within a group
+  // run in sheet order, while separate groups still run in parallel batches.
+  const rowsByPassId = new Map();
+  for (const { row, rowNumber } of rows) {
     const idPart2Raw = row.getCell(3).value;
-    return idPart2Raw && Number.isFinite(Number(idPart2Raw));
-  });
-  results.total = dataRows.length;
+    if (!idPart2Raw || !Number.isFinite(Number(idPart2Raw))) continue;
+
+    const idPart1 = row.getCell(2).value?.toString().trim() || '';
+    const id = `${idPart1}${idPart2Raw.toString().trim()}`;
+
+    if (!rowsByPassId.has(id)) rowsByPassId.set(id, []);
+    rowsByPassId.get(id).push({ row, rowNumber, id });
+    results.total++;
+  }
+
+  for (const [id, group] of rowsByPassId) {
+    if (group.length > 1) {
+      results.duplicates += group.length - 1;
+      results.warnings.push({
+        row: group[group.length - 1].rowNumber,
+        warning: `Pass ID ${id} appears on rows ${group.map((entry) => entry.rowNumber).join(', ')} — they were applied in order, so the last row's name and status are what was saved`,
+      });
+    }
+  }
 
   const uploadedIds = new Set();
 
-  const tasks = dataRows.map(({ row, rowNumber }) => async () => {
+  const processRow = async ({ row, rowNumber, id }) => {
     try {
       const name = row.getCell(1).value?.toString().trim() || '';
       const idPart1 = row.getCell(2).value?.toString().trim() || '';
-      const idPart2 = row.getCell(3).value.toString().trim();
       const car = row.getCell(4).value?.toString().trim() || '';
-      const id = `${idPart1}${idPart2}`;
-
-      if (!id) {
-        results.failed++;
-        results.errors.push({ row: rowNumber, error: 'No ID found (columns B + C are empty)' });
-        return;
-      }
 
       const status = rowHasColor(row, 'gray')
         ? 'inactive'
@@ -132,6 +147,12 @@ export async function uploadCustomerRecordsFromFile(file, {
     } catch (error) {
       results.failed++;
       results.errors.push({ row: rowNumber, error: error.message });
+    }
+  };
+
+  const tasks = [...rowsByPassId.values()].map((group) => async () => {
+    for (const entry of group) {
+      await processRow(entry);
     }
   });
 
